@@ -23,17 +23,22 @@ const tocItems = [
 
 /* ------------------------------------------------------------------ */
 
+// Matches .lc-h2 on the Terms/Privacy pages: same sans-serif stack the site
+// body uses (`--font-sf-pro` in globals.css), same weight and spacing.
 const sectionHeadingStyle: React.CSSProperties = {
-  fontFamily: "'Cormorant Garamond', Georgia, serif",
+  fontFamily:
+    "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif",
   fontSize: '1.6rem',
   fontWeight: 600,
   color: '#0c1424',
   lineHeight: 1.25,
-  margin: '8px 0 14px',
+  margin: '0 0 14px',
 };
 
+// Matches .lc-num on the Terms/Privacy pages.
 const sectionNumStyle: React.CSSProperties = {
-  fontFamily: "'Cormorant Garamond', Georgia, serif",
+  fontFamily:
+    "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif",
   fontSize: '0.8rem',
   fontWeight: 700,
   color: '#e8b84b',

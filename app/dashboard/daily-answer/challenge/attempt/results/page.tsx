@@ -16,6 +16,7 @@ import MainsResultsView, { MainsQuestionResultData } from '@/components/mains-re
 function ResultsPageInner() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
+  const attemptIdParam = searchParams.get('attemptId');
 
   const [data, setData] = useState<MainsQuestionResultData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,12 +24,12 @@ function ResultsPageInner() {
   const [attemptId, setAttemptId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (dateParam) return;
+    if (dateParam || attemptIdParam) return;
     if (typeof window !== 'undefined') {
       const storedAttemptId = sessionStorage.getItem('dailyAnswerAttemptId');
       if (storedAttemptId) setAttemptId(storedAttemptId);
     }
-  }, [dateParam]);
+  }, [attemptIdParam, dateParam]);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,11 +37,11 @@ function ResultsPageInner() {
     setError(null);
 
     dailyAnswerService
-      .getResults(dateParam ? undefined : attemptId || undefined, dateParam || undefined)
+      .getResults(dateParam ? undefined : attemptIdParam || attemptId || undefined, dateParam || undefined)
       .then((res) => {
         if (cancelled) return;
         setData(res.data);
-        if (!dateParam && typeof window !== 'undefined') {
+        if (!dateParam && !attemptIdParam && typeof window !== 'undefined') {
           sessionStorage.removeItem('dailyAnswerAttemptId');
         }
       })
@@ -53,7 +54,7 @@ function ResultsPageInner() {
       });
 
     return () => { cancelled = true; };
-  }, [attemptId, dateParam]);
+  }, [attemptId, attemptIdParam, dateParam]);
 
   if (loading) {
     return (

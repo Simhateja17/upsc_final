@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { dashboardService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardPageHero from '@/components/DashboardPageHero';
@@ -42,6 +43,9 @@ function LineChart({ data, width = 400, height = 120, color = '#00D5BE', dashed 
     x: pad.left + (i / Math.max(data.length - 1, 1)) * innerW,
     y: pad.top + (1 - (d.value - minV) / range) * innerH,
   }));
+  // Dense attempt histories otherwise render every x-axis label on top of the
+  // next one. Keep the first and last labels while sampling the middle.
+  const labelStep = Math.max(1, Math.ceil(data.length / 10));
 
   const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
   const areaD = `${pathD} L${pts.at(-1)!.x.toFixed(1)},${(pad.top + innerH).toFixed(1)} L${pts[0].x.toFixed(1)},${(pad.top + innerH).toFixed(1)} Z`;
@@ -69,12 +73,18 @@ function LineChart({ data, width = 400, height = 120, color = '#00D5BE', dashed 
       {pts.map((p, i) => (
         <circle key={i} cx={p.x} cy={p.y} r={dotRadius} fill={color} />
       ))}
-      {data.map((d, i) => (
-        <text key={i} x={pts[i].x} y={height - 4} textAnchor="middle"
-          fontSize="9" fill="#6A7282" fontFamily="Inter, sans-serif">
-          {d.label}
-        </text>
-      ))}
+      {data.map((d, i) => {
+        const showLabel = i === 0 || i === data.length - 1 || i % labelStep === 0;
+        if (!showLabel) return null;
+
+        return (
+          <text key={i} x={pts[i].x} y={height - 4}
+            textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'}
+            fontSize="9" fill="#6A7282" fontFamily="Inter, sans-serif">
+            {d.label}
+          </text>
+        );
+      })}
     </svg>
   );
 }
@@ -116,12 +126,21 @@ function ChartHeading({ dotColor, title, subtitle, filterToggle }: { dotColor: s
   );
 }
 
-// Day/Week/Month segmented toggle, ported 1:1 from the HTML reference's
-// .chart-filter-toggle / .chart-filter-btn (purely a display-period switch —
-// the reference's own setMainsPeriod() only swaps the active tab, it doesn't
-// re-fetch or recompute data, so this mirrors that exactly).
+// Day/Week/Month segmented toggle.
 const CHART_FILTER_PERIODS = ['day', 'week', 'month'] as const;
 type ChartFilterPeriod = typeof CHART_FILTER_PERIODS[number];
+
+function periodStart(period: ChartFilterPeriod, reference = new Date()): Date {
+  const start = new Date(reference);
+  start.setHours(0, 0, 0, 0);
+  if (period === 'week') {
+    const daysSinceMonday = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - daysSinceMonday);
+  } else if (period === 'month') {
+    start.setDate(1);
+  }
+  return start;
+}
 
 function ChartFilterToggle({ value, onChange }: { value: ChartFilterPeriod; onChange: (period: ChartFilterPeriod) => void }) {
   return (
@@ -142,10 +161,10 @@ function ChartFilterToggle({ value, onChange }: { value: ChartFilterPeriod; onCh
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function TestAnalyticsPage() {
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedReport, setSelectedReport] = useState<any | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [mainsTrendPeriod, setMainsTrendPeriod] = useState<ChartFilterPeriod>('day');
   const [timePerQuestionPeriod, setTimePerQuestionPeriod] = useState<ChartFilterPeriod>('day');
@@ -206,8 +225,10 @@ export default function TestAnalyticsPage() {
   const weeklyMcqTrend: any[] = data?.weeklyMcqTrend ?? [];
   const dailyActivity: any[] = data?.dailyActivity ?? [];
   const mainsTrend: any[] = data?.mainsTrend ?? [];
-  const mainsStats = data?.mainsStats ?? {};
+  const mainsAttemptTimeline: any[] = data?.mainsAttemptTimeline
+    ?? mainsTrend.map(point => ({ date: point.date, score: point.rawScore }));
   const timePerQuestion: any[] = data?.timePerQuestion ?? [];
+  const timePerQuestionTrend: Record<ChartFilterPeriod, any[]> = data?.timePerQuestionTrend ?? {};
   const testHistory: any[] = data?.testHistory ?? [];
 
   // Series filter → matches the backend's `type` field per row (see
@@ -230,6 +251,31 @@ export default function TestAnalyticsPage() {
       }
       return 0; // 'date' — testHistory already arrives most-recent-first from the backend
     });
+
+  const openTestReport = (row: any) => {
+    const params = row.routeParams ?? {};
+    let target = '';
+
+    if (row.type === 'daily-mcq') {
+      target = `/dashboard/daily-mcq/results?attemptId=${encodeURIComponent(row.id)}`;
+    } else if (row.type === 'daily-answer') {
+      target = `/dashboard/daily-answer/challenge/attempt/results?attemptId=${encodeURIComponent(params.attemptId ?? row.id)}`;
+    } else if (row.type === 'mock-prelims' && params.testId) {
+      target = `/dashboard/mock-tests/attempt/results?testId=${encodeURIComponent(params.testId)}`;
+    } else if (row.type === 'mock-mains' && params.testId) {
+      target = `/dashboard/mock-tests/attempt/results?testId=${encodeURIComponent(params.testId)}&examMode=mains&attemptId=${encodeURIComponent(row.id)}&title=${encodeURIComponent(row.name ?? 'Mains Mock Test')}`;
+    } else if (row.type === 'pyq-mains' && params.questionId && params.attemptId) {
+      target = `/dashboard/pyq/results?questionId=${encodeURIComponent(params.questionId)}&attemptId=${encodeURIComponent(params.attemptId)}`;
+    } else if (row.type === 'test-series' && params.seriesId && params.testId) {
+      target = `/dashboard/test-series/${encodeURIComponent(params.seriesId)}/results/${encodeURIComponent(params.testId)}`;
+    }
+
+    if (!target) {
+      setError('The result page for this attempt is unavailable.');
+      return;
+    }
+    router.push(target);
+  };
 
   const totalTests = summary.totalTests ?? 0;
   const avgAccuracy = summary.avgAccuracy ?? 0;
@@ -254,12 +300,35 @@ export default function TestAnalyticsPage() {
     { title: 'Tests Attempted', value: String(totalTests), color: '#ff9933', icon: '✏️', sub: 'Full length & sectional mocks' },
     { title: 'Questions Attempted', value: totalQuestions.toLocaleString('en-IN'), color: '#cc5de8', icon: '📝', sub: 'MCQs, PYQs and mock tests' },
     { title: 'Overall Accuracy', value: `${avgAccuracy}%`, color: '#51cf66', icon: '🎯', sub: 'Net accuracy after negatives' },
-    { title: 'Best Rank', value: 'N/A', color: '#d4a843', icon: '🏆', sub: 'Across all mock test series' },
     { title: 'Avg Score', value: String(summary.avgScore ?? 0), color: '#4dabf7', icon: '📈', sub: 'Average across attempts' },
   ];
 
   const weeklyChartData = weeklyMcqTrend.map(w => ({ label: w.week, value: w.score }));
-  const mainsChartData = mainsTrend.map(t => ({ label: t.attempt, value: t.score }));
+  const now = new Date();
+  const selectedMainsPeriodStart = periodStart(mainsTrendPeriod, now);
+  const isInSelectedMainsPeriod = (dateValue: unknown) => {
+    if (typeof dateValue !== 'string' && !(dateValue instanceof Date)) return false;
+    const date = new Date(dateValue);
+    return !Number.isNaN(date.getTime()) && date >= selectedMainsPeriodStart && date <= now;
+  };
+  const filteredMainsTrend = mainsTrend.filter(point => isInSelectedMainsPeriod(point.date));
+  const mainsChartData = filteredMainsTrend.map(point => ({ label: point.attempt, value: point.score }));
+  const filteredMainsAttempts = mainsAttemptTimeline.filter(attempt => isInSelectedMainsPeriod(attempt.date));
+  const filteredMainsScores = filteredMainsAttempts
+    .map(attempt => Number(attempt.score))
+    .filter(score => Number.isFinite(score));
+  const selectedMainsStats = {
+    totalAnswers: filteredMainsAttempts.length,
+    avgScore: filteredMainsScores.length > 0
+      ? Math.round((filteredMainsScores.reduce((sum, score) => sum + score, 0) / filteredMainsScores.length) * 10) / 10
+      : 0,
+    latestScore: filteredMainsScores.at(-1) ?? 0,
+    improvement: filteredMainsScores.length >= 2
+      ? Math.round((filteredMainsScores.at(-1)! - filteredMainsScores.at(-2)!) * 10) / 10
+      : 0,
+  };
+  const displayedTimePerQuestion = timePerQuestionTrend[timePerQuestionPeriod]
+    ?? (timePerQuestionPeriod === 'day' ? timePerQuestion.map(d => ({ label: d.day, avgSeconds: d.avgSeconds })) : []);
 
   const maxQuestions = Math.max(...dailyActivity.map(d => d.questionsAttempted), 1);
 
@@ -307,7 +376,7 @@ export default function TestAnalyticsPage() {
         </div>
         <div className="mx-auto w-full max-w-[1100px] px-4 sm:px-6 lg:px-8 py-8">
           {/* ── Stat cards (open on every plan) ── */}
-          <div className="grid grid-cols-2 gap-[10px] sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-[10px] sm:grid-cols-3 lg:grid-cols-5">
             {summaryCards.map((card) => (
               <StatCard
                 key={card.title}
@@ -461,15 +530,13 @@ export default function TestAnalyticsPage() {
               <div>
                 <div className="flex flex-wrap gap-6 mb-5">
                   {[
-                    { label: 'Answers Written', value: mainsStats.totalAnswers ?? 0, color: '#101828' },
-                    { label: 'Avg Score', value: mainsStats.avgScore ?? 0, color: '#155DFC' },
-                    { label: 'Latest Score', value: mainsStats.latestScore ?? 0, color: '#FF6900' },
+                    { label: 'Answers Written', value: selectedMainsStats.totalAnswers, color: '#101828' },
+                    { label: 'Avg Score', value: selectedMainsStats.avgScore, color: '#155DFC' },
+                    { label: 'Latest Score', value: selectedMainsStats.latestScore, color: '#FF6900' },
                     {
                       label: 'Improvement',
-                      value: mainsStats.improvement != null
-                        ? `${mainsStats.improvement >= 0 ? '+' : ''}${mainsStats.improvement}`
-                        : '–',
-                      color: mainsStats.improvement > 0 ? '#22C55E' : mainsStats.improvement < 0 ? '#EF4444' : '#6A7282',
+                      value: `${selectedMainsStats.improvement >= 0 ? '+' : ''}${selectedMainsStats.improvement}`,
+                      color: selectedMainsStats.improvement > 0 ? '#22C55E' : selectedMainsStats.improvement < 0 ? '#EF4444' : '#6A7282',
                     },
                   ].map(item => (
                     <div key={item.label}>
@@ -508,17 +575,17 @@ export default function TestAnalyticsPage() {
               }
             >
               <div>
-                <div className="grid grid-cols-7 gap-2 mb-4">
-                  {timePerQuestion.map((d) => (
+                <div className={`grid gap-2 mb-4 ${displayedTimePerQuestion.length > 7 ? 'grid-cols-4 sm:grid-cols-7' : 'grid-cols-7'}`}>
+                  {displayedTimePerQuestion.map((d) => (
                     <div
-                      key={d.day}
+                      key={d.label}
                       className="flex aspect-square flex-col items-center justify-center gap-1 rounded-[10px]"
                       style={{
                         border: '1px solid #e5e7eb',
                         background: d.avgSeconds > 0 ? timeColor(d.avgSeconds) + '1A' : '#fafafa',
                       }}
                     >
-                      <span className="uppercase" style={{ fontSize: 9.1, fontWeight: 700, color: '#64748b' }}>{d.day}</span>
+                      <span className="uppercase" style={{ fontSize: 9.1, fontWeight: 700, color: '#64748b' }}>{d.label}</span>
                       <span className="font-bold" style={{ fontSize: 15.4, color: d.avgSeconds > 0 ? timeColor(d.avgSeconds) : '#64748b' }}>
                         {d.avgSeconds > 0 ? formatSeconds(d.avgSeconds) : '–'}
                       </span>
@@ -671,7 +738,7 @@ export default function TestAnalyticsPage() {
                             <td className="px-3 py-3.5">
                               <button
                                 type="button"
-                                onClick={() => setSelectedReport(row)}
+                                onClick={() => openTestReport(row)}
                                 className="pa-link-gold font-medium hover:underline"
                                 style={{ fontSize: 11.48, color: '#155DFC' }}
                               >
@@ -696,77 +763,6 @@ export default function TestAnalyticsPage() {
         </div>
       </div>
 
-      {selectedReport && (
-        <div
-          className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto"
-          style={{ background: 'rgba(15,23,42,0.55)' }}
-          onClick={() => setSelectedReport(null)}
-        >
-          <div
-            className="w-full max-w-[840px] rounded-[24px] bg-white p-7 my-auto max-h-[calc(100dvh-2rem)] overflow-y-auto"
-            style={{ boxShadow: '0 25px 60px rgba(15,23,42,0.28)' }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <div className="mb-2 inline-flex rounded-full bg-[#ECFDF5] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#047857]">
-                  Detailed Test Report
-                </div>
-                <h2 className="m-0 text-[26px] font-bold text-[#101828]">
-                  {selectedReport.name || 'Test Report'}
-                </h2>
-                <p className="mt-1 text-[13px] text-[#6A7282]">
-                  {selectedReport.series || 'Practice'} · {selectedReport.date || 'Recent attempt'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedReport(null)}
-                className="h-10 w-10 rounded-full bg-[#101828] text-white"
-                aria-label="Close report"
-              >
-                x
-              </button>
-            </div>
-
-            <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-              {[
-                { label: 'Score', value: selectedReport.score ?? 'N/A', color: '#155DFC' },
-                { label: 'Accuracy', value: selectedReport.accuracy != null ? `${selectedReport.accuracy}%` : 'N/A', color: '#22C55E' },
-                { label: 'Rank', value: selectedReport.rank ?? 'N/A', color: '#FF8904' },
-                { label: 'Type', value: selectedReport.type ? String(selectedReport.type).replace(/-/g, ' ') : 'Practice', color: '#8B5CF6' },
-              ].map((item) => (
-                <div key={item.label} className="rounded-[16px] border border-[#E5E7EB] bg-[#F9FAFB] p-4">
-                  <div className="text-[24px] font-bold capitalize" style={{ color: item.color }}>
-                    {item.value}
-                  </div>
-                  <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[#6A7282]">
-                    {item.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-[16px] border border-[#E5E7EB] p-5">
-                <h3 className="mb-3 text-[15px] font-bold text-[#101828]">Performance Summary</h3>
-                <p className="text-[13px] leading-[22px] text-[#4A5565]">
-                  This report summarizes the selected attempt without redirecting away from analytics. Use it to review score,
-                  accuracy, rank and test context before opening the original module for a deeper question-by-question review.
-                </p>
-              </div>
-              <div className="rounded-[16px] border border-[#E5E7EB] p-5">
-                <h3 className="mb-3 text-[15px] font-bold text-[#101828]">Next Actions</h3>
-                <ul className="m-0 list-none space-y-2 p-0 text-[13px] text-[#4A5565]">
-                  <li>Review weak subjects from the subject accuracy panel.</li>
-                  <li>Retake a similar mock if accuracy is below 60%.</li>
-                  <li>Add recurring weak areas to Smart Revision Tools.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

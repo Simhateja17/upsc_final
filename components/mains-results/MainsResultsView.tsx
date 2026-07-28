@@ -18,6 +18,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { wordCountChip, mainsWordLimit, mainsTimeLimit, stripMarksSuffix } from '@/lib/mainsPattern';
+import { useAuth } from '@/contexts/AuthContext';
 import CuratedModelAnswer from './CuratedModelAnswer';
 
 export interface MainsParameterScore {
@@ -25,6 +26,12 @@ export interface MainsParameterScore {
   score: number;
   maxScore: number;
   comment?: string;
+}
+
+export interface StructuredModelAnswer {
+  introduction: string;
+  sections: Array<{ heading: string; points: string[] }>;
+  conclusion: string;
 }
 
 export interface MainsQuestionResultData {
@@ -45,6 +52,7 @@ export interface MainsQuestionResultData {
   evaluatorConclusion?: string | null;
   modelAnswerKeyPoints?: string[];
   modelAnswerContent?: string | null;
+  modelAnswerStructure?: StructuredModelAnswer | null;
   curatedModelAnswer?: string | null;
   curatedModelAnswerKeyPoints?: string[];
   parameterScores?: MainsParameterScore[];
@@ -73,6 +81,51 @@ export interface MainsResultsViewProps {
 }
 
 type TabKey = 'feedback' | 'markup' | 'breakdown' | 'next';
+
+const cleanModelAnswerText = (value: string) => value
+  .replace(/(\*{1,3}|_{1,3}|`)/g, '')
+  .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+/** Converts existing curated Markdown into the JSON shape used by new reports. */
+function structureLegacyModelAnswer(markdown: string | null | undefined): StructuredModelAnswer | null {
+  if (!markdown?.trim()) return null;
+  const result: StructuredModelAnswer = { introduction: '', sections: [], conclusion: '' };
+  let target: 'introduction' | 'conclusion' | { heading: string; points: string[] } = 'introduction';
+  const prose: string[] = [];
+  const flushProse = () => {
+    const text = cleanModelAnswerText(prose.join(' '));
+    prose.length = 0;
+    if (!text) return;
+    if (target === 'introduction') result.introduction = [result.introduction, text].filter(Boolean).join(' ');
+    else if (target === 'conclusion') result.conclusion = [result.conclusion, text].filter(Boolean).join(' ');
+    else target.points.push(text);
+  };
+
+  for (const rawLine of markdown.replace(/\r/g, '').split('\n')) {
+    const line = rawLine.trim();
+    if (!line || /^(-{3,}|\*{3,})$/.test(line)) { flushProse(); continue; }
+    const heading = line.match(/^#{1,6}\s+(.+)$/);
+    if (heading) {
+      flushProse();
+      const title = cleanModelAnswerText(heading[1]);
+      if (/^introduction$/i.test(title)) target = 'introduction';
+      else if (/^conclusion$/i.test(title)) target = 'conclusion';
+      else {
+        const section = { heading: title, points: [] as string[] };
+        result.sections.push(section); target = section;
+      }
+      continue;
+    }
+    const bullet = line.match(/^[-*+]\s+(.+)$/);
+    if (bullet) { flushProse(); const text = cleanModelAnswerText(bullet[1]); if (text) target === 'introduction' ? result.introduction = [result.introduction, text].filter(Boolean).join(' ') : target === 'conclusion' ? result.conclusion = [result.conclusion, text].filter(Boolean).join(' ') : target.points.push(text); }
+    else prose.push(line);
+  }
+  flushProse();
+  if (!result.introduction && !result.sections.length && !result.conclusion) return null;
+  return result;
+}
 
 const BETA_DISCLAIMER =
   'Jeet AI Mentor is currently in beta and evolving every day alongside you. Our evaluation engine is built to deliver meaningful, structured, and exam-relevant feedback, but it can still make mistakes. Use it as a smart companion alongside your mentors, notes, and judgment.';
@@ -284,6 +337,7 @@ export default function MainsResultsView({
   breadcrumbLabel = 'Result',
 }: MainsResultsViewProps) {
   const router = useRouter();
+  const { user } = useAuth();
 
   const [selectedQ, setSelectedQ] = useState(0);
   const [tab, setTab] = useState<TabKey>('feedback');
@@ -321,6 +375,8 @@ export default function MainsResultsView({
   const totalScore = results.reduce((a, b) => a + (b.score || 0), 0);
   const totalMax = results.reduce((a, b) => a + (b.maxScore || 0), 0) || 1;
   const scorePercent = Math.max(0, Math.min(100, Math.round((totalScore / totalMax) * 100)));
+  const reportName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email?.split('@')[0] || 'Aspirant';
+  const reportInitials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || user?.email?.slice(0, 2).toUpperCase() || 'AS';
 
   // Checked-copy pages for the SELECTED question. Typed answers have none —
   // in that case the Examiner's Markup tab is hidden entirely.
@@ -400,6 +456,7 @@ export default function MainsResultsView({
 
   const hasModelAnswer = Boolean(
     data.curatedModelAnswer ||
+    data.modelAnswerStructure ||
     data.modelAnswerContent ||
     (data.modelAnswerKeyPoints && data.modelAnswerKeyPoints.length > 0)
   );
@@ -430,15 +487,31 @@ export default function MainsResultsView({
         .replace(/[^\x20-\x7E\n]/g, ' ').replace(/\s+/g, ' ').trim();
       let page = 1;
       let y = 0;
+      let brandMark: string | null = null;
+      try {
+        const response = await fetch('/risewithjeet_favicon.jpg');
+        const blob = await response.blob();
+        brandMark = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        // The text brand remains usable when the decorative mark is unavailable.
+      }
       const footer = () => {
-        doc.setDrawColor(226, 232, 240); doc.setLineWidth(.75); doc.line(left, height - 37, right, height - 37);
+        doc.setDrawColor(226, 232, 240); doc.setLineWidth(.75); doc.line(left, height - 45, right, height - 45);
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(100, 116, 139);
-        doc.text(`Evaluation Report | ${reportDate}`, left, height - 22); doc.text(`Page ${page}`, right, height - 22, { align: 'right' });
+        doc.text('Telegram  |  YouTube  |  www.risewithjeet.com', width / 2, height - 31, { align: 'center' });
+        doc.setFontSize(7.5); doc.text(`Evaluation Report | ${reportDate}`, left, height - 17); doc.text(`Page ${page}`, right, height - 17, { align: 'right' });
       };
       const header = (section = 'Performance Report') => {
         doc.setFillColor(15, 23, 42); doc.rect(0, 0, width, 4, 'F'); doc.setFillColor(217, 119, 6); doc.rect(width * .65, 0, width * .35, 4, 'F');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(15, 23, 42); doc.text('RiseWithJeet', left, 34);
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(100, 116, 139); doc.text('MAINS ANSWER EVALUATION', left, 47);
+        if (brandMark) doc.addImage(brandMark, 'JPEG', left, 18, 28, 28);
+        const brandX = left + (brandMark ? 36 : 0);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(15, 23, 42); doc.text('RiseWithJeet', brandX, 34);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(100, 116, 139); doc.text(shareHeading.toUpperCase(), brandX, 47);
         doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(15, 23, 42); doc.text(section.toUpperCase(), right, 34, { align: 'right' });
         doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 116, 139); doc.text(reportDate, right, 47, { align: 'right' });
         doc.setDrawColor(15, 23, 42); doc.setLineWidth(1.3); doc.line(left, 59, right, 59); y = 82;
@@ -452,36 +525,83 @@ export default function MainsResultsView({
       const card = (x: number, top: number, w: number, h: number, fill: [number, number, number], border: [number, number, number] = [226, 232, 240]) => {
         doc.setFillColor(...fill); doc.setDrawColor(...border); doc.setLineWidth(.75); doc.roundedRect(x, top, w, h, 8, 8, 'FD');
       };
+      const sectionHead = (kicker: string, subtitle: string, color: [number, number, number], section = 'Evaluation Report') => {
+        ensure(34, section);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...color); doc.text(kicker.toUpperCase(), left, y);
+        y += 12; doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(100, 116, 139); doc.text(subtitle, left, y);
+        y += 9; doc.setDrawColor(226, 232, 240); doc.setLineWidth(.65); doc.line(left, y, right, y); y += 12;
+      };
+      const listCard = (title: string, values: string[], accent: [number, number, number], section = 'Evaluation Report') => {
+        const items = values.length ? values : ['No specific observations were recorded.'];
+        const lines = items.flatMap((item, index) => doc.splitTextToSize(`${index + 1}. ${plain(item)}`, contentWidth - 32) as string[]);
+        const cardHeight = 32 + lines.length * 10;
+        ensure(cardHeight + 10, section);
+        card(left, y, contentWidth, cardHeight, [250, 250, 250]);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...accent); doc.text(title.toUpperCase(), left + 14, y + 18);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.4); doc.setTextColor(15, 23, 42); doc.text(lines, left + 14, y + 35);
+        y += cardHeight + 9;
+      };
 
       header();
       doc.setFillColor(15, 23, 42); doc.roundedRect(left, y, contentWidth, 72, 10, 10, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(255, 255, 255); doc.text('Your answer has been evaluated.', left + 18, y + 27);
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(203, 213, 225); doc.text(`${shareHeading} | ${paperLabel}${subjectLabel ? ` | ${subjectLabel}` : ''}`, left + 18, y + 45);
+      doc.setFillColor(251, 191, 36); doc.circle(left + 30, y + 36, 18, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(15, 23, 42); doc.text(reportInitials, left + 30, y + 40, { align: 'center' });
+      doc.setFontSize(14); doc.setTextColor(255, 255, 255); doc.text(reportName, left + 58, y + 29);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(203, 213, 225); doc.text(`${shareHeading} | ${paperLabel}${subjectLabel ? ` | ${subjectLabel}` : ''}`, left + 58, y + 46);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.setTextColor(251, 191, 36); doc.text(`${totalScore}/${totalMax}`, right - 18, y + 32, { align: 'right' });
-      doc.setFontSize(8); doc.text(`${scorePercent}% SCORE`, right - 18, y + 47, { align: 'right' }); y += 92;
+      doc.setFontSize(8); doc.text('SCORE', right - 18, y + 47, { align: 'right' }); y += 86;
 
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(15, 23, 42); doc.text('Question', left, y); y += 10;
-      card(left, y, contentWidth, 58, [255, 249, 230], [253, 230, 138]); doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(51, 65, 85);
-      const questionLines = doc.splitTextToSize(plain(questionText || questionTitle), contentWidth - 28) as string[]; doc.text(questionLines.slice(0, 3), left + 14, y + 17); y += 76;
+      const chipLabels = [paperLabel, subjectLabel, `${marks} Marks`, `${mainsWordLimit(marks)} Words`, wordCount ? `${wordCount} written` : 'Word count unavailable'].filter(Boolean);
+      let chipX = left;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5);
+      for (const label of chipLabels) {
+        const chipWidth = Math.min(112, doc.getTextWidth(String(label)) + 18);
+        doc.setFillColor(250, 250, 250); doc.setDrawColor(226, 232, 240); doc.roundedRect(chipX, y, chipWidth, 22, 4, 4, 'FD');
+        doc.setTextColor(String(label).includes('written') ? 22 : 15, String(label).includes('written') ? 163 : 23, String(label).includes('written') ? 74 : 42);
+        doc.text(String(label), chipX + chipWidth / 2, y + 14, { align: 'center' }); chipX += chipWidth + 6;
+      }
+      y += 34;
 
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(37, 99, 235); doc.text('EVALUATION SNAPSHOT', left, y); y += 14;
-      const snapshot = [
-        { label: 'Score', value: `${data.score}/${data.maxScore}`, fill: [245, 243, 255] as [number, number, number], color: [124, 58, 237] as [number, number, number] },
-        { label: 'Word count', value: wordCount ? `${wordCount} words` : 'Not recorded', fill: [239, 246, 255] as [number, number, number], color: [37, 99, 235] as [number, number, number] },
-        { label: 'Focus', value: nextFocus ? 'Set' : 'Review feedback', fill: [240, 253, 244] as [number, number, number], color: [22, 163, 74] as [number, number, number] },
-      ];
-      snapshot.forEach((item, i) => { const x = left + i * 172; card(x, y, 160, 55, item.fill); doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(100, 116, 139); doc.text(item.label.toUpperCase(), x + 12, y + 17); doc.setFontSize(14); doc.setTextColor(...item.color); doc.text(item.value, x + 12, y + 37); }); y += 78;
+      const questionLines = doc.splitTextToSize(`"${plain(questionText || questionTitle)}"`, contentWidth - 32) as string[];
+      const questionHeight = 28 + questionLines.length * 11;
+      card(left, y, contentWidth, questionHeight, [255, 249, 230], [253, 230, 138]);
+      doc.setFillColor(251, 191, 36); doc.roundedRect(left, y, 3, questionHeight, 2, 2, 'F');
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(8.8); doc.setTextColor(51, 65, 85); doc.text(questionLines, left + 16, y + 18); y += questionHeight + 16;
 
-      const twoColumn = [
-        { title: 'STRENGTHS', values: data.strengths || [], fill: [240, 253, 244] as [number, number, number], color: [22, 163, 74] as [number, number, number], empty: 'No strengths recorded for this submission.' },
-        { title: 'IMPROVEMENT AREAS', values: data.improvements || [], fill: [254, 242, 242] as [number, number, number], color: [220, 38, 38] as [number, number, number], empty: 'No improvement areas recorded.' },
-      ];
-      twoColumn.forEach((item, i) => { const x = left + i * 258; card(x, y, 246, 86, item.fill); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...item.color); doc.text(item.title, x + 13, y + 18); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.4); doc.setTextColor(51, 65, 85); const body = item.values.length ? item.values.map((v) => `• ${plain(v)}`).join('\n') : item.empty; doc.text(doc.splitTextToSize(body, 218).slice(0, 4), x + 13, y + 38); }); y += 105;
+      sectionHead('Personalised Feedback', 'Actionable insights to help you improve', [37, 99, 235]);
+      listCard('Strengths', data.strengths || [], [22, 163, 74]);
+      listCard('Areas to Improve', data.improvements || [], [234, 88, 12]);
+      listCard('Recommendations', data.suggestions || [], [8, 145, 178]);
 
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(15, 23, 42); doc.text('Examiner Feedback', left, y); y += 12;
-      const feedback = detailedFeedback || suggestions.join(' ') || 'Review the strengths and improvement areas above before your next attempt.';
-      const feedbackLines = doc.splitTextToSize(plain(feedback), contentWidth - 28) as string[]; const feedbackHeight = Math.min(150, 32 + feedbackLines.length * 12);
-      card(left, y, contentWidth, feedbackHeight, [250, 250, 250]); doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(51, 65, 85); doc.text(feedbackLines, left + 14, y + 19); y += feedbackHeight + 18;
+      if (data.keyTerms?.length) {
+        sectionHead('Key Terms Analysis', 'Expected terminology', [220, 38, 38]);
+        const termLines = data.keyTerms.map((term) => `${term.found ? '[FOUND]' : '[MISSED]'} ${plain(term.term)}`);
+        const termHeight = 28 + Math.ceil(termLines.length / 2) * 14;
+        ensure(termHeight + 10);
+        card(left, y, contentWidth, termHeight, [250, 250, 250]);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); 
+        termLines.forEach((term, index) => {
+          const found = term.startsWith('[FOUND]'); const x = left + 14 + (index % 2) * 246; const termY = y + 18 + Math.floor(index / 2) * 14;
+          doc.setTextColor(found ? 22 : 220, found ? 163 : 38, found ? 74 : 38); doc.text(term, x, termY);
+        });
+        y += termHeight + 12;
+      }
+
+      const frontRows = data.parameterScores || [];
+      if (frontRows.length) {
+        sectionHead('7-Parameter Rubric', 'Score breakdown', [217, 119, 6]);
+        doc.setFillColor(250, 250, 250); doc.rect(left, y, contentWidth, 24, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 116, 139);
+        doc.text('PARAMETER', left + 10, y + 15); doc.text('SCORE', left + 190, y + 15); doc.text('REMARK', left + 248, y + 15); y += 24;
+        for (const row of frontRows) {
+          const remarkLines = doc.splitTextToSize(plain(row.comment || ''), contentWidth - 260) as string[];
+          const rowHeight = Math.max(31, 15 + remarkLines.length * 9); ensure(rowHeight, 'Score Breakdown');
+          doc.setDrawColor(226, 232, 240); doc.line(left, y + rowHeight, right, y + rowHeight);
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(8.2); doc.setTextColor(15, 23, 42); doc.text(plain(row.parameter), left + 10, y + 16);
+          doc.setTextColor(row.score > 0 ? 217 : 220, row.score > 0 ? 119 : 38, row.score > 0 ? 6 : 38); doc.text(`${row.score} / ${row.maxScore}`, left + 208, y + 16, { align: 'center' });
+          doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(100, 116, 139); doc.text(remarkLines, left + 248, y + 14); y += rowHeight;
+        }
+      }
 
       newPage('Detailed Evaluation');
       results.forEach((result, index) => {
@@ -494,26 +614,77 @@ export default function MainsResultsView({
           doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(37, 99, 235); doc.text('RUBRIC BREAKDOWN', left, y); y += 14;
           rows.forEach((row) => { ensure(40, 'Detailed Evaluation'); card(left, y, contentWidth, 32, [255, 255, 255]); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(15, 23, 42); doc.text(plain(row.parameter), left + 12, y + 14); doc.setTextColor(217, 119, 6); doc.text(`${row.score}/${row.maxScore}`, right - 12, y + 14, { align: 'right' }); doc.setFont('helvetica', 'normal'); doc.setFontSize(7.8); doc.setTextColor(100, 116, 139); doc.text(doc.splitTextToSize(plain(row.comment || ''), contentWidth - 24).slice(0, 1), left + 12, y + 26); y += 40; });
         }
-        const focus = result.nextAttemptFocus || result.evaluatorConclusion || '';
-        if (focus) { ensure(70, 'Detailed Evaluation'); doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(180, 83, 9); doc.text('NEXT ATTEMPT FOCUS', left, y); y += 14; card(left, y, contentWidth, 58, [255, 251, 235], [253, 230, 138]); doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(51, 65, 85); doc.text(doc.splitTextToSize(plain(focus), contentWidth - 28), left + 14, y + 19); y += 76; }
+      });
+
+      newPage("Examiner's Comments");
+      results.forEach((result, index) => {
+        if (index > 0) newPage("Examiner's Comments");
+        const q = result.question?.questionText || result.question?.title || `Question ${index + 1}`;
+        sectionHead("Examiner's Comments", multi ? `Question ${index + 1} detailed remarks` : 'Detailed examiner remarks', [124, 58, 237], "Examiner's Comments");
+        if (multi) {
+          doc.setFont('helvetica', 'italic'); doc.setFontSize(8.5); doc.setTextColor(51, 65, 85); text(q, left, contentWidth, 11, "Examiner's Comments"); y += 8;
+        }
+        const feedback = result.detailedFeedback || result.suggestions?.join(' ') || 'Review the rubric and recommendations before your next attempt.';
+        const feedbackLines = doc.splitTextToSize(plain(feedback), contentWidth - 32) as string[];
+        const feedbackHeight = 32 + feedbackLines.length * 10;
+        ensure(feedbackHeight + 10, "Examiner's Comments"); card(left, y, contentWidth, feedbackHeight, [250, 250, 250]);
+        doc.setFillColor(203, 213, 225); doc.rect(left + 14, y + 13, 3, 15, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(71, 85, 105); doc.text(multi ? `QUESTION ${index + 1} REMARKS` : 'OVERALL REMARKS', left + 24, y + 22);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(15, 23, 42); doc.text(feedbackLines, left + 14, y + 42); y += feedbackHeight + 10;
+
+        if (result.nextAttemptFocus) listCard('Next Attempt Focus', [result.nextAttemptFocus], [13, 148, 136], "Examiner's Comments");
+        if (result.evaluatorConclusion) listCard("Evaluator's Conclusion", [result.evaluatorConclusion], [159, 18, 57], "Examiner's Comments");
+
         const modelAnswer = result.curatedModelAnswer || result.modelAnswerContent || result.modelAnswerKeyPoints?.join('\n') || '';
-        if (modelAnswer) {
-          ensure(90, 'Model Answer');
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(180, 83, 9); doc.text('MODEL ANSWER - REFERENCE ONLY', left, y); y += 14;
-          const modelLines = doc.splitTextToSize(plain(modelAnswer), contentWidth - 28) as string[];
-          let remainingModelLines = [...modelLines];
-          while (remainingModelLines.length) {
-            // Keep a small amount of space for the panel itself; subsequent
-            // pages carry on instead of discarding the unseen model-answer text.
-            if (y + 42 > height - 55) newPage('Model Answer');
-            const lineCapacity = Math.max(1, Math.floor((height - 55 - y - 24) / 12));
-            const pageLines = remainingModelLines.splice(0, lineCapacity);
-            const modelHeight = 30 + pageLines.length * 12;
-            card(left, y, contentWidth, modelHeight, [255, 251, 235], [253, 230, 138]);
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(51, 65, 85);
-            doc.text(pageLines, left + 14, y + 18);
-            y += modelHeight + 12;
-            if (remainingModelLines.length) newPage('Model Answer');
+        const structuredModelAnswer = result.modelAnswerStructure || structureLegacyModelAnswer(modelAnswer);
+        if (structuredModelAnswer || modelAnswer) {
+          ensure(130, 'Model Answer');
+          sectionHead('Model Answer', 'Comprehensive answer framework', [217, 119, 6], 'Model Answer');
+          const bannerHeight = 49;
+          card(left, y, contentWidth, bannerHeight, [255, 249, 230], [253, 230, 138]);
+          doc.setFillColor(245, 158, 11); doc.circle(left + 23, y + 23, 10, 'F');
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(255, 255, 255); doc.text('!', left + 23, y + 27, { align: 'center' });
+          doc.setTextColor(146, 64, 14); doc.setFontSize(9); doc.text('REFERENCE ONLY', left + 42, y + 19);
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(7.8); doc.setTextColor(120, 113, 108); doc.text("Read after writing your own answer. Understand gaps; do not memorise it.", left + 42, y + 34); y += bannerHeight + 10;
+
+          const tagValues = [result.question?.paper || paperLabel, result.question?.subject || subjectLabel].filter(Boolean);
+          let tagX = left;
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5);
+          tagValues.forEach((tag) => { const tagWidth = doc.getTextWidth(String(tag)) + 18; doc.setFillColor(219, 234, 254); doc.roundedRect(tagX, y, tagWidth, 20, 10, 10, 'F'); doc.setTextColor(30, 64, 175); doc.text(String(tag), tagX + tagWidth / 2, y + 13, { align: 'center' }); tagX += tagWidth + 7; });
+          y += 29;
+          doc.setFont('helvetica', 'italic'); doc.setFontSize(8.2); doc.setTextColor(15, 23, 42); text(`"${q}"`, left, contentWidth, 10, 'Model Answer'); y += 7;
+          doc.setDrawColor(226, 232, 240); doc.line(left, y, right, y); y += 14;
+          const modelBlocks = structuredModelAnswer
+            ? [
+                structuredModelAnswer.introduction ? { title: 'INTRODUCTION', values: [structuredModelAnswer.introduction], bullets: false } : null,
+                ...structuredModelAnswer.sections.map((section) => ({ title: section.heading, values: section.points, bullets: true })),
+                structuredModelAnswer.conclusion ? { title: 'CONCLUSION', values: [structuredModelAnswer.conclusion], bullets: false } : null,
+              ].filter((block): block is { title: string; values: string[]; bullets: boolean } => Boolean(block))
+            : [{ title: 'MODEL ANSWER', values: [modelAnswer], bullets: false }];
+
+          for (const block of modelBlocks) {
+            const blockLines = block.values.flatMap((value) => {
+              const lines = doc.splitTextToSize(`${block.bullets ? '• ' : ''}${plain(value)}`, contentWidth - 28) as string[];
+              return lines;
+            });
+            let remainingLines = [...blockLines];
+            let isContinuation = false;
+            while (remainingLines.length) {
+              if (y + 46 > height - 55) newPage('Model Answer');
+              const isConclusion = block.title === 'CONCLUSION';
+              doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(isConclusion ? 22 : block.title === 'INTRODUCTION' ? 79 : 15, isConclusion ? 163 : block.title === 'INTRODUCTION' ? 70 : 23, isConclusion ? 74 : block.title === 'INTRODUCTION' ? 229 : 42);
+              doc.text(isContinuation ? `${block.title} (CONTINUED)` : block.title, left + (isConclusion ? 14 : 10), y + 2);
+              if (!isConclusion) { doc.setFillColor(block.title === 'INTRODUCTION' ? 79 : 245, block.title === 'INTRODUCTION' ? 70 : 158, block.title === 'INTRODUCTION' ? 229 : 11); doc.roundedRect(left, y - 7, 3, 14, 2, 2, 'F'); }
+              y += 12;
+              const lineCapacity = Math.max(1, Math.floor((height - 55 - y - 24) / 12));
+              const pageLines = remainingLines.splice(0, lineCapacity);
+              const blockHeight = 30 + pageLines.length * 12;
+              if (isConclusion) card(left, y, contentWidth, blockHeight, [240, 253, 244], [187, 247, 208]);
+              doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(51, 65, 85);
+              doc.text(pageLines, left + (isConclusion ? 14 : 4), y + 18);
+              y += blockHeight + 12;
+              if (remainingLines.length) { newPage('Model Answer'); isContinuation = true; }
+            }
           }
         }
       });

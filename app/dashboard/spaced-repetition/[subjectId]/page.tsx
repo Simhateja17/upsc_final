@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { flashcardService, spacedRepService, userService } from '@/lib/services';
+import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 import SpacedRepStyles from '../referenceStyles';
 import AddQuestionModal, { type AddQuestionPayload } from '../AddQuestionModal';
 import {
@@ -291,6 +292,7 @@ export default function SpacedRepetitionSubjectPage() {
                 </div>
               );
             })}
+            <button className="qv-add-btn" onClick={() => setShowAddModal(true)}>+ Add question</button>
           </div>
 
           {/* Table */}
@@ -314,6 +316,7 @@ export default function SpacedRepetitionSubjectPage() {
                   const rev = reviewInfo(q.nextReviewAt);
                   const activeDays = normalizeScheduleDays(q);
                   const src = sourceMeta(q.sourceType);
+                  const subjectMeta = getSubjectMetaStyle(q.subject);
                   return (
                     <div className="qv-question" key={q.id} onClick={() => { setReviewTarget(q); setShowAnswer(false); }}>
                       <div className="qv-q-content">
@@ -348,7 +351,10 @@ export default function SpacedRepetitionSubjectPage() {
                         </div>
                       </div>
                       <div className="qv-subject-col">
-                        <div className="qv-subject-pill"><div className="sp-dot">{subjectIcon}</div>{subjectLabel}</div>
+                        <div className="qv-subject-pill" style={{ background: subjectMeta.bg, color: subjectMeta.color }}>
+                          <div className="sp-dot" style={{ background: `${subjectMeta.accent}4D` }}>{subjectIcon}</div>
+                          {subjectLabel}
+                        </div>
                       </div>
                       <div className="qv-review-col">
                         <span className={`qv-review-status ${rev.tone}`}>{rev.nextLabel.toUpperCase()}</span>
@@ -387,10 +393,6 @@ export default function SpacedRepetitionSubjectPage() {
             </div>
             <button className="qv-add-btn" onClick={(e) => { e.stopPropagation(); setShowAddModal(true); }}>+ Add</button>
           </div>
-
-          <div className="qv-upgrade-prompt-bottom">
-            🔓 <strong>Unlock unlimited questions with Pro</strong> | {usedSlots} of {FREE_QUESTION_LIMIT} free slots used
-          </div>
         </div>
       </div>
 
@@ -407,6 +409,7 @@ export default function SpacedRepetitionSubjectPage() {
       {reviewTarget && (() => {
         const rev = reviewInfo(reviewTarget.nextReviewAt);
         const src = sourceMeta(reviewTarget.sourceType);
+        const reviewSubjectMeta = getSubjectMetaStyle(reviewTarget.subject);
         const hasAnswer = !!reviewTarget.answer?.trim();
         const close = () => { setReviewTarget(null); setShowAnswer(false); };
         return (
@@ -419,7 +422,7 @@ export default function SpacedRepetitionSubjectPage() {
               <div className="modal-body">
                 <div className="review-tags">
                   <span className="review-tag" style={{ background: rev.chipBg, color: rev.chipColor }}>{rev.icon} {rev.chipText}</span>
-                  <span className="review-tag" style={{ background: 'rgba(245,158,11,.12)', color: 'var(--orange)' }}>{subjectIcon} {reviewTarget.subject}</span>
+                  <span className="review-tag" style={{ background: reviewSubjectMeta.bg, color: reviewSubjectMeta.accent }}>{subjectIcon} {reviewTarget.subject}</span>
                   <span className="review-tag" style={{ background: 'var(--blue-dim)', color: 'var(--blue)' }}>{src.icon} {src.label}</span>
                 </div>
                 <div className="review-question">{reviewTarget.questionText}</div>

@@ -319,7 +319,7 @@ export default function SettingsPage() {
         {[
           { label: 'Daily MCQ reminder',            desc: 'Remind to complete daily practice', on: nMcq,    toggle: () => setNMcq(v    => !v) },
           { label: 'Daily Trio reminder',            desc: "Remind to complete today's MCQ, Mains & Editorial", on: nTrio, toggle: () => setNTrio(v => !v) },
-          { label: 'Answer evaluation complete',     desc: 'When AI finishes evaluating',       on: nAnswer, toggle: () => setNAnswer(v => !v) },
+          { label: 'Answer evaluation complete',     desc: 'When Jeet AI finishes evaluating your answer.', on: nAnswer, toggle: () => setNAnswer(v => !v) },
           { label: 'Current affairs morning digest', desc: 'Daily at 9 AM',                    on: nDigest, toggle: () => setNDigest(v => !v) },
           { label: 'Streak at risk',                 desc: 'Alert before streak breaks',        on: nStreak, toggle: () => setNStreak(v => !v) },
           { label: 'New mock test available',        desc: 'When a new mock test is added',     on: nMockTest, toggle: () => setNMockTest(v => !v) },

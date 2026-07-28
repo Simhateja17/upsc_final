@@ -57,10 +57,6 @@ const CSS = `
 
 /* === SUBJECT CARDS === */
 .sr-scope .subjects-section{padding:32px 32px 32px;max-width:1120px;margin:0 auto}
-.sr-scope .subjects-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px;padding-bottom:20px;border-bottom:1px solid var(--border-light)}
-.sr-scope .subjects-header .left h2{font-family:var(--font-serif);font-size:28px;font-weight:700;line-height:1.3}
-.sr-scope .subjects-header .left h2 em{font-family:var(--font-serif);font-style:italic;font-weight:800;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:0 2px 12px rgba(212,175,55,.15)}
-.sr-scope .subjects-header .left p{font-size:15px;color:var(--text-mid);margin-top:6px;font-weight:500;letter-spacing:.01em}
 .sr-scope .add-q-btn{background:var(--btn-gold);color:var(--btn-gold-text);border:none;padding:12px 24px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .3s cubic-bezier(.4,0,.2,1);font-family:var(--font-sans);box-shadow:0 4px 16px var(--btn-gold-shadow);letter-spacing:.02em}
 .sr-scope .add-q-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 24px rgba(245,180,0,.5)}
 .sr-scope .add-q-btn:disabled{opacity:.55;cursor:not-allowed}
@@ -123,13 +119,31 @@ const CSS = `
 .sr-scope .legend-dot{width:10px;height:10px;border-radius:50%}
 
 /* Retention curve */
-.sr-scope .retention-curve{margin:40px auto 0;max-width:700px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);opacity:0;transform:translateY(20px);transition:all .6s ease}
-.sr-scope .retention-curve.visible{opacity:1;transform:translateY(0)}
+.sr-scope .retention-curve{margin:40px auto 0;max-width:700px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);opacity:0;transform:translateY(24px) scale(.97);transition:opacity .55s cubic-bezier(.34,1.56,.64,1),transform .55s cubic-bezier(.34,1.56,.64,1),box-shadow .3s ease,border-color .3s ease}
+.sr-scope .retention-curve.visible{opacity:1;transform:translateY(0) scale(1)}
+.sr-scope .retention-curve:hover{box-shadow:var(--shadow-lg);border-color:var(--gold-light)}
 .sr-scope .retention-curve h3{font-family:var(--font-serif);font-size:18px;margin-bottom:4px}
 .sr-scope .retention-curve .curve-sub{font-size:13px;color:var(--text-light);margin-bottom:20px}
 .sr-scope .curve-svg{width:100%;height:180px}
-.sr-scope .curve-svg .draw-line{stroke-dasharray:1000;stroke-dashoffset:1000;transition:stroke-dashoffset 2s ease}
+.sr-scope .curve-svg .draw-line{stroke-dasharray:1000;stroke-dashoffset:1000;transition:stroke-dashoffset 2s cubic-bezier(.4,0,.2,1)}
 .sr-scope .retention-curve.visible .draw-line{stroke-dashoffset:0}
+
+/* Staggered reveal of the curve's own content, once the card becomes visible
+   (mirrors the reference modal's title/description/actions stagger). */
+.sr-scope .retention-curve h3,
+.sr-scope .retention-curve .curve-sub,
+.sr-scope .retention-curve .curve-svg,
+.sr-scope .retention-curve .retention-info{opacity:0;transform:translateY(10px);transition:opacity .4s ease,transform .4s ease}
+.sr-scope .retention-curve.visible h3{opacity:1;transform:translateY(0);transition-delay:.1s}
+.sr-scope .retention-curve.visible .curve-sub{opacity:1;transform:translateY(0);transition-delay:.18s}
+.sr-scope .retention-curve.visible .curve-svg{opacity:1;transform:translateY(0);transition-delay:.26s}
+.sr-scope .retention-curve.visible .retention-info{opacity:1;transform:translateY(0);transition-delay:.42s}
+
+/* Pulsing halo on each "review" marker, once revealed — same rhythm as the
+   reference's modal-icon ring pulse (scale + fade, ease-in-out, looping). */
+@keyframes sr-dot-pulse{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.7);opacity:.05}}
+.sr-scope .curve-dot-ring{transform-box:fill-box;transform-origin:center;opacity:0;animation:sr-dot-pulse 2.4s ease-in-out infinite}
+.sr-scope .retention-curve.visible .curve-dot-ring{opacity:.35}
 
 /* Timeline node animations */
 .sr-scope .timeline-node{opacity:0;transform:translateY(24px);transition:all .5s cubic-bezier(.4,0,.2,1)}
@@ -223,9 +237,9 @@ const CSS = `
 
 /* Table layout */
 .sr-scope .qv-table-wrap{margin-bottom:24px}
-/* Left border is 4px so the header columns line up with the 4px accent rail on each question card. */
-.sr-scope .qv-col-headers{display:grid;grid-template-columns:2.5fr 100px 110px 160px 50px;gap:16px;padding:12px 24px;background:var(--border-light);border-radius:var(--radius-sm);border:1px solid var(--border);border-left:4px solid var(--border);align-items:center;margin-bottom:12px}
-.sr-scope .qv-col-headers span{font-size:11px;font-weight:700;color:var(--text-light);letter-spacing:.06em;text-transform:uppercase}
+/* Left border is 4px (transparent) purely so the header columns line up with the 4px accent rail on each question card — no visible grey box/side border on the header itself, matching the PRD. */
+.sr-scope .qv-col-headers{display:grid;grid-template-columns:2.5fr 100px 110px 160px 50px;gap:16px;padding:12px 24px;background:var(--border-light);border-radius:var(--radius-sm);border-left:4px solid transparent;align-items:center;margin-bottom:12px}
+.sr-scope .qv-col-headers span{font-size:11px;font-weight:700;color:var(--text-mid);letter-spacing:.06em;text-transform:uppercase}
 .sr-scope .qv-col-headers .qh-question{text-align:left}
 .sr-scope .qv-col-headers .qh-subject,
 .sr-scope .qv-col-headers .qh-review,
