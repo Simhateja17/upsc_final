@@ -419,6 +419,11 @@ export const billingService = {
   cancelRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/cancel`, {}, authConfig()),
   pauseRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/pause`, {}, authConfig()),
   resumeRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/resume`, {}, authConfig()),
+  getBillingAddress: () => api.get<any>('/billing/address', authConfig()),
+  saveBillingAddress: (data: { fullName: string; email: string; phone?: string; city?: string; state?: string }) =>
+    api.put<any>('/billing/address', data, authConfig()),
+  submitCancellationFeedback: (id: string, data: { reason: string; wantsSupport: boolean }) =>
+    api.post<any>(`/billing/subscriptions/${id}/cancel-feedback`, data, authConfig()),
 };
 
 export const entitlementService = {

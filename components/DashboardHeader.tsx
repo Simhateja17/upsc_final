@@ -244,7 +244,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
           <>
             {/* Upgrade Button */}
             {entitlementSummary && tier !== 'ascent' && (
-            <Link href="/dashboard/billing/plans#upgrade-plans" className="hidden sm:block">
+            <Link href="/dashboard/billing/plans?tab=explore" className="hidden sm:block">
               <button
                 className="inline-flex items-center gap-1.5 group"
                 style={{
