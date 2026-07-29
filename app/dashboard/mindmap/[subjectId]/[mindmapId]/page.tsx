@@ -310,10 +310,10 @@ export default function MindmapViewPage() {
           </div>
           <div className="flex items-center flex-wrap gap-2 sm:gap-3">
             {/* View toggle */}
-            <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5">
+            <div className="inline-flex items-center shrink-0 h-9 p-1 bg-white border border-gray-200 rounded-full shadow-sm">
               <button
                 onClick={() => setViewMode('mindmap')}
-                className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors ${
+                className={`inline-flex items-center h-7 px-3 text-[12px] leading-none font-medium whitespace-nowrap rounded-full transition-colors ${
                   viewMode === 'mindmap'
                     ? 'bg-[#10182D] text-white'
                     : 'text-[#6B7280] hover:text-[#101828]'
@@ -323,7 +323,7 @@ export default function MindmapViewPage() {
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors ${
+                className={`inline-flex items-center h-7 px-3 text-[12px] leading-none font-medium whitespace-nowrap rounded-full transition-colors ${
                   viewMode === 'list'
                     ? 'bg-[#10182D] text-white'
                     : 'text-[#6B7280] hover:text-[#101828]'
@@ -334,16 +334,16 @@ export default function MindmapViewPage() {
             </div>
 
             {/* Mastery badge */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#DCFCE7] shadow-sm">
-              <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+            <div className="inline-flex items-center shrink-0 gap-2 h-9 pl-1 pr-3.5 rounded-full bg-white border border-[#DCFCE7] shadow-sm">
+              <div className="w-7 h-7 shrink-0 rounded-full bg-emerald-500 flex items-center justify-center">
                 <CheckmarkIcon />
               </div>
-              <span className="text-[12px] text-[#047857] font-medium">{data.mastery}% mastered</span>
+              <span className="text-[12px] leading-none text-[#047857] font-medium whitespace-nowrap">{data.mastery}% mastered</span>
             </div>
 
             {/* Branches explored */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-gray-200 shadow-sm">
-              <span className="text-[12px] text-[#6B7280] font-medium">
+            <div className="inline-flex items-center shrink-0 h-9 px-3.5 rounded-full bg-white border border-gray-200 shadow-sm">
+              <span className="text-[12px] leading-none text-[#6B7280] font-medium whitespace-nowrap">
                 Branches explored: {exploredBranches.size}/{topBranches}
               </span>
             </div>
@@ -353,7 +353,7 @@ export default function MindmapViewPage() {
               <button
                 type="button"
                 onClick={() => router.push('/dashboard/billing/plans?source=mindmap-quiz')}
-                className="rounded-full px-4 py-2 text-[12px] font-bold text-white flex items-center gap-1.5"
+                className="inline-flex items-center shrink-0 gap-1.5 h-9 px-3.5 rounded-full text-[12px] leading-none font-bold text-white whitespace-nowrap"
                 style={{ background: 'linear-gradient(90deg, #F0AE00 0%, #FE6D00 100%)' }}
               >
                 <span>Quiz</span>

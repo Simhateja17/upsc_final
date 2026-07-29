@@ -597,8 +597,10 @@ export const flashcardService = {
     api.patch<any>(`/flashcards/${cardId}/progress`, { mastered }, authConfig()),
   deleteSubject: (subjectId: string) =>
     api.delete<any>(`/flashcards/subjects/${subjectId}`, authConfig()),
+  // Write op — goes through withAuthRetry so an expired stored access token is
+  // refreshed and retried once instead of surfacing as a generic delete failure.
   deleteCard: (cardId: string) =>
-    api.delete<any>(`/flashcards/${cardId}`, authConfig()),
+    withAuthRetry(config => api.delete<any>(`/flashcards/${cardId}`, config)),
   deleteTopic: (subjectId: string, topicId: string) =>
     api.delete<any>(`/flashcards/${subjectId}/topics/${topicId}`, authConfig()),
 };

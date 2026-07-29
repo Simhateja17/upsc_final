@@ -360,8 +360,8 @@ export default function SpacedRepetitionSubjectPage() {
                         </div>
                       </div>
                       <div className="qv-subject-col">
-                        <div className="qv-subject-pill" style={{ background: subjectMeta.bg, color: subjectMeta.color }}>
-                          <div className="sp-dot" style={{ background: `${subjectMeta.accent}4D` }}>{subjectIcon}</div>
+                        <div className="qv-subject-pill" style={{ background: subjectMeta.bg, color: subjectMeta.accent }}>
+                          <span className="sp-icon" aria-hidden>{subjectIcon}</span>
                           {subjectLabel}
                         </div>
                       </div>
