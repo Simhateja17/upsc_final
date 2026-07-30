@@ -648,14 +648,36 @@ export default function DailyEditorialPage() {
                   && normalized !== 'indian express';
               });
               const tagList = [card.category, ...secondaryTags].slice(0, 3);
+              // The whole card opens the Jeet AI summary — same action as the
+              // "Summarize with Jeet AI" button. The inner buttons stop
+              // propagation so they never trigger this as well.
+              const openSummary = () => {
+                if (summarizing === card.id) return;
+                handleSummarize(card);
+              };
               return (
               <div
                 key={card.id}
                 className={`ca-news-card${card.isRead ? ' ca-news-card--read' : ''}`}
+                role="button"
+                tabIndex={0}
+                aria-label={`Summarize with Jeet AI: ${card.title}`}
+                onClick={openSummary}
+                onKeyDown={(e) => {
+                  // Only when the card itself has focus — otherwise Enter/Space
+                  // on Save / Mark read would fire this too.
+                  if (e.target !== e.currentTarget) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openSummary();
+                  }
+                }}
                 style={{
                   background: card.isRead ? '#F4F5F7' : '#FFFFFF',
                   borderRadius: '14px',
                   padding: 'clamp(18px, 2vw, 28px)',
+                  cursor: summarizing === card.id ? 'wait' : 'pointer',
+                  textAlign: 'left',
                   // Read cards are softened (slight blur + desaturation) and dimmed
                   // so they read as "already done" while staying fully legible.
                   opacity: card.isRead ? 0.82 : 1,
@@ -730,7 +752,7 @@ export default function DailyEditorialPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap items-center" style={{ gap: 'clamp(6px, 0.75vw, 10px)' }}>
                     <button
-                      onClick={() => handleSave(card.id)}
+                      onClick={(e) => { e.stopPropagation(); handleSave(card.id); }}
                       className="flex items-center gap-2 font-arimo"
                       style={{
                         padding: 'clamp(6px, 0.75vw, 10px) clamp(12px, 1.2vw, 16px)',
@@ -748,7 +770,7 @@ export default function DailyEditorialPage() {
                     </button>
 
                     <button
-                      onClick={() => handleMarkRead(card.id)}
+                      onClick={(e) => { e.stopPropagation(); handleMarkRead(card.id); }}
                       className="flex items-center gap-2 font-arimo"
                       style={{
                         padding: 'clamp(6px, 0.75vw, 10px) clamp(12px, 1.2vw, 16px)',
@@ -772,7 +794,7 @@ export default function DailyEditorialPage() {
                   </div>
 
                   <button
-                    onClick={() => handleSummarize(card)}
+                    onClick={(e) => { e.stopPropagation(); handleSummarize(card); }}
                     disabled={summarizing === card.id}
                     className="flex w-full items-center justify-center gap-2 font-arimo font-bold sm:w-auto"
                     style={{
@@ -886,10 +908,7 @@ export default function DailyEditorialPage() {
                   cursor: 'pointer',
                 }}
               >
-                {(() => {
-                  const { monthIndex, day } = getDateKeyParts(selectedDate);
-                  return `${day} ${monthNames[monthIndex]}`;
-                })()}
+                Today
               </button>
             </div>
 
@@ -1606,6 +1625,8 @@ export default function DailyEditorialPage() {
         /* Subtle, GPU-accelerated hover lift for news cards - no layout shift. */
         .ca-news-card{box-shadow:0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1);transition:transform .18s ease, box-shadow .18s ease, filter .25s ease, opacity .25s ease, background-color .25s ease;will-change:transform;}
         .ca-news-card:hover{transform:translateY(-3px);box-shadow:0px 12px 24px -6px rgba(16,24,40,0.12), 0px 4px 8px -4px rgba(16,24,40,0.08);}
+        /* The whole card is a button (opens the Jeet AI summary) — give keyboard users a focus ring. */
+        .ca-news-card:focus-visible{outline:2px solid #162456;outline-offset:2px;}
         /* Read cards sit flatter (inset ring instead of a lifted drop shadow) to look "settled". */
         .ca-news-card--read{box-shadow:inset 0 0 0 1px #E3E6EB;}
         .ca-news-card--read:hover{filter:saturate(1) blur(0)!important;opacity:1!important;box-shadow:0px 12px 24px -6px rgba(16,24,40,0.12), 0px 4px 8px -4px rgba(16,24,40,0.08);}

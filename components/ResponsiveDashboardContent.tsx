@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { dashboardService, studyPlannerService } from '@/lib/services';
 import { getSubjectEmoji } from '@/lib/subjectEmojis';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
+import { getTaskTypeStyle } from '@/lib/taskTypePalette';
 import SubjectSelect, { displaySubjectLabel } from '@/components/SubjectSelect';
 
 function getGreeting() {
@@ -964,6 +965,9 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
                 // Per-subject colour so each subject pill (Polity, Current Affairs,
                 // Society…) reads as a distinct colour instead of all being purple.
                 const subjectStyle = getSubjectMetaStyle(task.subject || '');
+                // Per-type colour so Reading / Test / Revision pills are each
+                // distinct instead of all rendering the same blue.
+                const typeStyle = getTaskTypeStyle(task.type || 'Reading');
                 const durationLabel = formatDurationLabel(taskDurationMinutes(task));
                 const timeLabel = task.startTime
                   ? `${task.startTime}${task.endTime ? ` - ${task.endTime}` : ''} ${durationLabel}`.trim()
@@ -981,10 +985,9 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
                         </h3>
                       </Link>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[clamp(12px,0.68vw,13px)] font-medium text-blue-600" style={{ background: '#DBEAFE' }}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src="/b.png" alt="Type" className="w-3.5 h-3.5" />
-                          {(() => { const t = task.type || 'Reading'; return t.charAt(0).toUpperCase() + t.slice(1); })()}
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[clamp(12px,0.68vw,13px)] font-medium" style={{ background: typeStyle.bg, color: typeStyle.accent }}>
+                          <span aria-hidden="true">{typeStyle.icon}</span>
+                          {typeStyle.label}
                         </span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[clamp(12px,0.68vw,13px)] font-medium" style={{ background: subjectStyle.bg, color: subjectStyle.accent }}>
                           {task.subject ? `${getSubjectEmoji(task.subject)} ${displaySubjectLabel(task.subject)}` : '📚 General'}

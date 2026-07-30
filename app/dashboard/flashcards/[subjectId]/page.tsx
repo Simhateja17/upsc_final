@@ -120,51 +120,51 @@ export default function FlashcardsSubjectPage() {
 
           {/* Subject summary card */}
           {loading ? (
-            <div className="w-full rounded-[12px] h-[88px] animate-pulse mb-6" style={{ background: '#F0F2F5', border: '0.8px solid #E5E7EB' }} />
+            <div className="w-full rounded-[12px] h-[120px] animate-pulse mb-6" style={{ background: '#F0F2F5', border: '0.8px solid #E5E7EB' }} />
           ) : meta && (
             <div
-              className="w-full rounded-[12px] px-6 py-4 flex items-center gap-5 mb-6"
+              className="w-full rounded-[12px] px-6 py-4 mb-6"
               style={{ border: '0.8px solid #E2E5ED', background: '#FFFFFF', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}
             >
-              <span
-                className="flex items-center justify-center flex-shrink-0"
-                aria-hidden
-                style={{ width: 56, height: 56, borderRadius: 16, background: '#EFF6FF', fontSize: 30, lineHeight: 1 }}
-              >
-                {meta.icon}
-              </span>
-              <div className="flex-1 min-w-0">
-                <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828' }}>
-                  {displaySubjectName(meta.subject)}
-                </h1>
-                <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, color: '#6A7282', marginTop: 2 }}>
-                  {totalCards} cards · {topics.length} topics
-                </p>
-              </div>
-              {/* Stats */}
-              <div className="hidden sm:flex items-center gap-6 flex-shrink-0">
-                <div className="text-center">
-                  <div style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#16A34A' }}>{totalMastered}</div>
-                  <div style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 2 }}>Mastered</div>
+              <div className="flex items-center gap-5">
+                <span
+                  className="flex items-center justify-center flex-shrink-0"
+                  aria-hidden
+                  style={{ width: 56, height: 56, borderRadius: 16, background: '#EFF6FF', fontSize: 30, lineHeight: 1 }}
+                >
+                  {meta.icon}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <h1 style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 22, lineHeight: '28px', color: '#101828' }}>
+                    {displaySubjectName(meta.subject)}
+                  </h1>
+                  <p style={{ fontFamily: 'Inter', fontWeight: 400, fontSize: 13, color: '#6A7282', marginTop: 2 }}>
+                    {totalCards} cards · {topics.length} topics
+                  </p>
                 </div>
-                <div className="text-center">
-                  <div style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#2563EB' }}>{coverage}%</div>
-                  <div style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 2 }}>Coverage</div>
+                {/* Stats */}
+                <div className="hidden sm:flex items-center gap-6 flex-shrink-0">
+                  <div className="text-center">
+                    <div style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#16A34A' }}>{totalMastered}</div>
+                    <div style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 2 }}>Mastered</div>
+                  </div>
+                  <div className="text-center">
+                    <div style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 20, color: '#2563EB' }}>{coverage}%</div>
+                    <div style={{ fontFamily: 'Inter', fontSize: 9, fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.5px', textTransform: 'uppercase', marginTop: 2 }}>Coverage</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Completion progress bar (mirrors the reference) */}
-          {!loading && meta && (
-            <div className="mb-6">
-              <div style={{ height: 8, borderRadius: 999, background: '#ECEEF2', overflow: 'hidden' }}>
-                <div style={{ width: `${coverage}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, #F0B429, #E8B84B)', transition: 'width .6s ease' }} />
-              </div>
-              <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
-                <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>0%</span>
-                <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, color: '#CA8A04' }}>{coverage}% complete</span>
-                <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>100%</span>
+              {/* Completion progress bar — inside the card */}
+              <div style={{ marginTop: 16 }}>
+                <div style={{ height: 8, borderRadius: 999, background: '#ECEEF2', overflow: 'hidden' }}>
+                  <div style={{ width: `${coverage}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, #F0B429, #E8B84B)', transition: 'width .6s ease' }} />
+                </div>
+                <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>0%</span>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 12, color: '#CA8A04' }}>{coverage}% complete</span>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: '#9CA3AF' }}>100%</span>
+                </div>
               </div>
             </div>
           )}

@@ -118,6 +118,16 @@ const ANALYTICS_UI_CSS = `
 .pa-cal-day:hover { transform: scale(1.05); }
 .pa-link-gold { transition: color 0.2s; }
 .pa-link-gold:hover { color: #d4a843; }
+/* Achievement badge card (.badge-card in the reference). Colours/opacity are set
+   inline per badge; the shared shadow + hover lift live here. */
+.pa-badge-card {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.pa-badge-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
 `;
 
 export function AnalyticsUiStyles() {

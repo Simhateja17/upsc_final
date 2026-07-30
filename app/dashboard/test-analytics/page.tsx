@@ -292,19 +292,11 @@ export default function TestAnalyticsPage() {
   const totalTests = summary.totalTests ?? 0;
   const avgAccuracy = summary.avgAccuracy ?? 0;
   const bestPercentile = summary.bestPercentile ?? 0;
-  const currentStreak = summary.currentStreak ?? 0;
   const totalQuestions = summary.totalQuestions ?? 0;
 
   const mcqCorrect = summary.mcqCorrect ?? 0;
   const mcqWrong = summary.mcqWrong ?? 0;
   const mcqSkipped = summary.mcqSkipped ?? 0;
-
-  const topStripCards = [
-    { label: 'TEST TAKEN', value: String(totalTests), valueColor: '#f5a623' },
-    { label: 'AVG SCORE', value: String(summary.avgScore ?? 0), valueColor: '#ff7070' },
-    { label: 'ACCURACY', value: `${avgAccuracy}%`, valueColor: '#FFFFFF' },
-    { label: 'DAY STREAK', value: String(currentStreak), valueColor: '#0e8a56' },
-  ];
 
   // Icon-left stat cards (reference stats row), driven by real analytics data.
   const summaryCards: { title: string; value: React.ReactNode; color: string; icon: string; sub: string }[] = [
@@ -382,7 +374,7 @@ export default function TestAnalyticsPage() {
             }
             badgeText="Analytics - Test Dashboard"
             title={<>{user?.firstName ?? 'Your'}&apos;s <span style={{ fontStyle: 'italic', color: '#e8b84b' }}>Test Analytics</span></>}
-            subtitle="Your complete UPSC test analytics - score trends, subject mastery, rank history, time management and AI-powered next steps."
+            subtitle="Your complete UPSC test analytics — score trends, subject mastery, rank history, time management and AI-powered next steps."
             stats={topStripCards.map(c => ({ value: c.value, label: c.label, color: c.valueColor }))}
           />
         </div>

@@ -196,12 +196,13 @@ export const dailyAnswerService = {
     const suffix = qs.length ? `?${qs.join('&')}` : '';
     return api.get<any>(`/daily-answer/today/results${suffix}`, authConfig());
   },
-  getCalendar: (params?: { from?: string; to?: string; page?: number; limit?: number }) => {
+  getCalendar: (params?: { from?: string; to?: string; page?: number; limit?: number; paper?: string }) => {
     const qs: string[] = [];
     if (params?.from) qs.push(`from=${encodeURIComponent(params.from)}`);
     if (params?.to) qs.push(`to=${encodeURIComponent(params.to)}`);
     if (params?.page) qs.push(`page=${params.page}`);
     if (params?.limit) qs.push(`limit=${params.limit}`);
+    if (params?.paper) qs.push(`paper=${encodeURIComponent(params.paper)}`);
     const suffix = qs.length ? `?${qs.join('&')}` : '';
     return api.get<any>(`/daily-answer/calendar${suffix}`, authConfig());
   },
@@ -596,8 +597,10 @@ export const flashcardService = {
     api.patch<any>(`/flashcards/${cardId}/progress`, { mastered }, authConfig()),
   deleteSubject: (subjectId: string) =>
     api.delete<any>(`/flashcards/subjects/${subjectId}`, authConfig()),
+  // Write op — goes through withAuthRetry so an expired stored access token is
+  // refreshed and retried once instead of surfacing as a generic delete failure.
   deleteCard: (cardId: string) =>
-    api.delete<any>(`/flashcards/${cardId}`, authConfig()),
+    withAuthRetry(config => api.delete<any>(`/flashcards/${cardId}`, config)),
   deleteTopic: (subjectId: string, topicId: string) =>
     api.delete<any>(`/flashcards/${subjectId}/topics/${topicId}`, authConfig()),
 };

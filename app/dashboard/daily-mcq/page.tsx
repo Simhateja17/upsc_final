@@ -14,7 +14,7 @@ interface MCQData {
   timeLimit: number;
   totalMarks: number;
   attempted: boolean;
-  attemptedCount: number;
+  studentsAttemptedTodayCount: number;
 }
 
 // "20th June 2026" style date for the landing header.
@@ -64,6 +64,14 @@ export default function DailyMcqIntroPage() {
       .then(res => setMcq(res.data))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
+
+    // Re-fetch every minute so the "students attempted today" banner stays current.
+    const interval = setInterval(() => {
+      dailyMcqService.getToday()
+        .then(res => setMcq(res.data))
+        .catch(() => {});
+    }, 60_000);
+    return () => clearInterval(interval);
   }, []);
 
   // Current streak for the landing screen (best-effort; landing still works without it).
@@ -601,9 +609,7 @@ export default function DailyMcqIntroPage() {
             <div className="dmcw-avatar dmcw-avatar-4">R</div>
           </div>
           <div className="dmcw-banner-text">
-            <div className="dmcw-line1">
-              {(mcq.attemptedCount ?? 0).toLocaleString('en-IN')} aspirants attempted today
-            </div>
+            <div className="dmcw-line1">{mcq.studentsAttemptedTodayCount.toLocaleString('en-IN')} students attempted today</div>
             <div className="dmcw-line2">Join them — every day counts</div>
           </div>
           <div className="dmcw-badge-live">

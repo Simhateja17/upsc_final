@@ -66,14 +66,15 @@ export function prefersReducedMotion() {
  * Shared shell for the three demo animations. Owns the scale-to-fit
  * box so each demo can be written at its authored 380x660 size.
  *
- * `variant` becomes the CSS scope class (jd-mains / jd-mock / jd-ca)
- * that namespaces the asset's stylesheet in styles/landing-demos.css.
+ * `variant` becomes the CSS scope class (jd-mains / jd-chat / jd-mock
+ * / jd-ca) that namespaces the asset's stylesheet in
+ * styles/landing-demos.css.
  */
 export default function DemoStage({
   variant,
   children,
 }: {
-  variant: 'jd-mains' | 'jd-mock' | 'jd-ca';
+  variant: 'jd-mains' | 'jd-chat' | 'jd-mock' | 'jd-ca';
   children: ReactNode;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);

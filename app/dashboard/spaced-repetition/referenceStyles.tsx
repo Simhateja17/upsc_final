@@ -237,9 +237,9 @@ const CSS = `
 
 /* Table layout */
 .sr-scope .qv-table-wrap{margin-bottom:24px}
-/* Left border is 4px (transparent) purely so the header columns line up with the 4px accent rail on each question card - no visible grey box/side border on the header itself, matching the PRD. */
-.sr-scope .qv-col-headers{display:grid;grid-template-columns:2.5fr 100px 110px 160px 50px;gap:16px;padding:12px 24px;background:var(--border-light);border-radius:var(--radius-sm);border-left:4px solid transparent;align-items:center;margin-bottom:12px}
-.sr-scope .qv-col-headers span{font-size:11px;font-weight:700;color:var(--text-mid);letter-spacing:.06em;text-transform:uppercase}
+/* Left border is 4px (transparent) purely so the header columns line up with the 4px accent rail on each question card — no visible grey box/side border on the header itself, matching the PRD. */
+.sr-scope .qv-col-headers{display:grid;grid-template-columns:2.5fr 100px 110px 160px 58px;gap:16px;padding:12px 24px;background:var(--border-light);border-radius:var(--radius-sm);border-left:4px solid transparent;align-items:center;margin-bottom:12px}
+.sr-scope .qv-col-headers span{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.04em;line-height:1.2;text-transform:uppercase;white-space:nowrap}
 .sr-scope .qv-col-headers .qh-question{text-align:left}
 .sr-scope .qv-col-headers .qh-subject,
 .sr-scope .qv-col-headers .qh-review,
@@ -247,7 +247,7 @@ const CSS = `
 .sr-scope .qv-col-headers .qh-remind{text-align:center}
 .sr-scope .qv-list{display:flex;flex-direction:column;gap:12px}
 /* Standalone cards, matching the "Today's Study Tasks" rows on the dashboard. */
-.sr-scope .qv-question{background:#f9fafb;padding:20px 24px;display:grid;grid-template-columns:2.5fr 100px 110px 160px 50px;gap:16px;align-items:center;cursor:pointer;border:1px solid #e5e7eb;border-left:4px solid #e5e7eb;border-radius:var(--radius-sm);box-shadow:0 1px 1px rgba(16,24,40,.04);transition:all .2s ease-out}
+.sr-scope .qv-question{background:#f9fafb;padding:20px 24px;display:grid;grid-template-columns:2.5fr 100px 110px 160px 58px;gap:16px;align-items:center;cursor:pointer;border:1px solid #e5e7eb;border-left:4px solid #e5e7eb;border-radius:var(--radius-sm);box-shadow:0 1px 1px rgba(16,24,40,.04);transition:all .2s ease-out}
 .sr-scope .qv-question:hover{transform:translateY(-2px);box-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.1);background:rgba(238,242,255,.3);border-color:#c7d2fe;border-left-color:#94a3b8}
 .sr-scope .qv-q-content{min-width:0}
 .sr-scope .qv-q-text{font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px;line-height:1.5}
@@ -267,8 +267,10 @@ const CSS = `
 .sr-scope .qv-delete-btn:hover{background:var(--red-dim)}
 .sr-scope .qv-question:hover .qv-delete-btn{opacity:1}
 .sr-scope .qv-subject-col{display:flex;align-items:center;justify-content:center}
-.sr-scope .qv-subject-pill{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-mid);background:var(--gold-dim);padding:6px 12px;border-radius:20px}
-.sr-scope .qv-subject-pill .sp-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;background:rgba(212,175,55,.3)}
+/* Colours come per-subject from lib/subjectPalette (the same tokens the subject
+   grid on step 1 uses), so no gold fallback is declared here. */
+.sr-scope .qv-subject-pill{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:20px}
+.sr-scope .qv-subject-pill .sp-icon{font-size:13px;line-height:1}
 .sr-scope .qv-review-col{display:flex;align-items:center;justify-content:center}
 .sr-scope .qv-review-status{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:center}
 .sr-scope .qv-review-status.overdue{color:var(--red)}

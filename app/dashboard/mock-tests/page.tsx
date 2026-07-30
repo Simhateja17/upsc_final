@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService, dashboardService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import GeneratingTestModal from '@/components/GeneratingTestModal';
-import { liveStudentCount } from '@/lib/liveCount';
 import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 import { mainsTimeLimit } from '@/lib/mainsPattern';
 import { handleEntitlementError } from '@/components/entitlements';
@@ -313,7 +312,7 @@ function MockTestsPageInner() {
   const [optionalSubjects, setOptionalSubjects] = useState(fallbackOptionalSubjects);
   const [difficulties, setDifficulties] = useState(fallbackDifficulties);
   const [practiceStats, setPracticeStats] = useState<{ todayCount: number; streak: number } | null>(null);
-  const [platformStats, setPlatformStats] = useState<{ questionsCount: number; testsCount: number; usersCount: number } | null>(null);
+  const [platformStats, setPlatformStats] = useState<{ questionsCount: number; testsCount: number; usersCount: number; studentsAttemptedTodayCount: number } | null>(null);
   const [badgeCount, setBadgeCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -466,6 +465,17 @@ function MockTestsPageInner() {
     return () => { cancelled = true; };
   }, []);
 
+  /* ─── Re-fetch platform stats every minute so the "students took a test
+     today" banner stays current. ─── */
+  useEffect(() => {
+    const interval = setInterval(() => {
+      mockTestService.getPlatformStats()
+        .then((res) => { if (res.data) setPlatformStats(res.data); })
+        .catch(() => {});
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
   /* ─── Badges earned (independent, non-blocking - feeds the "Your Activity" card) ─── */
   useEffect(() => {
     let cancelled = false;
@@ -564,7 +574,7 @@ function MockTestsPageInner() {
     } catch (err: any) {
       console.error('Failed to generate test:', err);
       const parsed = handleEntitlementError(err);
-      if (parsed.action === 'Upgrade plan' && selectedExamMode === 'prelims' && entitlements.tier === 'free') {
+      if (parsed.action === 'Upgrade plan' && selectedExamMode === 'prelims' && entitlements.tier === 'aspire') {
         setShowLimitModal(true);
         setError(parsed.message || 'Failed to generate test. Please try again.');
       } else if (parsed.title === 'Limit reached' || parsed.title === 'Upgrade required') {
@@ -609,7 +619,7 @@ function MockTestsPageInner() {
   const prelimsQuota = entitlements.featureStatus('prelims_mock_attempt');
   const activeQuota = entitlements.featureStatus(selectedExamMode === 'mains' ? 'mains_evaluation' : 'prelims_mock_attempt');
   const quotaExhausted = activeQuota?.allowed === false;
-  const isPrelimsAttemptsExhausted = selectedExamMode === 'prelims' && entitlements.tier === 'free' && !!prelimsQuota && (
+  const isPrelimsAttemptsExhausted = selectedExamMode === 'prelims' && entitlements.tier === 'aspire' && !!prelimsQuota && (
     prelimsQuota.code === 'FEATURE_LIMIT_REACHED' ||
     (prelimsQuota.limit !== null && prelimsQuota.remaining !== null && prelimsQuota.remaining <= 0)
   );
@@ -1525,80 +1535,43 @@ function MockTestsPageInner() {
                 fontSize: 'clamp(10px, 0.68vw, 12px)',
                 color: '#64748B',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                  {['#22C55E', '#F97316', '#3B82F6'].map((color, i) => (
+                <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                  {[
+                    { initials: 'AK', bg: '#3B82F6' },
+                    { initials: 'PS', bg: '#A855F7' },
+                    { initials: 'RV', bg: '#14B8A6' },
+                    { initials: 'MH', bg: '#F97316' },
+                    { initials: '+2k', bg: '#4B5563' },
+                  ].map((a, i) => (
                     <span
-                      key={i}
+                      key={a.initials}
                       style={{
-                        width: '7px',
-                        height: '7px',
+                        width: '18px',
+                        height: '18px',
                         borderRadius: '50%',
-                        background: color,
+                        background: a.bg,
+                        border: '1.5px solid #0B1220',
+                        color: '#FFFFFF',
+                        fontFamily: 'var(--font-inter), Inter, sans-serif',
+                        fontWeight: 700,
+                        fontSize: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         flexShrink: 0,
+                        marginLeft: i === 0 ? 0 : '-6px',
                       }}
-                    />
+                    >
+                      {a.initials}
+                    </span>
                   ))}
                 </div>
-                <span>{liveStudentCount('mock-tests')} students are taking tests right now</span>
+                <span>{(platformStats?.studentsAttemptedTodayCount ?? 0).toLocaleString('en-IN')} students took a test today</span>
               </div>
               </div>
             </div>
           </div>
 
-        </div>
-
-        {/* ── Social Proof Banner: Aspirants ── */}
-        <div style={{ padding: '0 clamp(12px, 1.2vw, 20px) clamp(24px, 2vw, 40px)', maxWidth: '1320px', margin: '0 auto' }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #162456 0%, #0F172B 50%, #030712 100%)',
-            borderRadius: '20px',
-            padding: 'clamp(18px, 1.6vw, 28px) clamp(20px, 2vw, 32px)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'clamp(16px, 1.5vw, 24px)',
-            flexWrap: 'wrap',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              {[
-                { initials: 'AK', bg: '#3B82F6' },
-                { initials: 'PS', bg: '#A855F7' },
-                { initials: 'RV', bg: '#14B8A6' },
-                { initials: 'MH', bg: '#F97316' },
-                { initials: '+2k', bg: '#4B5563' },
-              ].map((a, i) => (
-                <span
-                  key={a.initials}
-                  style={{
-                    width: 'clamp(38px, 2.6vw, 46px)',
-                    height: 'clamp(38px, 2.6vw, 46px)',
-                    borderRadius: '50%',
-                    background: a.bg,
-                    border: '2.5px solid #0F172B',
-                    color: '#FFFFFF',
-                    fontFamily: 'var(--font-inter), Inter, sans-serif',
-                    fontWeight: 700,
-                    fontSize: 'clamp(11px, 0.75vw, 13px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    marginLeft: i === 0 ? 0 : 'clamp(-14px, -1vw, -10px)',
-                  }}
-                >
-                  {a.initials}
-                </span>
-              ))}
-            </div>
-            <div>
-              <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 800, fontSize: 'clamp(18px, 1.4vw, 24px)' }}>
-                <span style={{ color: '#FB923C' }}>{platformStats ? platformStats.usersCount.toLocaleString('en-IN') + '+' : '2,400+'}</span>
-                <span style={{ color: '#FFFFFF' }}> aspirants</span>
-              </div>
-              <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 500, fontSize: 'clamp(12px, 0.85vw, 14px)', color: '#94A3B8', marginTop: '4px' }}>
-                actively preparing on this platform
-              </div>
-            </div>
-          </div>
         </div>
       </main>
     </div>

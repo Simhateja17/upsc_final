@@ -105,7 +105,6 @@ export default function SyllabusTrackerPage() {
   const [optionalDraft, setOptionalDraft] = useState<string>('');
   const [savingOptional, setSavingOptional] = useState(false);
   const [activeSubject, setActiveSubject] = useState<string | null>(null);
-  const [openTopics, setOpenTopics] = useState<Set<string>>(new Set());
   const [selectedTopic, setSelectedTopic] = useState<{ subjectId: string; topicIndex: number } | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'done' | 'important'>('all');
   const [states, setStates] = useState<TrackerState>({});
@@ -321,7 +320,6 @@ export default function SyllabusTrackerPage() {
   const handleModeChange = (newMode: Mode) => {
     setMode(newMode);
     setActiveSubject(null);
-    setOpenTopics(new Set());
     setSelectedTopic(null);
     setFilter('all');
     setSearchQuery('');
@@ -329,38 +327,13 @@ export default function SyllabusTrackerPage() {
 
   const handleSubjectSelect = (subjectId: string) => {
     setActiveSubject(subjectId);
-    setOpenTopics(new Set());
     setSelectedTopic(null);
   };
 
+  // Picking a topic replaces the selection outright — its sub-topics fill
+  // the next column, so only one topic is ever active (and highlighted).
   const handleTopicToggle = (subjectId: string, topicIndex: number) => {
-    const topicKey = `${subjectId}__${topicIndex}`;
-    const newOpenTopics = new Set(openTopics);
-    
-    if (newOpenTopics.has(topicKey)) {
-      newOpenTopics.delete(topicKey);
-    } else {
-      newOpenTopics.add(topicKey);
-    }
-    
-    setOpenTopics(newOpenTopics);
     setSelectedTopic({ subjectId, topicIndex });
-  };
-
-  const handleExpandAll = () => {
-    if (!activeSubject || !syllabusData) return;
-    const subject = syllabusData[mode].find(s => s.id === activeSubject);
-    if (!subject) return;
-
-    const newOpenTopics = new Set<string>();
-    subject.topics.forEach((_, index) => {
-      newOpenTopics.add(`${activeSubject}__${index}`);
-    });
-    setOpenTopics(newOpenTopics);
-  };
-
-  const handleCollapseAll = () => {
-    setOpenTopics(new Set());
   };
 
   const handleQuickDone = (subjectId: string, topicIndex: number, subTopicIndex: number) => {
@@ -421,11 +394,6 @@ export default function SyllabusTrackerPage() {
   // Open a sub-subject (topic) from the right panel and select it in the middle columns.
   const handleSelectSubTopic = (subjectId: string, topicIndex: number) => {
     setActiveSubject(subjectId);
-    setOpenTopics((prev) => {
-      const next = new Set(prev);
-      next.add(`${subjectId}__${topicIndex}`);
-      return next;
-    });
     setSelectedTopic({ subjectId, topicIndex });
   };
 
@@ -506,7 +474,6 @@ export default function SyllabusTrackerPage() {
           <div className="w-full xl:w-[240px] shrink-0 flex flex-col">
             <TopicList
               subject={currentSubject}
-              openTopics={openTopics}
               selectedTopic={selectedTopic}
               onToggleTopic={handleTopicToggle}
               states={states}

@@ -129,8 +129,8 @@ export default function MyPlanBillingTab({
 }) {
   const isTabletOrBelow = useIsTabletOrBelow();
   const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
-  // Aspire is free forever — genuinely no Subscription row to show billing/renewal for.
-  // (Distinct from isPreview: an admin simulating rise/ascent also has no subscription, but
+  // The free tier genuinely has no Subscription row to show billing/renewal for.
+  // (Distinct from isPreview: an admin simulating any paid tier also has no subscription, but
   // that's fake data being previewed, not a real free plan.)
   const isFreeTierNoBilling = !subscription && !isPreview;
   const planName = plan?.name || (isPreview || isFreeTierNoBilling ? `${tierLabel} Plan` : 'Your Plan');

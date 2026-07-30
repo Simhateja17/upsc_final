@@ -1250,16 +1250,15 @@ export default function ExplorePlansPage() {
   const currentRank = { free: 0, aspire: 1, rise: 2, ascent: 3 }[currentTier];
   const hasRealSubscription = currentTier !== 'free' && !!entitlements.subscription;
 
-  // Admins can preview any tier via the plan switcher in /admin. A pure simulation never
-  // attaches a real Subscription row, so treat a rise/ascent simulation as "paid" too —
-  // otherwise the My Plan & Billing preview they're testing for would never be reachable.
+  // Admins can preview any paid tier (including Aspire) via the plan switcher in /admin.
+  // A pure simulation never attaches a real Subscription row, so the My Plan & Billing card
+  // must render as a clearly-labeled preview whenever the override is active — Aspire is a
+  // paid tier like Rise/Ascent, not a free default, so it gets no special exemption here.
   const isAdminSimulating = Boolean(entitlements.summary?.override?.isAdminPlanSimulation);
-  const isPreviewTier = isAdminSimulating && (currentTier === 'rise' || currentTier === 'ascent');
-  const isPreview = isPreviewTier && !hasRealSubscription;
+  const isPreview = isAdminSimulating && !hasRealSubscription;
 
-  // Aspire is a real, always-on tier now (never "no plan") — every authenticated user has
-  // *something* to show on My Plan & Billing, not just paying subscribers. currentTier only
-  // stays 'free' while logged out or before entitlements have finished their first load.
+  // currentTier only stays 'free' while logged out or before entitlements have finished
+  // their first load — every other tier (including Aspire) has something real to show.
   const canViewMyPlan = isAuthenticated && currentTier !== 'free';
   const canShowPlan = (plan: PlanKey) => ({ aspire: 1, rise: 2, ascent: 3 }[plan] > currentRank);
 

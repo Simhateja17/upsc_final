@@ -881,6 +881,11 @@ export default function StudyGroupsPage() {
   // server-side. sessionStorage remembers which room to re-enter.
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    // Exception: arriving via the Study Planner's "Start Focus Session"
+    // deep-link (?tab=solo) must land straight in Solo Focus, so don't pull the
+    // user back into their previous room. Every other entry still restores.
+    // Read from window (not searchParams) to keep this a mount-only check.
+    if (new URLSearchParams(window.location.search).get('tab') === 'solo') return;
     const activeRoomId = sessionStorage.getItem('rwj_active_room_id');
     if (!activeRoomId) return;
     (async () => {

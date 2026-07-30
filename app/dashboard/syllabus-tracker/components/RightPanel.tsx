@@ -93,14 +93,9 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
     ] as Array<SubjectProgress & { stage: string }>;
   }, [getSubjectStats, syllabusData]);
 
-  const subjectsWithProgress = useMemo(
-    () => allSubjects.filter((subject) => subject.tracked > 0),
-    [allSubjects]
-  );
-
-  const modalSubjectsWithProgress = useMemo(
-    () => subjectsWithProgress.filter((subject) => subject.stage.toLowerCase() === modalMode),
-    [modalMode, subjectsWithProgress]
+  const modalSubjects = useMemo(
+    () => allSubjects.filter((subject) => subject.stage.toLowerCase() === modalMode),
+    [allSubjects, modalMode]
   );
 
   return (
@@ -228,19 +223,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
           </div>
           <button
             type="button"
-            className="inline-flex items-center gap-[5px] px-[18px] py-[8px] rounded-[9px] text-[11.5px] font-extrabold text-[#0f1f3d] cursor-pointer border-none transition-all duration-200"
-            style={{
-              background: 'linear-gradient(135deg, #e8a820, #c9921a)',
-              boxShadow: '0 2px 8px rgba(201,146,26,.28)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 14px rgba(201,146,26,.36)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(201,146,26,.28)';
-            }}
+            className="btn-gold"
             onClick={(e) => {
               e.stopPropagation();
               router.push('/dashboard/study-planner');
@@ -294,7 +277,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
             </div>
 
             <div className="space-y-2">
-              {modalSubjectsWithProgress.map((subject) => (
+              {modalSubjects.map((subject) => (
                 <div key={subject.id} className="rounded-[10px] border border-[#E5E7EB] p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -320,9 +303,9 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
                   </div>
                 </div>
               ))}
-              {modalSubjectsWithProgress.length === 0 && (
+              {modalSubjects.length === 0 && (
                 <div className="rounded-[10px] border border-dashed border-[#CBD5E1] bg-[#F8FAFC] px-4 py-8 text-center text-[13px] text-[#64748B]">
-                  No {modalMode === 'prelims' ? 'Prelims' : modalMode === 'mains' ? 'Mains' : 'Optional'} subject progress yet. Update a topic status to see it here.
+                  No {modalMode === 'prelims' ? 'Prelims' : modalMode === 'mains' ? 'Mains' : 'Optional'} subjects available.
                 </div>
               )}
             </div>
