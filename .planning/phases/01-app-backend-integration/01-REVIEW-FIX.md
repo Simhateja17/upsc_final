@@ -18,7 +18,7 @@ status: partial
 **Summary:**
 - Findings in scope: 16 (CR-01 through CR-06 excluding CR-07, WR-01 through WR-09; CR-06 and WR-07 combined into one commit)
 - Fixed: 15
-- Skipped: 1 (CR-07 — user-confirmed intentional placeholder)
+- Skipped: 1 (CR-07 - user-confirmed intentional placeholder)
 
 ---
 
@@ -37,7 +37,7 @@ a build-injected value before production release. Requires human verification fo
 
 ---
 
-### CR-02: `IS_DEBUG = true` hardcoded — full HTTP traffic logged in production builds
+### CR-02: `IS_DEBUG = true` hardcoded - full HTTP traffic logged in production builds
 
 **Files modified:**
 - `composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/config/BuildKonfig.kt` (new)
@@ -70,7 +70,7 @@ wiring a direct 404 request.
 
 ---
 
-### CR-04: Token refresh race condition — concurrent requests all attempt refresh simultaneously
+### CR-04: Token refresh race condition - concurrent requests all attempt refresh simultaneously
 
 **Files modified:** `composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/repository/AuthRepository.kt`
 **Commit:** 41b9805
@@ -97,7 +97,7 @@ spurious 3-second wait occurs after the final (12th) iteration completes.
 
 ---
 
-### CR-06 + WR-07: `safeCall` is not `suspend` — async body bypasses exception wrapping; `CancellationException` swallowed
+### CR-06 + WR-07: `safeCall` is not `suspend` - async body bypasses exception wrapping; `CancellationException` swallowed
 
 **Files modified:** `composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/remote/ApiClient.kt`
 **Commit:** 3f1ffdc
@@ -131,7 +131,7 @@ encrypted). Callers can now detect the insecure storage path and respond appropr
 
 **Commit:** 5493aa4
 **Applied fix:** Replaced `Result<JsonObject>` return types with `Result<PerformanceAnalytics>` and
-`Result<TestAnalyticsData>` — the same typed models already used by `AnalyticsRepository`.
+`Result<TestAnalyticsData>` - the same typed models already used by `AnalyticsRepository`.
 `getPracticeStats()` now delegates to `getPerformance()` with a deprecation note (no separate
 practice-stats type exists in the domain model layer). `DashboardUiState` fields updated to match.
 `JsonObject` import removed from both files.
@@ -162,7 +162,7 @@ coroutine to write results from an earlier source.
 
 ---
 
-### WR-05: Multipart upload sets `ContentType` header before `setBody` — boundary will be missing
+### WR-05: Multipart upload sets `ContentType` header before `setBody` - boundary will be missing
 
 **Files modified:**
 - `composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/repository/DailyAnswerRepository.kt`
@@ -216,7 +216,7 @@ success.
 ### CR-07: Payment checkout fabricates a provider payment ID
 
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/ui/viewmodel/AdvancedBackendViewModels.kt:185-199`
-**Reason:** User-confirmed skip — payment gateway integration (Razorpay/Stripe) is not yet
+**Reason:** User-confirmed skip - payment gateway integration (Razorpay/Stripe) is not yet
 implemented and the `"mock-${payment.paymentId}"` placeholder is intentional for the current
 development phase. This file must NOT be modified until real payment SDK integration is in place.
 **Original issue:** `BillingViewModel.checkout()` fabricates a `providerPaymentId` value that

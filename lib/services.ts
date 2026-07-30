@@ -419,6 +419,11 @@ export const billingService = {
   cancelRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/cancel`, {}, authConfig()),
   pauseRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/pause`, {}, authConfig()),
   resumeRazorpaySubscription: (id: string) => api.post<any>(`/billing/subscriptions/${id}/resume`, {}, authConfig()),
+  getBillingAddress: () => api.get<any>('/billing/address', authConfig()),
+  saveBillingAddress: (data: { fullName: string; email: string; phone?: string; city?: string; state?: string }) =>
+    api.put<any>('/billing/address', data, authConfig()),
+  submitCancellationFeedback: (id: string, data: { reason: string; wantsSupport: boolean }) =>
+    api.post<any>(`/billing/subscriptions/${id}/cancel-feedback`, data, authConfig()),
 };
 
 export const entitlementService = {
@@ -835,7 +840,7 @@ export const adminService = {
   /**
    * Link (or unlink) an existing Study Material record to a video.
    *
-   * A video does NOT get its own copy of a PDF — it only stores a reference to
+   * A video does NOT get its own copy of a PDF - it only stores a reference to
    * a row in the Study Material module (studyMaterialService.list()), which
    * stays the single source of truth for PDFs. Pass `null` to unlink.
    *
@@ -845,9 +850,9 @@ export const adminService = {
    *     `studyMaterialId` (and, for convenient display, `studyMaterialName`).
    *   The student "Read" button then reuses the EXISTING study-material
    *     viewer endpoint  GET /library/view/material/:studyMaterialId/pages
-   *     (libraryService.getMaterialViewPages) — no video-specific PDF render.
+   *     (libraryService.getMaterialViewPages) - no video-specific PDF render.
    * Until the API persists/returns studyMaterialId the link simply won't
-   * "stick" (visible, not silent) — no separate storage is ever created.
+   * "stick" (visible, not silent) - no separate storage is ever created.
    * ───────────────────────────────────────────────────────────────────
    */
   linkVideoStudyMaterial: (videoId: string, studyMaterialId: string | null) =>

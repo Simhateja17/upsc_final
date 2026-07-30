@@ -192,7 +192,7 @@ function DailyMainsChallengeInner() {
   const [error, setError] = useState<string | null>(null);
 
   // Streaks / progress / achievements come from the user's real leaderboard stats
-  // (leaderboardService.getMyRank) — not hardcoded. `myMainsRank` carries the live
+  // (leaderboardService.getMyRank) - not hardcoded. `myMainsRank` carries the live
   // daily-mains streak, average score (/10), total attempt count and rank.
   const mainsStreak = Number(myMainsRank?.streak) || 0;
   const mainsAvgScore = Number(myMainsRank?.mainsAvg) || 0;
@@ -672,7 +672,7 @@ function DailyMainsChallengeInner() {
                           {c.score != null ? (
                             <div style={{ fontSize: '20px', fontWeight: 800, color: '#0B1020', lineHeight: 1 }}>{c.score}<span style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600 }}>/{c.maxScore}</span></div>
                           ) : (
-                            <div style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600 }}>{c.attempted ? c.evaluationStatus : '—'}</div>
+                            <div style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600 }}>{c.attempted ? c.evaluationStatus : '-'}</div>
                           )}
                         </div>
                         <span className="dms-pc-arrow" style={{ color: a.accent, fontSize: '18px', flexShrink: 0 }}>→</span>
@@ -684,7 +684,7 @@ function DailyMainsChallengeInner() {
             </div>
           </div>
 
-          {/* ── Two-column: Calendar(+Progress) | Mains League — equal width & height ── */}
+          {/* ── Two-column: Calendar(+Progress) | Mains League - equal width & height ── */}
           <div className="mt-5 grid w-full grid-cols-1 items-stretch gap-5 lg:grid-cols-2" style={{ maxWidth: '1240px' }}>
 
             {/* LEFT COLUMN: Calendar and Your Progress as two separate cards */}
@@ -809,7 +809,7 @@ function DailyMainsChallengeInner() {
               title="Mains League"
               viewAllHref="/dashboard/leaderboard?tab=mains"
               rows={mainsLeague.map((row) => ({ rank: row.rank, userId: row.userId, name: row.name, value: row.mainsAvg }))}
-              you={{ rank: myMainsRank?.mainsRank ?? '—', name: myMainsRank?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You' }}
+              you={{ rank: myMainsRank?.mainsRank ?? '-', name: myMainsRank?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You' }}
             />
           </div>
 
@@ -828,7 +828,7 @@ function DailyMainsChallengeInner() {
                   { emoji: '🔥', name: 'Streak Master', stat: `${mainsStreak} days`, dim: mainsStreak < 1 },
                   { emoji: '✍️', name: 'Sharp Pen', stat: `${mainsAttemptCount} attempted`, dim: mainsAttemptCount < 1 },
                   { emoji: '🥇', name: 'Top 50', stat: mainsRankNum ? `Rank #${mainsRankNum}` : 'Unranked', dim: !mainsRankNum || mainsRankNum > 50 },
-                  { emoji: '🧠', name: 'Polymath', stat: '—', dim: true },
+                  { emoji: '🧠', name: 'Polymath', stat: '-', dim: true },
                   { emoji: '💯', name: 'Centurion', stat: `${mainsAttemptCount} / 100`, dim: mainsAttemptCount < 100 },
                 ].map((b) => (
                   <Link
@@ -973,7 +973,7 @@ function DailyMainsChallengeInner() {
 
                 {selectedFiles.length > 0 ? (
                   <div className="w-full" onClick={e => e.stopPropagation()}>
-                    {/* Uploaded files — reuses the Mains Answer Evaluation upload UI
+                    {/* Uploaded files - reuses the Mains Answer Evaluation upload UI
                         (visible thumbnails + preview + remove). */}
                     <div className="mb-3">
                       <UploadedAnswerFiles files={selectedFiles} onRemove={removeFile} />
@@ -1069,7 +1069,7 @@ function DailyMainsChallengeInner() {
             </>
           )}
 
-          {/* Evaluation quota status banner — limit reached */}
+          {/* Evaluation quota status banner - limit reached */}
           {!entitlements.loading && mainsQuota && mainsQuota.allowed === false && (
             <div
               className="mt-4 flex items-center justify-between gap-3 px-4 py-3 rounded-[12px]"
@@ -1115,7 +1115,7 @@ function DailyMainsChallengeInner() {
             )}
           </button>
 
-          {/* Free evaluation indicator — pill sits below the Submit button (per PRD reference) */}
+          {/* Free evaluation indicator - pill sits below the Submit button (per PRD reference) */}
           {!entitlements.loading && mainsQuota && mainsQuota.allowed !== false && mainsQuota.remaining !== null && (
             <div className="flex justify-center">
               <span
@@ -1189,7 +1189,7 @@ function DailyMainsChallengeInner() {
                 points: [
                   'Use dark blue or black ink only',
                   'Unruled sheets work best for evaluation',
-                  'Avoid pencil — AI may miss faint marks',
+                  'Avoid pencil - AI may miss faint marks',
                 ],
               },
               {
@@ -1199,7 +1199,7 @@ function DailyMainsChallengeInner() {
                 points: [
                   'Take photos in bright, shadow-free lighting',
                   'Keep camera parallel to paper (no angle)',
-                  'Avoid reflections — turn off flash if needed',
+                  'Avoid reflections - turn off flash if needed',
                 ],
               },
               {
@@ -1219,7 +1219,7 @@ function DailyMainsChallengeInner() {
                 points: [
                   'Adding the question text can improve accuracy',
                   'Number each page if multi-page answer',
-                  'Keep handwriting legible — not too rushed',
+                  'Keep handwriting legible - not too rushed',
                 ],
               },
             ].map((tip) => (

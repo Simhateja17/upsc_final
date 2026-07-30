@@ -436,12 +436,12 @@ export default function LandingPage() {
                 <span className="device-title">{AI_SLIDES[activeSlide].title}</span>
               </div>
               <div className="demo-content">
-                {/* Slide 0: Mains Evaluator — client animation asset */}
+                {/* Slide 0: Mains Evaluator - client animation asset */}
                 <div className={`demo-slide demo-slide-asset${activeSlide === 0 ? ' active' : ''}`}>
                   <MainsEvaluatorDemo />
                 </div>
 
-                {/* Slide 1: AI Assistant — still the hand-built demo; the
+                {/* Slide 1: AI Assistant - still the hand-built demo; the
                     client's chat animation asset has not been supplied yet
                     (their link for it duplicated the Mains Evaluator file). */}
                 <div className={`demo-slide demo-slide-chat${activeSlide === 1 ? ' active' : ''}`}>
@@ -471,12 +471,12 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Slide 2: Mock Tests — client animation asset */}
+                {/* Slide 2: Mock Tests - client animation asset */}
                 <div className={`demo-slide demo-slide-asset${activeSlide === 2 ? ' active' : ''}`}>
                   <MockTestDemo active={activeSlide === 2} />
                 </div>
 
-                {/* Slide 3: Current Affairs — client animation asset */}
+                {/* Slide 3: Current Affairs - client animation asset */}
                 <div className={`demo-slide demo-slide-asset${activeSlide === 3 ? ' active' : ''}`}>
                   <CurrentAffairsDemo active={activeSlide === 3} />
                 </div>

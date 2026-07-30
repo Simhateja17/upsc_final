@@ -167,7 +167,7 @@ function getRecurrenceDates(start: Date, type: RecurType, days: number[], end: R
   return result;
 }
 
-// Canonical Quick Add to Plan subject list — reuses the shared Dashboard
+// Canonical Quick Add to Plan subject list - reuses the shared Dashboard
 // subject list so both modules stay in sync (list + order).
 const SUBJECT_OPTIONS = STUDY_TASK_SUBJECTS;
 
@@ -228,7 +228,7 @@ export default function StudyPlannerPage() {
   const [recurDays, setRecurDays] = useState<number[]>([1, 3]); // Tue & Thu by default
   const [recurEnd, setRecurEnd] = useState<RecurEnd>('exam');
   const [currentDate, setCurrentDate] = useState(new Date());
-  // Streak calendar month — navigated independently of the task planner's day.
+  // Streak calendar month - navigated independently of the task planner's day.
   const [calMonth, setCalMonth] = useState(new Date());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [streakDays, setStreakDays] = useState(0);
@@ -295,7 +295,7 @@ export default function StudyPlannerPage() {
           if (saved) { try { states = JSON.parse(saved); } catch {} }
         }
         const stateMap = states ?? {};
-        // Only prelims/mains — the "optional" stage lists all 25 UPSC optional
+        // Only prelims/mains - the "optional" stage lists all 25 UPSC optional
         // papers (Agriculture, Philosophy, Sociology, ...), not just the one the
         // user picked, and some optional papers share a name with a core subject
         // (Geography, History), which would silently merge unrelated syllabuses.
@@ -581,7 +581,7 @@ export default function StudyPlannerPage() {
   const nextCalMonth = () => { const d = new Date(calMonth); d.setDate(1); d.setMonth(d.getMonth() + 1); setCalMonth(d); };
   const goCalToday = () => setCalMonth(new Date());
 
-  // Streak calendar — day cells for calMonth, classified per the reference design:
+  // Streak calendar - day cells for calMonth, classified per the reference design:
   // active (past+studied), missed (past, no activity), today, future.
   type CalCell =
     | { empty: true }
@@ -1296,7 +1296,7 @@ export default function StudyPlannerPage() {
                   flexShrink: 0,
                 }}
               >
-                {/* Header — parallel to "Build Your Study Plan" */}
+                {/* Header - parallel to "Build Your Study Plan" */}
                 <div className="flex items-center" style={{ gap: '6px', marginBottom: '18px', height: '34px' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/study-tasks-icon.png" alt="Today's Plan" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
@@ -1378,7 +1378,7 @@ export default function StudyPlannerPage() {
                 </div>
                 )}
 
-                {/* Bottom Stats — aligned with the left card's "Add to Today's Plan" button */}
+                {/* Bottom Stats - aligned with the left card's "Add to Today's Plan" button */}
                 <div style={{ paddingTop: '16px', marginTop: 'auto', marginBottom: '44px' }}>
                   {/* Today's Study Time */}
                   <div
@@ -1396,7 +1396,7 @@ export default function StudyPlannerPage() {
                     {totalStudyLabel}
                   </div>
 
-                  {/* Start Focus Session — hand off to the Live Study Room's
+                  {/* Start Focus Session - hand off to the Live Study Room's
                       existing Solo Focus tab (?tab=solo), reusing that timer /
                       focus / tracking implementation rather than the in-page
                       overlay. See study-groups/page.tsx searchParams handler. */}
@@ -1429,7 +1429,7 @@ export default function StudyPlannerPage() {
               <div
                 className="bg-white rounded-[16px] border-[0.8px] border-[#E5E7EB] p-6 shadow-[0px_1px_2px_-1px_#0000001A,0px_1px_3px_0px_#0000001A] min-h-[360px] h-full flex flex-col"
               >
-                {/* Header (stays fixed — indentation preserved up to the pie-chart icon) */}
+                {/* Header (stays fixed - indentation preserved up to the pie-chart icon) */}
                 <div className="flex items-center gap-2 mb-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/image-removebg-preview%20(60)%201.png" alt="Syllabus" style={{ width: '24px', height: '24px', objectFit: 'contain', flexShrink: 0 }} />
@@ -1551,12 +1551,12 @@ export default function StudyPlannerPage() {
                     ))
                   ) : (
                     <p className="font-arimo text-[#6B7280] text-center" style={{ fontSize: '13px', paddingTop: '8px' }}>
-                      No goals yet — add one below to get started.
+                      No goals yet - add one below to get started.
                     </p>
                   )}
                 </div>
 
-                {/* Inline add-goal row — sits at the bottom, below the goals list */}
+                {/* Inline add-goal row - sits at the bottom, below the goals list */}
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -1589,7 +1589,7 @@ export default function StudyPlannerPage() {
           {/* ═══════ Right Column (340px): Streak + Quick Add ═══════ */}
           <div className="flex-shrink-0 flex flex-col gap-5 w-full xl:w-[340px]">
 
-            {/* Study Streak Card — converted from the reference study-streak/calendar design */}
+            {/* Study Streak Card - converted from the reference study-streak/calendar design */}
             <div
               className="streak-cal"
               style={{

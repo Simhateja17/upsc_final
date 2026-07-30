@@ -95,7 +95,7 @@ export default function SettingsPage() {
     try {
       await userService.revokeSession('all');
       notify('Signed out on all devices.');
-      // The current device's session was revoked too — sign it out locally.
+      // The current device's session was revoked too - sign it out locally.
       window.location.href = '/';
     } catch {
       notify('Could not sign out other devices.', false);

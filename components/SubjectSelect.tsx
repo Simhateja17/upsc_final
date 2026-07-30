@@ -10,10 +10,10 @@ import { getSubjectEmoji } from '@/lib/subjectEmojis';
  * This is the single source of truth for the subject list, order, icons,
  * option labels and the select styling. Underlying option *values* stay
  * canonical (e.g. "GS1", "Environment & Ecology") so task creation / planning
- * logic and the backend contract are unchanged — only the display changes.
+ * logic and the backend contract are unchanged - only the display changes.
  */
 
-// Complete study-planner subject list — mirrors VALID_STUDY_PLANNER_SUBJECTS on
+// Complete study-planner subject list - mirrors VALID_STUDY_PLANNER_SUBJECTS on
 // the backend so custom tasks offer every subject (not just the 6 core ones).
 export const STUDY_TASK_SUBJECTS = [
   'Polity',
@@ -40,7 +40,7 @@ export const STUDY_TASK_SUBJECTS = [
 ];
 
 // Display-only labels for the GS Paper subjects. The stored values (GS1..GS4)
-// are kept unchanged — only how they read in the dropdown changes.
+// are kept unchanged - only how they read in the dropdown changes.
 const GS_PAPER_LABELS: Record<string, string> = {
   GS1: 'GS Paper I',
   GS2: 'GS Paper II',

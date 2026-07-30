@@ -42,11 +42,11 @@ The project is a **Next.js 14 App Router** frontend paired with a standalone **E
 - **Frontend:** `lib/services.ts`, `lib/auth.ts`, `contexts/AuthContext.tsx`, `hooks/*`
 - **Backend:** `upsc_backend/src/controllers/`, `upsc_backend/src/services/`, `upsc_backend/src/jobs/`
 - **Responsibilities:**
-  - `lib/services.ts` — 800+ line service aggregator exposing domain APIs (dashboard, daily MCQ, mock tests, study planner, AI chat, etc.)
-  - `lib/auth.ts` — Supabase auth wrapper with token persistence and backend sync
-  - `contexts/AuthContext.tsx` — React Context for auth state, session recovery, and redirect logic
-  - Backend controllers — request validation, orchestration, and response formatting
-  - Backend services — AI evaluation, RSS scraping, PDF parsing, embedding generation, email
+  - `lib/services.ts` - 800+ line service aggregator exposing domain APIs (dashboard, daily MCQ, mock tests, study planner, AI chat, etc.)
+  - `lib/auth.ts` - Supabase auth wrapper with token persistence and backend sync
+  - `contexts/AuthContext.tsx` - React Context for auth state, session recovery, and redirect logic
+  - Backend controllers - request validation, orchestration, and response formatting
+  - Backend services - AI evaluation, RSS scraping, PDF parsing, embedding generation, email
 
 ### Data Layer
 - **Frontend:** `lib/supabase.ts`, `lib/supabase-admin.ts`, `lib/api.ts`
@@ -72,7 +72,7 @@ The project is a **Next.js 14 App Router** frontend paired with a standalone **E
 ### Test Series Request Path
 
 1. **User action** triggers `testSeriesService` in `lib/services.ts`
-2. Service calls `fetch('/api/test-series/...')` — hits **Next.js App Router API**
+2. Service calls `fetch('/api/test-series/...')` - hits **Next.js App Router API**
 3. API route handler (`app/api/test-series/[seriesId]/route.ts`) uses `getSupabaseAdmin()`
 4. Supabase admin client queries PostgreSQL directly via Supabase REST API
 5. Response returns as `{ status, data, message }` JSON
@@ -87,12 +87,12 @@ The project is a **Next.js 14 App Router** frontend paired with a standalone **E
 
 ## Key Abstractions
 
-### `api.ts` — HTTP Client
+### `api.ts` - HTTP Client
 - **Location:** `lib/api.ts`
 - **Pattern:** Thin wrapper around `fetch` with timeout (`AbortController`), JSON parsing, and Bearer token injection
 - **Returns:** `{ status, data, message }` envelope
 
-### `services.ts` — Service Aggregator
+### `services.ts` - Service Aggregator
 - **Location:** `lib/services.ts`
 - **Pattern:** Domain-organized object literals (`dashboardService`, `dailyMcqService`, `mockTestService`, `adminService`, etc.)
 - **Note:** Most services call the Express backend, except `testSeriesService` which calls Next.js internal API routes
@@ -108,40 +108,40 @@ The project is a **Next.js 14 App Router** frontend paired with a standalone **E
 - **Pool config:** max 10, idle timeout 60s, connection timeout 15s, keep-alive enabled
 
 ### Supabase Admin Clients
-- **Frontend test-series:** `lib/supabase-admin.ts` — lazy-initialized singleton with service role key
-- **Backend:** `upsc_backend/src/config/supabase.ts` — three clients: public, admin (RLS bypass), and storage-only (no IPv4 agent for TUS compatibility)
+- **Frontend test-series:** `lib/supabase-admin.ts` - lazy-initialized singleton with service role key
+- **Backend:** `upsc_backend/src/config/supabase.ts` - three clients: public, admin (RLS bypass), and storage-only (no IPv4 agent for TUS compatibility)
 
 ## Entry Points
 
 | Entry Point | Purpose |
 |-------------|---------|
-| `app/page.tsx` | Landing page — redirects authenticated users to `/dashboard` or `/admin` |
-| `app/layout.tsx` | Root layout — fonts, global CSS, `AuthProvider` wrapper |
-| `app/dashboard/layout.tsx` | Dashboard shell — auth guard, sidebar, streak milestones |
-| `app/admin/layout.tsx` | Admin shell — role verification (`admin`), admin sidebar |
-| `app/login/page.tsx` | Auth page — login/signup/forgot-password with Google OAuth |
-| `app/auth/callback/page.tsx` | OAuth callback — exchanges Supabase session, syncs to backend |
-| `upsc_backend/src/index.ts` | Express server — middleware, route mounting, cron scheduler, startup jobs |
-| `upsc_backend/src/routes/index.ts` | API router — mounts all domain routes under `/api` |
+| `app/page.tsx` | Landing page - redirects authenticated users to `/dashboard` or `/admin` |
+| `app/layout.tsx` | Root layout - fonts, global CSS, `AuthProvider` wrapper |
+| `app/dashboard/layout.tsx` | Dashboard shell - auth guard, sidebar, streak milestones |
+| `app/admin/layout.tsx` | Admin shell - role verification (`admin`), admin sidebar |
+| `app/login/page.tsx` | Auth page - login/signup/forgot-password with Google OAuth |
+| `app/auth/callback/page.tsx` | OAuth callback - exchanges Supabase session, syncs to backend |
+| `upsc_backend/src/index.ts` | Express server - middleware, route mounting, cron scheduler, startup jobs |
+| `upsc_backend/src/routes/index.ts` | API router - mounts all domain routes under `/api` |
 
 ## Module Boundaries
 
 ### Frontend Modules
-- **app/** — Route segments mirroring URL structure; each folder is a page or layout
-- **components/** — Shared React components; `components/admin/` for admin-specific UI
-- **lib/** — Utilities and service layer; `lib/test-series/` isolated for Next.js API route helpers
-- **hooks/** — Minimal; currently only CMS content hook with in-memory caching
-- **contexts/** — React contexts; only AuthContext at this time
-- **types/** — Shared TypeScript definitions (minimal)
+- **app/** - Route segments mirroring URL structure; each folder is a page or layout
+- **components/** - Shared React components; `components/admin/` for admin-specific UI
+- **lib/** - Utilities and service layer; `lib/test-series/` isolated for Next.js API route helpers
+- **hooks/** - Minimal; currently only CMS content hook with in-memory caching
+- **contexts/** - React contexts; only AuthContext at this time
+- **types/** - Shared TypeScript definitions (minimal)
 
 ### Backend Modules
-- **routes/** — Express route definitions (thin, delegate to controllers)
-- **controllers/** — Request/response handling; `controllers/admin/` for admin operations
-- **services/** — Business logic: AI evaluation, scraping, embedding, email, PDF parsing
-- **middleware/** — Auth, rate limiting, error handling, request ID, upload handling
-- **jobs/** — Cron-scheduled tasks (editorial scraping, news syncing)
-- **config/** — Environment, database, Supabase, Redis, LLM, logger, storage initialization
-- **prisma/** — Schema, migrations, seeds
+- **routes/** - Express route definitions (thin, delegate to controllers)
+- **controllers/** - Request/response handling; `controllers/admin/` for admin operations
+- **services/** - Business logic: AI evaluation, scraping, embedding, email, PDF parsing
+- **middleware/** - Auth, rate limiting, error handling, request ID, upload handling
+- **jobs/** - Cron-scheduled tasks (editorial scraping, news syncing)
+- **config/** - Environment, database, Supabase, Redis, LLM, logger, storage initialization
+- **prisma/** - Schema, migrations, seeds
 
 ## State Management
 

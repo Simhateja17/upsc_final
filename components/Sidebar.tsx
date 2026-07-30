@@ -118,7 +118,7 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
           transition: 'width 220ms ease, min-width 220ms ease, transform 220ms ease',
         }}
       >
-        {/* Focus Mode + Hamburger toggle — desktop only.
+        {/* Focus Mode + Hamburger toggle - desktop only.
             Expanded: Focus Mode pill on the left, hamburger on the right (same row).
             Collapsed: Focus Mode icon on top, hamburger below (stacked, centered). */}
         <div

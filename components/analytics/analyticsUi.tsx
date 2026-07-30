@@ -3,7 +3,7 @@
 import React from 'react';
 
 /* ─────────────────────────────────────────────────────────────
-   Shared analytics UI kit — ported from the approved PRD HTML
+   Shared analytics UI kit - ported from the approved PRD HTML
    references (performance_analytics / test-analytics). Provides the
    card/section 3D treatment, styled section dividers and the
    icon-left stat card used by both the Performance Analytics and
@@ -44,7 +44,7 @@ const ANALYTICS_UI_CSS = `
 .pa-card-3d:hover .pa-glow { opacity: 1; }
 
 /* Icon-left stat card (sizes ported 1:1 from the approved HTML reference, which
-   sets html{font-size:14px} — e.g. .stat-label 0.62rem = 8.7px, .stat-value
+   sets html{font-size:14px} - e.g. .stat-label 0.62rem = 8.7px, .stat-value
    1.55rem = 21.7px, .stat-sub 0.65rem = 9.1px, .stat-icon 1.1rem = 15.4px). */
 .pa-stat-card { display: flex; align-items: flex-start; gap: 8px; padding: 18px 12px; }
 .pa-stat-icon {
@@ -65,7 +65,7 @@ const ANALYTICS_UI_CSS = `
 .pa-stat-sub .pa-up { color: #22C55E; font-weight: 700; }
 .pa-stat-sub .pa-down { color: #EF4444; font-weight: 700; }
 
-/* Chart filter toggle (Day / Week / Month) — ported 1:1 from the HTML
+/* Chart filter toggle (Day / Week / Month) - ported 1:1 from the HTML
    reference's .chart-filter-toggle / .chart-filter-btn (0.72rem = 10.08px). */
 .pa-filter-toggle { display: flex; gap: 2px; margin-left: auto; background: #f1f5f9; border-radius: 8px; padding: 2px; }
 .pa-filter-btn {
@@ -78,7 +78,7 @@ const ANALYTICS_UI_CSS = `
   background: #fff; color: #1e293b; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-/* Test History series/sort filter buttons — ported 1:1 from the HTML
+/* Test History series/sort filter buttons - ported 1:1 from the HTML
    reference's .filter-label / .history-filter-btn / .sort-btn (.72rem = 10.08px
    label, .75rem = 10.5px buttons). */
 .pa-filter-label { font-size: 10.08px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -90,7 +90,7 @@ const ANALYTICS_UI_CSS = `
 .pa-history-btn:hover { border-color: #cbd5e1; color: #1e293b; }
 .pa-history-btn.pa-history-btn-active { background: #1E2028; border-color: #1E2028; color: #fff; }
 
-/* Section divider (line — LABEL — line) */
+/* Section divider (line - LABEL - line) */
 .pa-divider { display: flex; align-items: center; gap: 16px; margin: 32px 0 24px; }
 .pa-divider::before, .pa-divider::after { content: ''; flex: 1; height: 1px; background: #E2E8F0; }
 .pa-divider > span {

@@ -14,7 +14,7 @@ import { getSubjectAccentColor } from '@/lib/subjectPalette';
 
 // ─── SVG Line Chart ───────────────────────────────────────────────────────────
 // Ported 1:1 from the HTML reference's inline SVG charts: a plain filled-circle
-// polyline over a gradient area fill, no background gridlines, no dot ring —
+// polyline over a gradient area fill, no background gridlines, no dot ring -
 // `dashed` mirrors the reference's Mains trend stroke-dasharray="6,4".
 function LineChart({ data, width = 400, height = 120, color = '#00D5BE', dashed = false, dotRadius = 4 }: {
   data: { label: string; value: number }[];
@@ -180,7 +180,7 @@ export default function TestAnalyticsPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [mainsTrendPeriod, setMainsTrendPeriod] = useState<ChartFilterPeriod>('day');
   const [timePerQuestionPeriod, setTimePerQuestionPeriod] = useState<ChartFilterPeriod>('day');
-  // Test History series filter + sort — pure client-side display state over the
+  // Test History series filter + sort - pure client-side display state over the
   // already-fetched `testHistory` list (same "swap the view, don't recompute"
   // pattern as ChartFilterToggle above), ported 1:1 from the HTML reference's
   // filterBySeries()/sortTests().
@@ -257,7 +257,7 @@ export default function TestAnalyticsPage() {
         const scoreNum = (row: any) => parseInt(String(row.score ?? '0').split('/')[0], 10) || 0;
         return scoreNum(b) - scoreNum(a);
       }
-      return 0; // 'date' — testHistory already arrives most-recent-first from the backend
+      return 0; // 'date' - testHistory already arrives most-recent-first from the backend
     });
 
   const openTestReport = (row: any) => {
@@ -382,7 +382,7 @@ export default function TestAnalyticsPage() {
             }
             badgeText="Analytics - Test Dashboard"
             title={<>{user?.firstName ?? 'Your'}&apos;s <span style={{ fontStyle: 'italic', color: '#e8b84b' }}>Test Analytics</span></>}
-            subtitle="Your complete UPSC test analytics — score trends, subject mastery, rank history, time management and AI-powered next steps."
+            subtitle="Your complete UPSC test analytics - score trends, subject mastery, rank history, time management and AI-powered next steps."
             stats={topStripCards.map(c => ({ value: c.value, label: c.label, color: c.valueColor }))}
           />
         </div>
@@ -661,7 +661,7 @@ export default function TestAnalyticsPage() {
               </div>
             ) : (
               <>
-                {/* Series filter + sort — client-side view over testHistory, see displayedTestHistory above */}
+                {/* Series filter + sort - client-side view over testHistory, see displayedTestHistory above */}
                 <div className="mb-5 flex flex-col items-start justify-between gap-4 xl:flex-row">
                   <div className="flex min-w-0 flex-1 items-start gap-3">
                     <span className="pa-filter-label shrink-0 self-center">Series:</span>

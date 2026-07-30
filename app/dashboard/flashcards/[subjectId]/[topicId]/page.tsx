@@ -171,7 +171,7 @@ export default function FlashcardReviewPage() {
 
           {/* ── Top nav: colorful chips + card count + keyboard hint ── */}
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            {/* Subject chip — purple */}
+            {/* Subject chip - purple */}
             <span
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-1"
               style={{ background: '#EDE9FE', color: '#7C3AED', fontFamily: 'Inter', fontWeight: 600, fontSize: 12 }}
@@ -180,7 +180,7 @@ export default function FlashcardReviewPage() {
               {pretty(subjectId)}
             </span>
 
-            {/* Topic chip — blue */}
+            {/* Topic chip - blue */}
             <span
               className="inline-flex items-center rounded-full px-3 py-1"
               style={{ background: '#DBEAFE', color: '#1D4ED8', fontFamily: 'Inter', fontWeight: 600, fontSize: 12 }}
@@ -192,7 +192,7 @@ export default function FlashcardReviewPage() {
               Card {currentIndex + 1} / {totalCards}
             </span>
 
-            {/* Delete card button — right */}
+            {/* Delete card button - right */}
             <div className="ml-auto flex items-center gap-3">
               <span style={{ fontFamily: 'Inter', fontSize: 11, color: '#9CA3AF' }}>{ratedCount} of {totalCards} seen</span>
               <button
@@ -230,7 +230,7 @@ export default function FlashcardReviewPage() {
             ))}
           </div>
 
-          {/* ── Step breadcrumb row — grey Subject × Topic × | Flashcards active ── */}
+          {/* ── Step breadcrumb row - grey Subject × Topic × | Flashcards active ── */}
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <Link
               href="/dashboard/flashcards"
@@ -331,7 +331,7 @@ export default function FlashcardReviewPage() {
                     </span>
                   </div>
 
-                  {/* Question text — left-aligned with padding, vertically centred */}
+                  {/* Question text - left-aligned with padding, vertically centred */}
                   <div className="flex-1 flex items-center px-16 py-6">
                     <p style={{ fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: 28, lineHeight: '46px', color: '#FFFFFF' }}>
                       {card.question}
@@ -412,7 +412,7 @@ export default function FlashcardReviewPage() {
               ‹ Prev
             </button>
 
-            {/* Center group — Flip Card/Back + Got it stay together */}
+            {/* Center group - Flip Card/Back + Got it stay together */}
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -426,7 +426,7 @@ export default function FlashcardReviewPage() {
                 {revealed ? 'Flip Back' : 'Flip Card'}
               </button>
 
-              {/* Got it — only when revealed and not yet mastered */}
+              {/* Got it - only when revealed and not yet mastered */}
               {revealed && !card?.mastered && (
                 <button
                   type="button"

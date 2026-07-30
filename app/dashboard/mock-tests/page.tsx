@@ -67,7 +67,7 @@ const MAINS_SUBJECTS = [
 
 // Focus Subjects available for each Mains GS Paper. The Focus Subject list in
 // the Exam Mode section is derived from the currently selected GS Paper using
-// this mapping — never a single hardcoded list for every paper.
+// this mapping - never a single hardcoded list for every paper.
 const MAINS_PAPER_FOCUS_SUBJECTS: Record<string, string[]> = {
   gs1: ['History', 'Geography', 'Society'],
   gs2: ['Polity', 'International Relations', 'Governance', 'Social Justice'],
@@ -155,7 +155,7 @@ const optionalSubjectIcons: Record<string, string> = {
 };
 
 // Mock Test Mains only uses 10-mark questions (cheaper to auto-evaluate),
-// so every question in the set is a 10-marker — including Full Length.
+// so every question in the set is a 10-marker - including Full Length.
 function buildMainsMarksPattern(questionCount: number) {
   return Array(Math.max(1, questionCount)).fill(10);
 }
@@ -427,7 +427,7 @@ function MockTestsPageInner() {
             })));
           }
           if (cfg.examModes) setExamModes(cfg.examModes);
-          // mainsPaperTypes are fixed UPSC papers — always use the static fallback
+          // mainsPaperTypes are fixed UPSC papers - always use the static fallback
           if (cfg.optionalSubjects) setOptionalSubjects(cfg.optionalSubjects);
           if (Array.isArray(cfg.difficulties)) {
             const normalizedDifficulties = cfg.difficulties
@@ -466,7 +466,7 @@ function MockTestsPageInner() {
     return () => { cancelled = true; };
   }, []);
 
-  /* ─── Badges earned (independent, non-blocking — feeds the "Your Activity" card) ─── */
+  /* ─── Badges earned (independent, non-blocking - feeds the "Your Activity" card) ─── */
   useEffect(() => {
     let cancelled = false;
     dashboardService.getAchievements()
@@ -558,7 +558,7 @@ function MockTestsPageInner() {
       if (!testId) {
         throw new Error('No test ID returned from server');
       }
-      // Hand the id to the modal — it finishes its progress animation and
+      // Hand the id to the modal - it finishes its progress animation and
       // then navigates via onComplete.
       setGeneratedTestId(testId);
     } catch (err: any) {
@@ -615,7 +615,7 @@ function MockTestsPageInner() {
   );
 
   /* ─── If the user has already exhausted their plan's Custom Mock Tests, show
-     the upgrade popup immediately on page entry — don't wait for a Generate
+     the upgrade popup immediately on page entry - don't wait for a Generate
      click. Only fires once real usage has loaded, and only once per visit. ─── */
   useEffect(() => {
     if (!usageChecked || entitlements.loading) return;
@@ -1336,7 +1336,7 @@ function MockTestsPageInner() {
                 </span>
               </div>
 
-              {/* Activity Rows — streak, tests taken today, badges earned */}
+              {/* Activity Rows - streak, tests taken today, badges earned */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(14px, 1.1vw, 18px)', marginBottom: 'clamp(18px, 1.4vw, 26px)' }}>
                 {[
                   {
@@ -1384,7 +1384,7 @@ function MockTestsPageInner() {
                 ))}
               </div>
 
-              {/* Test Summary — keeps the selected configuration visible while
+              {/* Test Summary - keeps the selected configuration visible while
                   retaining the activity information above. */}
               <div style={{
                 borderTop: '1px solid rgba(255,255,255,0.1)',

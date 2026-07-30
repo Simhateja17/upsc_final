@@ -186,7 +186,7 @@ function EvaluatingInner() {
         setTimeout(navigateToResults, 2000);
       }
     } catch {
-      /* transient error — keep polling */
+      /* transient error - keep polling */
     }
   }, [testId, attemptIds, navigateToResults]);
 

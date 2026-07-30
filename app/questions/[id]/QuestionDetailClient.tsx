@@ -667,7 +667,7 @@ function QuestionActionButtons({
       setShareStatus('copied');
       setTimeout(() => setShareStatus('idle'), 2000);
     } catch {
-      // user cancelled share or clipboard unavailable — no-op
+      // user cancelled share or clipboard unavailable - no-op
     }
   };
 
@@ -709,7 +709,7 @@ function AnswerLengthNote() {
         <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
       </svg>
       <p className="text-[12px] leading-relaxed text-[#6B7280]">
-        <strong className="text-[#4A5568]">Note:</strong> Model answers may exceed the prescribed word limit for better clarity and depth. Use them as a reference — always frame your final answer within the exam&apos;s word limit.
+        <strong className="text-[#4A5568]">Note:</strong> Model answers may exceed the prescribed word limit for better clarity and depth. Use them as a reference - always frame your final answer within the exam&apos;s word limit.
       </p>
     </div>
   );

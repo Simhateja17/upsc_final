@@ -5,7 +5,7 @@ import React from 'react';
 /**
  * Scoped port of the reference HTML/CSS (RiseWithJeet | Spaced Repetition).
  * Everything is namespaced under `.sr-scope` so it never collides with the
- * surrounding dashboard styles. This reproduces — exactly — every section
+ * surrounding dashboard styles. This reproduces - exactly - every section
  * BELOW the blue hero: subject cards, the science/timeline/retention sections,
  * the notification preview, the CTA banner, the full question view and the
  * Add-Question / Review modals.
@@ -139,7 +139,7 @@ const CSS = `
 .sr-scope .retention-curve.visible .curve-svg{opacity:1;transform:translateY(0);transition-delay:.26s}
 .sr-scope .retention-curve.visible .retention-info{opacity:1;transform:translateY(0);transition-delay:.42s}
 
-/* Pulsing halo on each "review" marker, once revealed — same rhythm as the
+/* Pulsing halo on each "review" marker, once revealed - same rhythm as the
    reference's modal-icon ring pulse (scale + fade, ease-in-out, looping). */
 @keyframes sr-dot-pulse{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.7);opacity:.05}}
 .sr-scope .curve-dot-ring{transform-box:fill-box;transform-origin:center;opacity:0;animation:sr-dot-pulse 2.4s ease-in-out infinite}
@@ -237,7 +237,7 @@ const CSS = `
 
 /* Table layout */
 .sr-scope .qv-table-wrap{margin-bottom:24px}
-/* Left border is 4px (transparent) purely so the header columns line up with the 4px accent rail on each question card — no visible grey box/side border on the header itself, matching the PRD. */
+/* Left border is 4px (transparent) purely so the header columns line up with the 4px accent rail on each question card - no visible grey box/side border on the header itself, matching the PRD. */
 .sr-scope .qv-col-headers{display:grid;grid-template-columns:2.5fr 100px 110px 160px 50px;gap:16px;padding:12px 24px;background:var(--border-light);border-radius:var(--radius-sm);border-left:4px solid transparent;align-items:center;margin-bottom:12px}
 .sr-scope .qv-col-headers span{font-size:11px;font-weight:700;color:var(--text-mid);letter-spacing:.06em;text-transform:uppercase}
 .sr-scope .qv-col-headers .qh-question{text-align:left}

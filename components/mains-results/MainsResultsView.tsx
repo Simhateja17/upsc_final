@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * MainsResultsView — shared results UI for AI-evaluated mains answers.
+ * MainsResultsView - shared results UI for AI-evaluated mains answers.
  *
  * Extracted from the Daily Answer Writing results page so Daily Answer,
  * PYQ Mains and Mock Test Mains all render the exact same experience:
@@ -9,7 +9,7 @@
  *   - Question selector chips (only when more than one question)
  *   - Tabs: Feedback / Examiner's Markup / Score Breakdown / What's Next
  *   - The Examiner's Markup tab is HIDDEN for typed answers (no checked-copy
- *     pages) — visual markup only exists for handwritten uploads.
+ *     pages) - visual markup only exists for handwritten uploads.
  *   - Model answer modal (curated markdown answer preferred, AI-generated
  *     fallback), share modal, unreadable-upload modal, AI disclaimer.
  */
@@ -130,7 +130,7 @@ function structureLegacyModelAnswer(markdown: string | null | undefined): Struct
 const BETA_DISCLAIMER =
   'Jeet AI Mentor is currently in beta and evolving every day alongside you. Our evaluation engine is built to deliver meaningful, structured, and exam-relevant feedback, but it can still make mistakes. Use it as a smart companion alongside your mentors, notes, and judgment.';
 
-/* Scoped CSS — every selector is prefixed with #dmcResults so the generic class
+/* Scoped CSS - every selector is prefixed with #dmcResults so the generic class
    names (.card, .chip, .btn-primary, …) cannot leak into the dashboard chrome. */
 const SCOPED_CSS = `
 #dmcResults{
@@ -378,7 +378,7 @@ export default function MainsResultsView({
   const reportName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email?.split('@')[0] || 'Aspirant';
   const reportInitials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || user?.email?.slice(0, 2).toUpperCase() || 'AS';
 
-  // Checked-copy pages for the SELECTED question. Typed answers have none —
+  // Checked-copy pages for the SELECTED question. Typed answers have none -
   // in that case the Examiner's Markup tab is hidden entirely.
   const realImagePages = checkedPagesOf(data);
   const hasMarkup = realImagePages.length > 0;
@@ -699,7 +699,7 @@ export default function MainsResultsView({
 
   const NEXT_CARDS = [
     { tone: 'blue', icon: '✍️', title: 'Rewrite with Feedback', desc: 'Rewrite your answer using the examiner comments and missed-demand checklist.', pill: '~15 min', action: 'Rewrite', route: rewriteRoute },
-    { tone: 'rose', icon: '✒️', title: 'Practice Answer Writing', desc: 'Write with your own question — create a fresh prompt and get targeted feedback.', pill: '10 marks · 150 words', action: 'Write', route: '/dashboard/mains-answer-evaluator' },
+    { tone: 'rose', icon: '✒️', title: 'Practice Answer Writing', desc: 'Write with your own question - create a fresh prompt and get targeted feedback.', pill: '10 marks · 150 words', action: 'Write', route: '/dashboard/mains-answer-evaluator' },
     { tone: 'green', icon: '🧾', title: 'Read & Practice MCQs', desc: 'Read a short concept note, then solve targeted MCQs from the areas you missed.', pill: '5 min · 10 MCQs', action: 'Practice', route: '/dashboard/daily-mcq' },
   ] as const;
 
@@ -822,7 +822,7 @@ export default function MainsResultsView({
           </div>
         </div>
 
-        {/* Question-wise breakdown — clickable rows that open each question's
+        {/* Question-wise breakdown - clickable rows that open each question's
             detailed evaluation. Mirrors the live reference's question navigation
             concept; data comes straight from the real evaluation results. */}
         {multi && view === 'list' && (
@@ -939,8 +939,8 @@ export default function MainsResultsView({
                 <div style={{ marginTop: 14, borderRadius: 12, padding: '12px 16px', background: wordChip.bg, border: `1px solid ${wordChip.color}22`, fontSize: 13, lineHeight: 1.6, color: wordChip.color }}>
                   <strong>Word limit breached.</strong>{' '}
                   {wordChip.status === 'over'
-                    ? `A ${marks}-mark answer must be about ${wordChip.limit} words — you wrote ${wordCount}. In the real exam the surplus goes unread and eats time meant for other questions. Trim to the limit and prioritise analysis over listing.`
-                    : `A ${marks}-mark answer should be about ${wordChip.limit} words — you wrote only ${wordCount}. At this length the question's demand cannot be fully developed.`}
+                    ? `A ${marks}-mark answer must be about ${wordChip.limit} words - you wrote ${wordCount}. In the real exam the surplus goes unread and eats time meant for other questions. Trim to the limit and prioritise analysis over listing.`
+                    : `A ${marks}-mark answer should be about ${wordChip.limit} words - you wrote only ${wordCount}. At this length the question's demand cannot be fully developed.`}
                 </div>
               )}
 

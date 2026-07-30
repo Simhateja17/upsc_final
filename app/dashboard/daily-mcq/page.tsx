@@ -14,6 +14,7 @@ interface MCQData {
   timeLimit: number;
   totalMarks: number;
   attempted: boolean;
+  attemptedCount: number;
 }
 
 // "20th June 2026" style date for the landing header.
@@ -600,12 +601,14 @@ export default function DailyMcqIntroPage() {
             <div className="dmcw-avatar dmcw-avatar-4">R</div>
           </div>
           <div className="dmcw-banner-text">
-            <div className="dmcw-line1">1,248 aspirants attempting now</div>
+            <div className="dmcw-line1">
+              {(mcq.attemptedCount ?? 0).toLocaleString('en-IN')} aspirants attempted today
+            </div>
             <div className="dmcw-line2">Join them — every day counts</div>
           </div>
           <div className="dmcw-badge-live">
             <span className="dmcw-dot" />
-            LIVE
+            TODAY
           </div>
         </div>
 

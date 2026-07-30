@@ -296,7 +296,7 @@ function getYouTubeEmbedUrl(url: string) {
   return url;
 }
 
-/* Bottom "Join the Tribe" YouTube CTA — layout per reference design. */
+/* Bottom "Join the Tribe" YouTube CTA - layout per reference design. */
 function YouTubeTribeCta() {
   const avatars = [
     { t: 'RJ', bg: '#E9B949', color: '#1A1206' },
@@ -506,7 +506,7 @@ export default function VideoLecturesPage() {
    * "Read" opens the SAME in-app PDF viewer used by the Study Material module
    * (StudyMaterialReaderModal). The admin links a video to an existing Study
    * Material record from the Video Lecture Manager, so the video carries a
-   * `studyMaterialId` — we render that record through the very same endpoint
+   * `studyMaterialId` - we render that record through the very same endpoint
    * the Study Material module uses (libraryService.getMaterialViewPages),
    * keeping Study Material the single source of truth for PDFs.
    *
@@ -568,7 +568,7 @@ export default function VideoLecturesPage() {
       setShareCopied(true);
       window.setTimeout(() => setShareCopied(false), 1800);
     } catch {
-      /* clipboard blocked — no-op */
+      /* clipboard blocked - no-op */
     }
   };
 
@@ -641,7 +641,7 @@ export default function VideoLecturesPage() {
     if (lastAutoScrolledSubjectRef.current === selectedSubject) return;
     lastAutoScrolledSubjectRef.current = selectedSubject;
 
-    // Scroll immediately on next paint — no delay, no re-scroll after API loads
+    // Scroll immediately on next paint - no delay, no re-scroll after API loads
     window.requestAnimationFrame(() => {
       const section = selectedVideosRef.current;
       const scrollContainer = section?.closest('main');
@@ -1269,7 +1269,7 @@ export default function VideoLecturesPage() {
 
       {/* Shared modal styles (Get PDF + Share popups) */}
       <style>{`
-        /* Modals — ported 1:1 from VIDEO_LECT_SURI_FINAL reference */
+        /* Modals - ported 1:1 from VIDEO_LECT_SURI_FINAL reference */
         .vlm-backdrop{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;}
         .vlm-modal{width:100%;max-width:420px;background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;position:relative;animation:vlm-pop .3s ease;}
         @keyframes vlm-pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
@@ -1299,7 +1299,7 @@ export default function VideoLecturesPage() {
         .vlm-copy-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#0b1226;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
         .vlm-copy-btn:hover{background:#1a2a4a;}
         .vlm-copy-btn.copied{background:#16a34a;}
-        /* Subject cards — shared 1:1 with Flashcards / Mindmaps / Spaced Repetition */
+        /* Subject cards - shared 1:1 with Flashcards / Mindmaps / Spaced Repetition */
         .subjhx-card{position:relative;overflow:hidden;border:1px solid var(--subjhx-border);transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1),border-color .3s cubic-bezier(.4,0,.2,1);}
         .subjhx-card:hover{transform:translateY(-3px);box-shadow:0 4px 24px rgba(0,0,0,.08),0 1px 4px rgba(0,0,0,.04);border-color:transparent;}
         .subjhx-accent{position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s;z-index:2;}

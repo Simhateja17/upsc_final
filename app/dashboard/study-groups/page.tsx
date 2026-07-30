@@ -110,14 +110,14 @@ type UpgradeIntent =
 function personalizeUpgrade(intent: UpgradeIntent): { title: string; sub: string } {
   if (!intent) return { title: "You're one step from your study circle.", sub: 'Live Study Rooms are available on Rise and Ascent plans.' };
   switch (intent.kind) {
-    case 'solo': return { title: 'Enter your Solo Focus sanctuary.', sub: 'Pomodoro timer, task tracker, and focus streaks — zero distractions.' };
+    case 'solo': return { title: 'Enter your Solo Focus sanctuary.', sub: 'Pomodoro timer, task tracker, and focus streaks - zero distractions.' };
     case 'mygroup': return { title: 'Rejoin your study group in seconds.', sub: 'Your study groups are waiting on the other side.' };
     case 'room':
-      if (intent.subject) return { title: `Join the ${intent.subject} room in seconds.`, sub: `${intent.title ? `"${intent.title}" ` : ''}is live right now — sit alongside peers.` };
+      if (intent.subject) return { title: `Join the ${intent.subject} room in seconds.`, sub: `${intent.title ? `"${intent.title}" ` : ''}is live right now - sit alongside peers.` };
       return { title: intent.title ? `Join "${intent.title}" in seconds.` : 'Join this live room in seconds.', sub: 'Sit alongside peers preparing for the same exam.' };
-    case 'filter': return { title: 'Filter and join live rooms instantly.', sub: 'Available on Rise and Ascent — start your first session today.' };
+    case 'filter': return { title: 'Filter and join live rooms instantly.', sub: 'Available on Rise and Ascent - start your first session today.' };
     case 'create': return { title: 'Host your own study room.', sub: 'Invite peers, set the pace, and lead the session.' };
-    default: return { title: "You're one step from your study circle.", sub: 'Join live rooms with peers preparing for the same exam — right now.' };
+    default: return { title: "You're one step from your study circle.", sub: 'Join live rooms with peers preparing for the same exam - right now.' };
   }
 }
 const PLAN_PRICES = {
@@ -343,10 +343,10 @@ interface Group {
   maxMembers: number;
   memberCount: number;
   // Number of members currently in an active study session (clicked "Start
-  // Studying"). Always populated by the API — idle joiners are excluded.
+  // Studying"). Always populated by the API - idle joiners are excluded.
   studyingNow?: number;
   isMember: boolean;
-  // 'none' | 'pending' | 'rejected' | 'member' — my relationship to a room I
+  // 'none' | 'pending' | 'rejected' | 'member' - my relationship to a room I
   // haven't joined. Drives the modal/card CTA (Enter vs Request vs Pending).
   myRequestStatus?: string;
   isAdmin?: boolean;
@@ -370,7 +370,7 @@ export default function StudyGroupsPage() {
   const { user } = useAuth();
   const { canAccess, tier, summary, refreshEntitlements } = useEntitlements();
 
-  // Admin-only QA widget — lets an admin preview the Free vs Rise gated UI by
+  // Admin-only QA widget - lets an admin preview the Free vs Rise gated UI by
   // simulating the effective plan via the existing admin plan-simulation
   // endpoint. Regular users never see this; their gating always reflects
   // their real entitlements.
@@ -391,7 +391,7 @@ export default function StudyGroupsPage() {
   }, [refreshEntitlements]);
   const userInitials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
 
-  // Plan gating — Rise/Ascent get full Live Study Room access; Free/Aspire are
+  // Plan gating - Rise/Ascent get full Live Study Room access; Free/Aspire are
   // "locked": they see the whole UI but any interaction opens the upgrade modal.
   const locked = !canAccess('live_study_room', ['full']);
   const [upgrade, setUpgrade] = useState<{ title: string; sub: string } | null>(null);
@@ -424,7 +424,7 @@ export default function StudyGroupsPage() {
   const [roomFocusMode, setRoomFocusMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Transient toast (e.g. "Request sent to RK — waiting for approval")
+  // Transient toast (e.g. "Request sent to RK - waiting for approval")
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = useCallback((msg: string) => {
@@ -433,7 +433,7 @@ export default function StudyGroupsPage() {
     toastTimerRef.current = setTimeout(() => setToast(null), 3500);
   }, []);
 
-  // Admin approval panel — pending join requests across my created rooms
+  // Admin approval panel - pending join requests across my created rooms
   interface JoinRequest { id: string; groupId: string; groupName: string; userId: string; userName: string; userInitials: string; avatarUrl: string | null; createdAt: string; }
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [showRequests, setShowRequests] = useState(false);
@@ -542,7 +542,7 @@ export default function StudyGroupsPage() {
           if (pomoMode === 'focus') {
             // Every tick while running already added +1 (see below), so the
             // cycle-completion tick only needs to account for its own final
-            // second — adding focusSecs again here would double-count the
+            // second - adding focusSecs again here would double-count the
             // whole session.
             setTodaySeconds((t) => {
               const next = t + 1;
@@ -621,7 +621,7 @@ export default function StudyGroupsPage() {
     const m = Math.floor((s % 3600) / 60);
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
-  // Always renders both units, e.g. "0h 0m" / "2h 45m" — used where a bare
+  // Always renders both units, e.g. "0h 0m" / "2h 45m" - used where a bare
   // "0m" would read ambiguously (the serif "0m" looks like "om").
   const formatHM = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -629,7 +629,7 @@ export default function StudyGroupsPage() {
     return `${h}h ${m}m`;
   };
   // Spelled-out variant for the prominent "Your Time Today" readout, e.g.
-  // "0 Hrs 0 Mins" — avoids the serif "0m" reading like "om".
+  // "0 Hrs 0 Mins" - avoids the serif "0m" reading like "om".
   const formatHrsMins = (s: number) => {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
@@ -641,7 +641,7 @@ export default function StudyGroupsPage() {
 
   // A user only counts as "studying now" once they click Start Studying inside a
   // room and the count-up timer is actually running. Joining a room alone does
-  // NOT make them a studier — this gates the presence count and the green
+  // NOT make them a studier - this gates the presence count and the green
   // "active" dot on their own avatar.
   const isStudying = !!inRoom && roomRunning;
 
@@ -660,7 +660,7 @@ export default function StudyGroupsPage() {
   // which is what the Dashboard's study-hours stat exact-matches against. An
   // explicit "YYYY-MM-DD" string gets stored at noon UTC instead (a separate,
   // pre-existing convention used for date-navigation), which silently fails
-  // that exact-match — so tasks created that way never count toward Dashboard
+  // that exact-match - so tasks created that way never count toward Dashboard
   // hours even though they're genuinely "today".
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(true);
@@ -849,7 +849,7 @@ export default function StudyGroupsPage() {
       const res = await studyGroupService.approveJoinRequest(req.groupId, req.id);
       if (res.status === 'success') {
         setJoinRequests((prev) => prev.filter((r) => r.id !== req.id));
-        showToast(`Approved — ${req.userName} joined ${req.groupName}`);
+        showToast(`Approved - ${req.userName} joined ${req.groupName}`);
         fetchGroups();
       }
     } catch {
@@ -875,7 +875,7 @@ export default function StudyGroupsPage() {
     }
   };
 
-  // Restore the immersive "in room" view after navigating away and back —
+  // Restore the immersive "in room" view after navigating away and back -
   // `inRoom` is plain component state, wiped when this page unmounts on
   // route change, even though the user is still an active room member
   // server-side. sessionStorage remembers which room to re-enter.
@@ -1030,7 +1030,7 @@ export default function StudyGroupsPage() {
           ? getCreatorInitials(previewGroup)
           : res.data?.adminInitials || 'the admin';
         setPreviewGroup(null);
-        showToast(`Request sent to ${adminLabel} — waiting for approval`);
+        showToast(`Request sent to ${adminLabel} - waiting for approval`);
         await fetchGroups();
         return;
       }
@@ -1666,13 +1666,13 @@ export default function StudyGroupsPage() {
                 return h > 0 ? `${h}h ${m}m total` : `${m}m total`;
               })();
               const quotes = [
-                { text: '"Success is not final, failure is not fatal: It is the courage to continue that counts."', author: '— Winston Churchill' },
-                { text: '"The secret of getting ahead is getting started."', author: '— Mark Twain' },
-                { text: '"It does not matter how slowly you go as long as you do not stop."', author: '— Confucius' },
-                { text: '"Believe you can and you\'re halfway there."', author: '— Theodore Roosevelt' },
-                { text: '"An investment in knowledge pays the best interest."', author: '— Benjamin Franklin' },
-                { text: '"The expert in anything was once a beginner."', author: '— Helen Hayes' },
-                { text: '"Hard work beats talent when talent doesn\'t work hard."', author: '— Tim Notke' },
+                { text: '"Success is not final, failure is not fatal: It is the courage to continue that counts."', author: '- Winston Churchill' },
+                { text: '"The secret of getting ahead is getting started."', author: '- Mark Twain' },
+                { text: '"It does not matter how slowly you go as long as you do not stop."', author: '- Confucius' },
+                { text: '"Believe you can and you\'re halfway there."', author: '- Theodore Roosevelt' },
+                { text: '"An investment in knowledge pays the best interest."', author: '- Benjamin Franklin' },
+                { text: '"The expert in anything was once a beginner."', author: '- Helen Hayes' },
+                { text: '"Hard work beats talent when talent doesn\'t work hard."', author: '- Tim Notke' },
               ];
               const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
               const quote = quotes[dayOfYear % quotes.length];
@@ -1793,7 +1793,7 @@ export default function StudyGroupsPage() {
         {activeTab === 'rooms' && locked && (
           <div className="plan-ribbon">
             <span className="ribbon-spark">✦</span>
-            <span>Live Study Rooms are a Rise feature — join peers studying in real time.</span>
+            <span>Live Study Rooms are a Rise feature - join peers studying in real time.</span>
             <button className="ribbon-cta" onClick={() => openUpgrade({ kind: 'rooms' })}>Unlock with Rise</button>
           </div>
         )}
@@ -2396,7 +2396,7 @@ export default function StudyGroupsPage() {
             <div className="sg-upgrade-benefits">
               {[
                 ['Solo Focus rooms', ' with Pomodoro timer & task tracker'],
-                ['Live subject groups', ' — Polity, History, Economy & more'],
+                ['Live subject groups', ' - Polity, History, Economy & more'],
                 ['Weekly focus streaks', ' & leaderboard among 15,000+ aspirants'],
               ].map(([b, rest]) => (
                 <div key={b} className="sg-upgrade-benefit">
@@ -2438,7 +2438,7 @@ export default function StudyGroupsPage() {
     {inRoom && (
       <div className="fixed inset-0 z-[200] flex flex-col" style={{ background: '#F4F5F7' }}>
 
-        {/* Dark Navbar — matches DashboardHeader exactly */}
+        {/* Dark Navbar - matches DashboardHeader exactly */}
         <header
           className="flex shrink-0 items-center justify-between px-3 md:px-6"
           style={{ background: 'rgba(7,14,30,0.98)', backdropFilter: 'blur(24px) saturate(200%)', borderBottom: '1px solid rgba(255,255,255,0.06)', height: 64 }}
@@ -2469,7 +2469,7 @@ export default function StudyGroupsPage() {
             </button>
           </div>
 
-          {/* Right actions — mirrors DashboardHeader */}
+          {/* Right actions - mirrors DashboardHeader */}
           <div className="flex items-center gap-3">
             {/* Focus Mode pill */}
             <button
@@ -2487,7 +2487,7 @@ export default function StudyGroupsPage() {
               <span className="text-[12px] font-semibold text-white/80">Focus Mode</span>
             </button>
 
-            {/* Upgrade button — gold filled pill */}
+            {/* Upgrade button - gold filled pill */}
             <button
               className="hidden sm:inline-flex items-center rounded-full px-4 py-1.5 text-[13px] font-bold"
               style={{ background: '#E8B84B', color: '#0C1424', border: 'none' }}
@@ -2506,7 +2506,7 @@ export default function StudyGroupsPage() {
               </span>
             </div>
 
-            {/* Bell — same style as DashboardHeader */}
+            {/* Bell - same style as DashboardHeader */}
             <button
               className="relative flex h-[38px] w-[38px] items-center justify-center rounded-xl bg-[#1a2540] text-white hover:bg-[#243050] transition-colors flex-shrink-0"
               style={{ border: '1px solid rgba(255,255,255,0.16)' }}
@@ -2517,7 +2517,7 @@ export default function StudyGroupsPage() {
               </svg>
             </button>
 
-            {/* User avatar — gold gradient with real initials */}
+            {/* User avatar - gold gradient with real initials */}
             <div
               className="flex h-[38px] w-[38px] items-center justify-center rounded-full text-[14px] font-bold text-[#0E182D]"
               style={{ background: 'linear-gradient(135deg, #FFD170 0%, #D4A843 100%)' }}
@@ -2581,7 +2581,7 @@ export default function StudyGroupsPage() {
               className="mx-auto mb-5 max-w-[420px] rounded-[20px] bg-white p-6"
               style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}
             >
-              {/* Timer header — label + Active/Paused status */}
+              {/* Timer header - label + Active/Paused status */}
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[15px] font-bold text-[#0C1424]">
                   <span
@@ -2602,7 +2602,7 @@ export default function StudyGroupsPage() {
                 </span>
               </div>
 
-              {/* Circular count-up timer — full ring = 1 hour */}
+              {/* Circular count-up timer - full ring = 1 hour */}
               <div className="flex flex-col items-center">
                 <div className="relative" style={{ width: 220, height: 220 }}>
                   <svg width="220" height="220" viewBox="0 0 220 220">
@@ -2986,7 +2986,7 @@ export default function StudyGroupsPage() {
               className="shrink-0 border-t border-[#E8E3D8] px-4 py-2 text-center text-[11px] text-[#9AA3B8]"
               style={{ background: 'white' }}
             >
-              ⬆ Be respectful — abusive messages → permanent ban
+              ⬆ Be respectful - abusive messages → permanent ban
             </div>
 
             {/* Input */}

@@ -1,5 +1,5 @@
 /**
- * UPSC Mains marking & timing pattern — mirrors upsc_backend/src/utils/mainsPattern.ts.
+ * UPSC Mains marking & timing pattern - mirrors upsc_backend/src/utils/mainsPattern.ts.
  * Keep the two in sync: the limit the student is shown must be the limit the
  * examiner grades against.
  *
@@ -69,7 +69,7 @@ export function mainsWordRange(marks: number): { limit: number; min: number; max
 /**
  * Strip a trailing "(N marks)" annotation from question text. The marks are
  * already shown separately as a badge next to the question, so leaving this
- * in the text duplicates it — inconsistently, since only some source
+ * in the text duplicates it - inconsistently, since only some source
  * questions carry the annotation.
  */
 export function stripMarksSuffix(text: string): string {

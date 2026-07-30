@@ -17,7 +17,7 @@ export interface BookmarkItem {
   createdAt: string;
   isPinned: boolean;
   /** Distinguishes articles saved via the live Current Affairs feed from ones saved
-   *  manually through "+ Add Bookmark" — they live in different backends. */
+   *  manually through "+ Add Bookmark" - they live in different backends. */
   origin?: 'editorial-service' | 'bookmark';
 }
 
@@ -432,7 +432,7 @@ function FlashcardCard(props: Props) {
         </div>
         <div className="rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] p-2.5">
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[#9AA7BD]">Back</p>
-          <p className="line-clamp-3 text-xs text-[#5C6B85]">{c.back || '—'}</p>
+          <p className="line-clamp-3 text-xs text-[#5C6B85]">{c.back || '-'}</p>
         </div>
       </div>
       <CardFooter {...props} />

@@ -713,8 +713,8 @@ export default function MindmapIntroSections({ onUpgradeClick }: { onUpgradeClic
           padding: 80px 40px;
           background: #f5f5fa;
         }
-        /* Card treatment matches .cta-banner ("Map Your Way to Mastery") 1:1 —
-           same max-width, border-radius and padding — so it sits centered with
+        /* Card treatment matches .cta-banner ("Map Your Way to Mastery") 1:1 -
+           same max-width, border-radius and padding - so it sits centered with
            consistent side margins instead of bleeding to the container edges. */
         .why-banner {
           max-width: 1000px;

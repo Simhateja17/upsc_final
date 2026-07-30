@@ -107,7 +107,7 @@ export default function SubjectDetailPage() {
               </div>
             </div>
 
-            {/* Completion progress bar — inside the card */}
+            {/* Completion progress bar - inside the card */}
             <div style={{ marginTop: 16 }}>
               <div style={{ height: 8, borderRadius: 999, background: '#ECEEF2', overflow: 'hidden' }}>
                 <div style={{ width: `${exploredPct}%`, height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, #F0B429, #E8B84B)', transition: 'width .6s ease' }} />

@@ -320,7 +320,7 @@
 /* The client demo assets are authored at 380x660 and scale down to the
    column width. `demo-content` derives that same height from its own
    width (660/380 = 173.68cqw, capped at the authored 660px) so every
-   slide — assets and the hand-built chat slide alike — is exactly as
+   slide - assets and the hand-built chat slide alike - is exactly as
    tall as the device frame. Without this the frame would jump height
    each time the carousel advanced. */
 .demo-device { container-type: inline-size; }

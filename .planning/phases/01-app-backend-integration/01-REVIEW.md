@@ -58,7 +58,7 @@ This review covers the complete backend-integration layer of the KMP app: config
 
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/config/AppConfig.kt:17`
 
-**Issue:** `SUPABASE_ANON_KEY` is a fully-decoded, valid JWT with an embedded project ref (`pjbijjhrxlkotldenydv`) hardcoded as a `const val`. Anyone with read access to the repository can extract the key and use it to query the Supabase project directly (row-level security permitting). The comment "safe to ship in client code" is partially true at runtime, but committing the key to git history means it cannot be easily rotated — it will persist in every clone and fork forever unless history is rewritten.
+**Issue:** `SUPABASE_ANON_KEY` is a fully-decoded, valid JWT with an embedded project ref (`pjbijjhrxlkotldenydv`) hardcoded as a `const val`. Anyone with read access to the repository can extract the key and use it to query the Supabase project directly (row-level security permitting). The comment "safe to ship in client code" is partially true at runtime, but committing the key to git history means it cannot be easily rotated - it will persist in every clone and fork forever unless history is rewritten.
 
 **Fix:**
 1. Revoke/rotate the key in the Supabase dashboard immediately.
@@ -74,12 +74,12 @@ const val SUPABASE_ANON_KEY = BuildConfig.SUPABASE_ANON_KEY
 
 ---
 
-### CR-02: `IS_DEBUG = true` hardcoded — full HTTP traffic logged in production builds
+### CR-02: `IS_DEBUG = true` hardcoded - full HTTP traffic logged in production builds
 
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/remote/ApiClient.kt:165`
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/remote/SupabaseAuthService.kt:170`
 
-**Issue:** Both `ApiClient.IS_DEBUG` and `SupabaseAuthService.IS_DEBUG` are permanently `true`. With `LogLevel.ALL`, every HTTP request — including `Authorization: Bearer <token>` headers and response bodies containing access tokens and user PII — is written to logcat/console in every build, including production APKs. This makes token exfiltration trivial on rooted devices or via ADB on debug-enabled hardware.
+**Issue:** Both `ApiClient.IS_DEBUG` and `SupabaseAuthService.IS_DEBUG` are permanently `true`. With `LogLevel.ALL`, every HTTP request - including `Authorization: Bearer <token>` headers and response bodies containing access tokens and user PII - is written to logcat/console in every build, including production APKs. This makes token exfiltration trivial on rooted devices or via ADB on debug-enabled hardware.
 
 **Fix:**
 ```kotlin
@@ -91,7 +91,7 @@ Both classes should reference this single platform-aware flag instead of their o
 
 ---
 
-### CR-03: GET `user/settings` route does not exist on the backend — always 404
+### CR-03: GET `user/settings` route does not exist on the backend - always 404
 
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/repository/UserRepository.kt:79-81`
 
@@ -100,21 +100,21 @@ Both classes should reference this single platform-aware flag instead of their o
 suspend fun getSettings(): Result<UserSettings> =
     getProfile().map { it.settings ?: UserSettings() }
 ```
-This is not actually the problem — it correctly piggybacks on `GET user/profile`. However, `updateSettings()` at line 83 calls `PUT user/settings`:
+This is not actually the problem - it correctly piggybacks on `GET user/profile`. However, `updateSettings()` at line 83 calls `PUT user/settings`:
 ```kotlin
 val response = apiClient.put<UserSettings>("user/settings", body = settings)
 ```
-The project brief states the backend only has `PUT /user/settings` (no GET), confirming `PUT` is the correct verb. But `SettingsViewModel.loadSettings()` calls `userRepository.getSettings()` which goes to `GET user/profile` — a different endpoint that returns the entire profile object and then extracts `.settings`. If the backend `User` response does not include a `settings` field (or it is null), `loadSettings` silently returns `UserSettings()` defaults instead of an error, masking a data gap. More critically: **the `SettingsViewModel` and `UserRepository` were apparently intended to use a dedicated settings GET endpoint that does not exist** — callers that expect `GET /user/settings` to work directly will receive 404s if anyone wires this differently.
+The project brief states the backend only has `PUT /user/settings` (no GET), confirming `PUT` is the correct verb. But `SettingsViewModel.loadSettings()` calls `userRepository.getSettings()` which goes to `GET user/profile` - a different endpoint that returns the entire profile object and then extracts `.settings`. If the backend `User` response does not include a `settings` field (or it is null), `loadSettings` silently returns `UserSettings()` defaults instead of an error, masking a data gap. More critically: **the `SettingsViewModel` and `UserRepository` were apparently intended to use a dedicated settings GET endpoint that does not exist** - callers that expect `GET /user/settings` to work directly will receive 404s if anyone wires this differently.
 
 **Fix:** Document explicitly in `UserRepository` that there is no `GET /user/settings` endpoint and that settings are read from the profile. If the backend ever adds the route, a migration path is needed. Alternatively, add a backend `GET /user/settings` route to match the logical API surface.
 
 ---
 
-### CR-04: Token refresh race condition — concurrent requests all attempt refresh simultaneously
+### CR-04: Token refresh race condition - concurrent requests all attempt refresh simultaneously
 
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/repository/AuthRepository.kt:93-107`
 
-**Issue:** `getMe(refreshOnUnauthorized = true)` catches `ApiException.Unauthorized` and calls `refreshSession()`. There is no mutex or in-flight deduplication. If two coroutines call `getMe()` concurrently (e.g., `DashboardViewModel` and `UserProfileViewModel` both init simultaneously), both will observe the 401, both will call `refreshSession()`, the first will write new tokens, and the second will attempt to exchange the now-stale refresh token — which Supabase/the backend will reject, logging the user out. This is a classic TOCTOU on token refresh.
+**Issue:** `getMe(refreshOnUnauthorized = true)` catches `ApiException.Unauthorized` and calls `refreshSession()`. There is no mutex or in-flight deduplication. If two coroutines call `getMe()` concurrently (e.g., `DashboardViewModel` and `UserProfileViewModel` both init simultaneously), both will observe the 401, both will call `refreshSession()`, the first will write new tokens, and the second will attempt to exchange the now-stale refresh token - which Supabase/the backend will reject, logging the user out. This is a classic TOCTOU on token refresh.
 
 **Fix:**
 ```kotlin
@@ -142,7 +142,7 @@ Replace all `refreshSession()` calls in the refresh-on-401 path with `refreshSes
 
 **Issue:** All three polling implementations share the same two bugs:
 
-1. **Post-completion delay:** `delay(3000)` is placed unconditionally after the status check. When `status.isComplete` is true and `return@launch` fires, the delay at the bottom of the `repeat` body has already been skipped because `return@launch` exits the lambda. However, on the *last* iteration of the 12-step loop (when evaluation is still not complete after 12 polls), a final `delay(3000)` fires unnecessarily after the loop exits — a 3-second wait that produces nothing.
+1. **Post-completion delay:** `delay(3000)` is placed unconditionally after the status check. When `status.isComplete` is true and `return@launch` fires, the delay at the bottom of the `repeat` body has already been skipped because `return@launch` exits the lambda. However, on the *last* iteration of the 12-step loop (when evaluation is still not complete after 12 polls), a final `delay(3000)` fires unnecessarily after the loop exits - a 3-second wait that produces nothing.
 
 2. **No cancellation on ViewModel destruction:** `pollEvaluation` launches a new coroutine into `viewModelScope`, which is correct for cancellation when the ViewModel is cleared. However, **if `pollEvaluation` is called multiple times** (e.g., user submits, backs out, re-enters the screen and resubmits), a new polling coroutine is launched without cancelling the old one. Both coroutines will write to `_uiState` concurrently for up to 36 seconds. There is no guard (job reference, mutex, or cancellation call) to prevent this.
 
@@ -174,7 +174,7 @@ fun pollEvaluation(attemptId: String? = _uiState.value.attemptId) {
 
 ---
 
-### CR-06: `safeCall` is not `suspend` — async body runs synchronously, bypassing exception wrapping
+### CR-06: `safeCall` is not `suspend` - async body runs synchronously, bypassing exception wrapping
 
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/remote/ApiClient.kt:149-157`
 
@@ -182,7 +182,7 @@ fun pollEvaluation(attemptId: String? = _uiState.value.attemptId) {
 ```kotlin
 inline fun <reified T> safeCall(block: () -> ApiResponse<T>): ApiResponse<T>
 ```
-The `block` lambda is not `suspend`. All three call sites (`DailyAnswerRepository.uploadImage`, `MockTestRepository.submitMainsAnswer`, `PyqRepository.submitMainsAnswer`) pass a lambda that calls `apiClient.httpClient.post(...).body()` — both of which are `suspend` functions. Kotlin will silently allow calling suspend functions from a non-suspend lambda **only** because the enclosing function at each call site is itself `suspend`, meaning the lambda is implicitly `suspend` via the inline context. This is a subtle correctness landmine: if `safeCall` is ever called from a non-suspend context or the inline optimization is removed (e.g., for testing), the code will fail to compile or behave incorrectly. More practically: exceptions thrown from the `.body()` call inside `httpClient.post()` are caught by the outer `runCatching` in each repository, **not** by the `try/catch` inside `safeCall`, because the suspend machinery unwinds differently. The `ApiException` re-throw logic in `safeCall` is therefore dead code for these async usages.
+The `block` lambda is not `suspend`. All three call sites (`DailyAnswerRepository.uploadImage`, `MockTestRepository.submitMainsAnswer`, `PyqRepository.submitMainsAnswer`) pass a lambda that calls `apiClient.httpClient.post(...).body()` - both of which are `suspend` functions. Kotlin will silently allow calling suspend functions from a non-suspend lambda **only** because the enclosing function at each call site is itself `suspend`, meaning the lambda is implicitly `suspend` via the inline context. This is a subtle correctness landmine: if `safeCall` is ever called from a non-suspend context or the inline optimization is removed (e.g., for testing), the code will fail to compile or behave incorrectly. More practically: exceptions thrown from the `.body()` call inside `httpClient.post()` are caught by the outer `runCatching` in each repository, **not** by the `try/catch` inside `safeCall`, because the suspend machinery unwinds differently. The `ApiException` re-throw logic in `safeCall` is therefore dead code for these async usages.
 
 **Fix:**
 ```kotlin
@@ -200,7 +200,7 @@ Mark both the function and the lambda parameter as `suspend`.
 
 ---
 
-### CR-07: Payment checkout fabricates a provider payment ID — mock value will be sent to backend
+### CR-07: Payment checkout fabricates a provider payment ID - mock value will be sent to backend
 
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/ui/viewmodel/AdvancedBackendViewModels.kt:185-199`
 
@@ -212,7 +212,7 @@ repository.verifyPayment(
     status = "success"
 )
 ```
-The `providerPaymentId` is fabricated as a string prefix `"mock-"` plus the internal payment ID. This is not a placeholder left for testing — it is the code path that will execute in a production build. A backend that naively accepts this will mark real orders as paid without any real payment gateway verification, allowing any authenticated user to activate subscriptions for free.
+The `providerPaymentId` is fabricated as a string prefix `"mock-"` plus the internal payment ID. This is not a placeholder left for testing - it is the code path that will execute in a production build. A backend that naively accepts this will mark real orders as paid without any real payment gateway verification, allowing any authenticated user to activate subscriptions for free.
 
 **Fix:** Remove the `checkout()` function entirely from this ViewModel until real payment gateway integration (Razorpay/Stripe SDK) is in place. Replace with a stub that throws `NotImplementedError` or shows a "coming soon" UI state, so this path cannot accidentally be exercised in production.
 
@@ -250,13 +250,13 @@ Delete `DashboardUiState.performance`, `practiceStats`, and `testAnalytics` fiel
 
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/remote/SupabaseAuthService.kt:45-78`
 
-**Issue:** The `SupabaseAuthService` creates its own `HttpClient` without any `HttpResponseValidator`. When Supabase returns a 4xx/5xx HTTP response (e.g., 429 rate-limit, 503 during maintenance), Ktor will throw a `ClientRequestException` or `ServerResponseException`. These are caught by the outer `catch (e: Exception)` and wrapped as `ApiException.NetworkError` — losing the HTTP status code and giving the UI only a generic "Login failed" message. More critically: a 400 response from Supabase (e.g., invalid credentials) has a JSON body with `error` and `error_description` fields. The code does check `supabaseResponse.error != null` at line 55, but only if deserialization succeeds. If Ktor's exception-throwing `HttpResponseValidator` fires first (which it will for non-2xx if a validator is installed), the body is never read and the structured error is lost.
+**Issue:** The `SupabaseAuthService` creates its own `HttpClient` without any `HttpResponseValidator`. When Supabase returns a 4xx/5xx HTTP response (e.g., 429 rate-limit, 503 during maintenance), Ktor will throw a `ClientRequestException` or `ServerResponseException`. These are caught by the outer `catch (e: Exception)` and wrapped as `ApiException.NetworkError` - losing the HTTP status code and giving the UI only a generic "Login failed" message. More critically: a 400 response from Supabase (e.g., invalid credentials) has a JSON body with `error` and `error_description` fields. The code does check `supabaseResponse.error != null` at line 55, but only if deserialization succeeds. If Ktor's exception-throwing `HttpResponseValidator` fires first (which it will for non-2xx if a validator is installed), the body is never read and the structured error is lost.
 
 **Fix:** Either add a `HttpResponseValidator` to the Supabase client that does not throw for 4xx responses (so the body can always be read and `supabaseResponse.error` checked), or use `response.status.isSuccess()` to branch before calling `.body()`:
 ```kotlin
 val response = httpClient.post("$supabaseUrl/token?grant_type=password") { ... }
 // Ktor's default client does NOT throw on 4xx unless a validator is installed,
-// so body reading is safe — but document this assumption explicitly.
+// so body reading is safe - but document this assumption explicitly.
 ```
 
 ---
@@ -291,7 +291,7 @@ The same pattern exists in `loadLiveNews()` on line 58-68.
 
 ---
 
-### WR-05: Multipart upload sets `ContentType` header before `setBody` — boundary will be missing
+### WR-05: Multipart upload sets `ContentType` header before `setBody` - boundary will be missing
 
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/repository/DailyAnswerRepository.kt:39`
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/repository/StudyToolRepositories.kt:81` (MockTest)
@@ -302,12 +302,12 @@ The same pattern exists in `loadLiveNews()` on line 58-68.
 contentType(ContentType.MultiPart.FormData)
 setBody(MultiPartFormDataContent(...))
 ```
-When `MultiPartFormDataContent` is set as the body, Ktor automatically sets the `Content-Type` header to `multipart/form-data; boundary=<generated_boundary>`. Calling `contentType(ContentType.MultiPart.FormData)` **before** `setBody` installs a content-type header without the `boundary` parameter. Ktor's `MultiPartFormDataContent.writeTo` will then override it with the correct header including the boundary — but the explicit `contentType()` call before it may interfere with this depending on the Ktor version. In Ktor 2.x the `setBody` with `MultiPartFormDataContent` is sufficient and `contentType()` should be omitted to avoid a duplicate or incorrect header.
+When `MultiPartFormDataContent` is set as the body, Ktor automatically sets the `Content-Type` header to `multipart/form-data; boundary=<generated_boundary>`. Calling `contentType(ContentType.MultiPart.FormData)` **before** `setBody` installs a content-type header without the `boundary` parameter. Ktor's `MultiPartFormDataContent.writeTo` will then override it with the correct header including the boundary - but the explicit `contentType()` call before it may interfere with this depending on the Ktor version. In Ktor 2.x the `setBody` with `MultiPartFormDataContent` is sufficient and `contentType()` should be omitted to avoid a duplicate or incorrect header.
 
 **Fix:** Remove the `contentType(ContentType.MultiPart.FormData)` call from all three upload sites and let `MultiPartFormDataContent` set the header automatically:
 ```kotlin
 apiClient.httpClient.post(apiClient.buildUrl("daily-answer/today/upload")) {
-    // Do NOT set contentType manually for multipart — Ktor sets it with boundary
+    // Do NOT set contentType manually for multipart - Ktor sets it with boundary
     setBody(MultiPartFormDataContent(formData { ... }))
 }.body()
 ```
@@ -322,7 +322,7 @@ apiClient.httpClient.post(apiClient.buildUrl("daily-answer/today/upload")) {
 ```kotlin
 onSuccess = { user -> ProfileUiState(user = user) },
 ```
-This constructs a brand-new `ProfileUiState` instead of using `.copy()`. As a result, `isEditing`, `feedbackSubmitted`, and any other transient UI state is silently reset to `false` whenever `loadProfile` completes — even if it was called in the background to refresh data. The same reset pattern is present in `updateProfile` (line 69) and `updateAvatar` (line 86). If `loadProfile` is called while the user has the feedback dialog open, `feedbackSubmitted = true` will be erased.
+This constructs a brand-new `ProfileUiState` instead of using `.copy()`. As a result, `isEditing`, `feedbackSubmitted`, and any other transient UI state is silently reset to `false` whenever `loadProfile` completes - even if it was called in the background to refresh data. The same reset pattern is present in `updateProfile` (line 69) and `updateAvatar` (line 86). If `loadProfile` is called while the user has the feedback dialog open, `feedbackSubmitted = true` will be erased.
 
 **Fix:** Use `.copy()` for partial updates:
 ```kotlin
@@ -331,7 +331,7 @@ onSuccess = { user -> _uiState.value.copy(isLoading = false, user = user, error 
 
 ---
 
-### WR-07: `ApiClient.safeCall` is not `suspend` but is used in suspend contexts — `CancellationException` will be swallowed
+### WR-07: `ApiClient.safeCall` is not `suspend` but is used in suspend contexts - `CancellationException` will be swallowed
 
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/remote/ApiClient.kt:149-157`
 
@@ -378,7 +378,7 @@ This is not necessarily wrong (local token clear is always safe), but the `Resul
 fun logout() {
     viewModelScope.launch {
         _uiState.value = _uiState.value.copy(isLoading = true)
-        authRepository.logout()  // best-effort — always clears local tokens
+        authRepository.logout()  // best-effort - always clears local tokens
         _uiState.value = AuthUiState(isLoggedIn = false)
     }
 }
@@ -401,7 +401,7 @@ The current code is functionally correct but the `Result` contract is misleading
             onComplete()  // called even though submit failed
         }
 ```
-If the submit failed due to a genuine error (network, 422 validation), getting results will likely also fail or return a previous session's result. The user's current answers are silently discarded and they are shown stale results from a prior attempt, with `error = null` — no indication that anything went wrong. The `onComplete()` callback fires, navigating the user away from the quiz as if submission succeeded.
+If the submit failed due to a genuine error (network, 422 validation), getting results will likely also fail or return a previous session's result. The user's current answers are silently discarded and they are shown stale results from a prior attempt, with `error = null` - no indication that anything went wrong. The `onComplete()` callback fires, navigating the user away from the quiz as if submission succeeded.
 
 **Fix:** Remove the fallback `getResults()` call on submit failure. Surface the submit error to the user:
 ```kotlin
@@ -427,7 +427,7 @@ If the submit failed due to a genuine error (network, 422 validation), getting r
 
 ---
 
-### IN-02: `FeedbackRequest` sends duplicate data — `category` and `type` both set to the same `type` argument
+### IN-02: `FeedbackRequest` sends duplicate data - `category` and `type` both set to the same `type` argument
 
 **File:** `jeet_app/composeApp/src/commonMain/kotlin/com/example/myapplicationrisewithjeet/data/repository/UserRepository.kt:91-104`
 

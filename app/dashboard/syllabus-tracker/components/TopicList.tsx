@@ -13,7 +13,7 @@ const TOPIC_PALETTE: Record<string, { bg: string; color: string }> = {
   'Physical Geography of India':                                            { bg: '#D8F0DC', color: '#2E6E3E' },
   'Economic Geography':                                                     { bg: '#F4EDD0', color: '#826020' },
   'Human Geography':                                                        { bg: '#ECD8F4', color: '#6A3A90' },
-  // Polity — all topics share one colour
+  // Polity - all topics share one colour
   'Historical Evolution & Making of Constitution':                          { bg: '#D0DDF4', color: '#2A4490' },
   'Salient Features, Preamble, Schedules, Amendments':                     { bg: '#D0DDF4', color: '#2A4490' },
   'Citizenship, Union & its Territory':                                     { bg: '#D0DDF4', color: '#2A4490' },

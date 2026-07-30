@@ -216,7 +216,7 @@ html, body {
   z-index: -1;
 }
 
-/* Growing lightbulb — used for the "Preparing Personalised Feedback" step */
+/* Growing lightbulb - used for the "Preparing Personalised Feedback" step */
 @keyframes bulb-grow {
   0% {
     transform: scale(0.85);
@@ -258,7 +258,7 @@ html, body {
   border-radius: 9999px;
 }
 
-/* Focus Mode pulsing dot — matches dashboard reference (pulse-indigo) */
+/* Focus Mode pulsing dot - matches dashboard reference (pulse-indigo) */
 @keyframes pulse-indigo {
   0% {
     box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.45);
@@ -327,7 +327,7 @@ html, body {
 .sm-shine:hover::after { transform: translateX(100%); }
 .sm-btn:disabled { opacity: .6; cursor: default; }
 
-/* Subject card grid — shared by the Flashcards, Mindmaps and Spaced Repetition
+/* Subject card grid - shared by the Flashcards, Mindmaps and Spaced Repetition
    modules so the three stay visually identical.
    auto-fill keys the column count off the container's width rather than the
    viewport's, so the dashboard sidebar can't force a premature 2-up. Within the

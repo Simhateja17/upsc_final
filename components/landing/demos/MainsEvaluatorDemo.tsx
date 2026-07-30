@@ -4,7 +4,7 @@ import Image from 'next/image';
 import DemoStage from './DemoStage';
 
 /**
- * Mains Answer Evaluator demo — client asset
+ * Mains Answer Evaluator demo - client asset
  * `mains-evaluator-app-website.html`.
  *
  * Pure CSS on an 8s loop (upload → scan → red-pen markup); no JS
@@ -30,7 +30,7 @@ export default function MainsEvaluatorDemo() {
               <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" /></svg>
             </div>
             <div className="upload-text">Upload Answer Script</div>
-            <div className="upload-sub">PNG, JPG or PDF — OCR enabled</div>
+            <div className="upload-sub">PNG, JPG or PDF - OCR enabled</div>
             <div className="upload-btn">Choose File</div>
           </div>
         </div>
@@ -72,7 +72,7 @@ export default function MainsEvaluatorDemo() {
             <div className="rp note a5" style={{ top: '30%', right: '15%' }}>Good example</div>
             <div className="rp-under a5" style={{ top: '32%', left: '12%', width: '50%' }} />
 
-            {/* Point 4 — weak */}
+            {/* Point 4 - weak */}
             <div className="rp cross c2 a6" style={{ top: '36%', left: '4%' }}>✗</div>
             <div className="rp-wavy a6" style={{ top: '37%', left: '14%', width: '48%' }} />
             <div className="rp note a7" style={{ top: '35%', right: '10%' }}>Need examples</div>

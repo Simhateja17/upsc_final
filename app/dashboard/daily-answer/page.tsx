@@ -18,7 +18,7 @@ interface AnswerData {
   attemptCount: number;
 }
 
-// "26 Jun 2026" — matches the reference top strip.
+// "26 Jun 2026" - matches the reference top strip.
 function formatShortDate(d: Date) {
   const day = d.getDate();
   const month = d.toLocaleString('en-US', { month: 'short' });
@@ -151,7 +151,7 @@ export default function DailyMainsChallengePage() {
               Daily Answer Writing
             </h1>
             <p style={{ color: '#6B7280', fontSize: '13px', lineHeight: 1.45, maxWidth: '340px', margin: '0 auto' }}>
-              Sharpen your answer writing with today&apos;s carefully crafted question — build structure, clarity, and depth, one day at a time.
+              Sharpen your answer writing with today&apos;s carefully crafted question - build structure, clarity, and depth, one day at a time.
             </p>
 
             {/* Chips */}

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 
 /* ─────────────────────────────────────────────────────────────
-   ExamInstructions — pre-test gate shown after the test is
+   ExamInstructions - pre-test gate shown after the test is
    generated and before the writing/attempt screen opens.
    Themed to match the app (navy hero, gold accents) and sized
    to fit on one screen without vertical scrolling.
@@ -171,7 +171,7 @@ export default function ExamInstructions({
 
         {/* ── Body ── */}
         <div style={{ padding: 'clamp(22px, 2.6vw, 36px) clamp(24px, 3vw, 40px) clamp(24px, 2.8vw, 36px)' }}>
-          {/* Stat cards — 2×2 grid */}
+          {/* Stat cards - 2×2 grid */}
           <div
             style={{
               display: 'grid',

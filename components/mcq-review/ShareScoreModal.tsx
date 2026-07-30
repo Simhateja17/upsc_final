@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 
 /* ─────────────────────────────────────────────────────────────
-   ShareScoreModal — the shared "Share Score" popup used by both
+   ShareScoreModal - the shared "Share Score" popup used by both
    the Daily MCQ Challenge and Prelims Mock Test score screens.
    Social share buttons + copy link + "include rank & streak"
    toggle, with an internal copy toast. Purely presentational:
@@ -82,10 +82,10 @@ export default function ShareScoreModal({
       linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
       telegram: `https://t.me/share/url?url=${url}&text=${text}`,
     };
-    // Instagram has no web share intent — copy the link so the user can paste it into the app.
+    // Instagram has no web share intent - copy the link so the user can paste it into the app.
     if (network === 'instagram') {
       copyShareLink();
-      showToast('Link copied — paste it into Instagram');
+      showToast('Link copied - paste it into Instagram');
       return;
     }
     if (typeof window !== 'undefined') {

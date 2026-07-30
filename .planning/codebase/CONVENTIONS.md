@@ -43,7 +43,7 @@ focus: quality
   - Example: `app/api/test-series/route.ts` exports `GET`, `POST`
 
 - **Repositories / Mappers:** camelCase functions
-  - Example: `lib/test-series/repo.ts` — `countTestsPerSeries`, `listSeriesRows`
+  - Example: `lib/test-series/repo.ts` - `countTestsPerSeries`, `listSeriesRows`
 
 ## TypeScript Patterns
 
@@ -78,16 +78,16 @@ export default function Toast({ message, type, onClose, autoCloseDuration = 3000
 ```
 
 **React Import Styles:**
-- `import React from 'react';` — when JSX is used or React namespace needed
-- `import { useState, useEffect } from 'react';` — when only hooks needed
-- `import type { CSSProperties } from 'react';` — when only types needed
+- `import React from 'react';` - when JSX is used or React namespace needed
+- `import { useState, useEffect } from 'react';` - when only hooks needed
+- `import type { CSSProperties } from 'react';` - when only types needed
 
 ## Error Handling
 
 **API Layer (`lib/api.ts`):**
 - Native `fetch` wrapped with `AbortController` for timeouts (default 15s).
 - Errors thrown as `Error` with backend message or HTTP status.
-- `try/catch` clears timeout and rethrows with friendly messages (e.g., "Request timeout — backend server may be unavailable").
+- `try/catch` clears timeout and rethrows with friendly messages (e.g., "Request timeout - backend server may be unavailable").
 
 **Service Layer (`lib/services.ts`):**
 - Service methods generally throw errors to callers.
@@ -107,12 +107,12 @@ export default function Toast({ message, type, onClose, autoCloseDuration = 3000
 ## Data Fetching
 
 **Pattern 1: Custom API Client + Service Layer**
-- `lib/api.ts` — lightweight `fetch` wrapper with generic typing.
-- `lib/services.ts` — domain-organized service objects (dashboard, dailyMcq, mockTest, etc.).
+- `lib/api.ts` - lightweight `fetch` wrapper with generic typing.
+- `lib/services.ts` - domain-organized service objects (dashboard, dailyMcq, mockTest, etc.).
 - No SWR, React Query, or TanStack Query detected.
 
 **Pattern 2: Next.js API Routes (for local data)**
-- `app/api/test-series/route.ts` — Server-side API routes using Supabase admin client.
+- `app/api/test-series/route.ts` - Server-side API routes using Supabase admin client.
 - Route handlers use `NextRequest`/`NextResponse` from `next/server`.
 
 **Pattern 3: Client-side `useEffect`**
@@ -120,7 +120,7 @@ export default function Toast({ message, type, onClose, autoCloseDuration = 3000
 - `Promise.allSettled` used for parallel independent fetches.
 
 **Pattern 4: Hook with Cache**
-- `hooks/useCmsContent.ts` — custom hook with in-memory deduplicated cache and TTL (5 minutes).
+- `hooks/useCmsContent.ts` - custom hook with in-memory deduplicated cache and TTL (5 minutes).
 
 ## Import Organization
 
@@ -190,5 +190,5 @@ public/            # Static assets
 - Fix: Extract to CSS modules, styled-components, or Tailwind class compositions.
 
 **TODO comments in source:**
-- `app/dashboard/test-series/[id]/page.tsx:448` — `const isEnrolled = false; // TODO: Check from auth context`
+- `app/dashboard/test-series/[id]/page.tsx:448` - `const isEnrolled = false; // TODO: Check from auth context`
 - Fix: Implement TODO or track in issue tracker.

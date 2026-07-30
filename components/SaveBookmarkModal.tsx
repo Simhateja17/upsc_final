@@ -337,7 +337,7 @@ export default function SaveBookmarkModal({ open, entityType, onClose, onSaved }
       case 'video':
         return (
           <>
-            <Field label="Lecture Title"><input value={fields.title || ''} onChange={set('title')} className={inputClass} style={inputStyle} placeholder="e.g. India's Foreign Policy — Lecture 3" /></Field>
+            <Field label="Lecture Title"><input value={fields.title || ''} onChange={set('title')} className={inputClass} style={inputStyle} placeholder="e.g. India's Foreign Policy - Lecture 3" /></Field>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Educator / Channel"><input value={fields.instructor || ''} onChange={set('instructor')} className={inputClass} style={inputStyle} placeholder="e.g. RiseWithJeet, Jeet Sir" /></Field>
               <Field label="Duration"><input value={fields.duration || ''} onChange={set('duration')} className={inputClass} style={inputStyle} placeholder="e.g. 1h 24m" /></Field>

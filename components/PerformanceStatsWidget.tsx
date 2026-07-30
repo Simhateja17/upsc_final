@@ -39,7 +39,7 @@ interface BadgeData {
   supported: boolean;
 }
 
-// Activities shown in the "How streak works?" drawer — completing any one keeps the streak alive.
+// Activities shown in the "How streak works?" drawer - completing any one keeps the streak alive.
 const STREAK_ACTIVITIES: { emoji: string; title: string; desc: string; tint: string; tone: string }[] = [
   { emoji: '🎯', title: 'Daily 10 MCQs', desc: 'Attempt the daily objective quiz.', tint: '#FFF1DC', tone: '#E48A00' },
   { emoji: '✍️', title: 'Daily Answer Writing', desc: 'Submit one structured answer.', tint: '#EAF2FF', tone: '#3459E6' },
@@ -233,7 +233,7 @@ const PerformanceStatsWidget = () => {
               ) : null}
             </div>
 
-            {/* Week Days — completed day shows a golden box with a dark tick; others are grey with their letter */}
+            {/* Week Days - completed day shows a golden box with a dark tick; others are grey with their letter */}
             <div className="flex gap-[clamp(4px,0.31vw,6px)] mb-[clamp(16px,1.04vw,20px)]">
               {dayLabels.map((day, index) => (
                 <div
@@ -605,7 +605,7 @@ const PerformanceStatsWidget = () => {
         </div>
       </div>
 
-      {/* Upcoming Test — only shown to users who purchased a test series */}
+      {/* Upcoming Test - only shown to users who purchased a test series */}
       {hasPurchasedTestSeries && (
       <div
         className="rounded-[clamp(16px,1.04vw,20px)] overflow-hidden"

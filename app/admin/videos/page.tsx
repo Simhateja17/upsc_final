@@ -12,7 +12,7 @@ interface StudyMaterialRow {
 }
 
 // Common starting points offered as one-click chips. The admin is NOT limited to
-// these — any custom tag can be typed in the input below.
+// these - any custom tag can be typed in the input below.
 const SUGGESTED_TAGS = ['Popular', 'New', 'PDF Included'];
 
 /**
@@ -87,7 +87,7 @@ export default function VideoManager() {
   const [savingTags, setSavingTags] = useState(false);
 
   // Existing Study Material records, offered as the pool to link from. These
-  // are the SAME rows managed on the Study Materials admin page — the single
+  // are the SAME rows managed on the Study Materials admin page - the single
   // source of truth for PDFs. We never upload a PDF onto a video here.
   const [studyMaterials, setStudyMaterials] = useState<StudyMaterialRow[]>([]);
   const [materialsLoading, setMaterialsLoading] = useState(true);
@@ -314,7 +314,7 @@ export default function VideoManager() {
   };
 
   // Link an existing Study Material record to the selected video (or unlink
-  // with materialId = null). No PDF is uploaded or copied — we only store the
+  // with materialId = null). No PDF is uploaded or copied - we only store the
   // reference, keeping the Study Material module the single source of truth.
   const handleLinkMaterial = async (material: StudyMaterialRow | null) => {
     if (!selectedVideo) return;
@@ -572,7 +572,7 @@ export default function VideoManager() {
               <p className="text-xs font-semibold text-[#1E3A8A] mb-1">Study Material PDF</p>
               <p className="text-xs text-[#3B82F6] mb-3">
                 Link an existing Study Material record. Its PDF opens from the &quot;Read&quot;
-                button on the Video Lectures page — no separate upload, no duplicate copy.
+                button on the Video Lectures page - no separate upload, no duplicate copy.
               </p>
 
               {linkedMaterial ? (

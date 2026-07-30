@@ -737,7 +737,7 @@ function AskModal({ onClose, onCreated }: { onClose: () => void; onCreated: () =
               onChange={(e) => setBody(e.target.value)}
               rows={4}
               className="w-full resize-none rounded-[12px] border border-[#E1E6EF] bg-[#FAFBFE] px-4 py-3 text-[13px] text-[#0C1424] outline-none placeholder:text-[#9AA3B8] focus:border-[#E8B84B] transition-colors"
-              placeholder="Add more context — what have you already tried? What specifically is confusing you? The more detail, the better answers you'll get."
+              placeholder="Add more context - what have you already tried? What specifically is confusing you? The more detail, the better answers you'll get."
               required
             />
           </div>

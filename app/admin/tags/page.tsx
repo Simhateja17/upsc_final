@@ -13,7 +13,7 @@ interface TagItem {
   isActive: boolean;
 }
 
-// Suggestions only — admins are NOT limited to these. They can type any custom tag.
+// Suggestions only - admins are NOT limited to these. They can type any custom tag.
 const SUGGESTIONS = ['Popular', 'New', 'PDF Included', 'Trending', 'Revision', 'Beginner'];
 
 const PRESET_COLORS = ['#1D4ED8', '#059669', '#DC2626', '#D97706', '#7C3AED', '#DB2777', '#0891B2', '#4B5563'];
@@ -109,7 +109,7 @@ export default function AdminTagsPage() {
         </button>
       </div>
       <p className="font-inter text-gray-500 text-sm mb-6">
-        Create your own tags manually. You are not limited to predefined options — type any label you need.
+        Create your own tags manually. You are not limited to predefined options - type any label you need.
       </p>
 
       {msg && (

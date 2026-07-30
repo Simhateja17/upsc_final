@@ -29,9 +29,9 @@ export type EssayBody = {
 };
 
 export type RepositoryItem = {
-  /** Bold lead-in — a quotation in section A, a concept name elsewhere. */
+  /** Bold lead-in - a quotation in section A, a concept name elsewhere. */
   primary: string;
-  /** "— Martin Luther King Jr." for quotations. */
+  /** "- Martin Luther King Jr." for quotations. */
   attribution: string;
   body: string;
   /** "Relevance" | "Application" | "Connection" */
@@ -74,7 +74,7 @@ function clean(value: string) {
 
 /** Drops the leading "## Part 2 - Model UPSC Essay" style heading. */
 function stripPartHeading(markdown: string) {
-  return markdown.replace(/^\s*(?:#{1,6}\s*|\*\*)?Part\s*-?\s*\d+\s*[-:–—]?[^\n]*\n/i, '').trim();
+  return markdown.replace(/^\s*(?:#{1,6}\s*|\*\*)?Part\s*-?\s*\d+\s*[-:–-]?[^\n]*\n/i, '').trim();
 }
 
 /** Strips markdown emphasis so parsed values render as plain text in the cards. */
@@ -113,8 +113,8 @@ function parseKeywords(value: string): string[] {
   const rawItems = usesBullets ? bulletLines : clean(value).split(/[,;]/);
 
   return rawItems
-    // Bullet keywords come as "Truth: the ultimate reality" — keep only the term.
-    .map((item) => stripEmphasis(item).split(/[:–—]/)[0])
+    // Bullet keywords come as "Truth: the ultimate reality" - keep only the term.
+    .map((item) => stripEmphasis(item).split(/[:–-]/)[0])
     .map((item) => clean(item).replace(/[.]+$/, ''))
     .filter((item) => item.length > 0 && item.length <= 48);
 }
@@ -201,7 +201,7 @@ function parseRepositoryItem(raw: string): RepositoryItem {
   let attribution = '';
 
   // Section A quotations: **"…"** – Author.  (quotes may or may not be bolded)
-  const quoteMatch = /^\*{0,2}\s*[“"]([\s\S]+?)[”"]\s*\*{0,2}\s*(?:[–—-]\s*([\s\S]+?))?\.?\s*$/.exec(text);
+  const quoteMatch = /^\*{0,2}\s*[“"]([\s\S]+?)[”"]\s*\*{0,2}\s*(?:[–-]\s*([\s\S]+?))?\.?\s*$/.exec(text);
   if (quoteMatch) {
     primary = clean(quoteMatch[1]);
     attribution = clean(quoteMatch[2] || '').replace(/[.]+$/, '');

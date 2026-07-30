@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * CuratedModelAnswer — renders a curated markdown model answer with the
+ * CuratedModelAnswer - renders a curated markdown model answer with the
  * reference exam layout: 📌 Introduction → Key Points Checklist → gold-accented
  * body sections → ✅ Conclusion. Self-contained (literal colors, no CSS-var
  * dependency) so it renders identically inside the Daily/PYQ/Mock results view

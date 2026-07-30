@@ -163,7 +163,7 @@ export default function FlashcardsPage() {
     const target = deleteTarget;
 
     // A subject added via "Add Subject" only exists in local state until the
-    // user creates its first flashcard — no deck was ever persisted, so
+    // user creates its first flashcard - no deck was ever persisted, so
     // there's nothing to delete on the backend, just drop it locally.
     const hasPersistedDeck = decks.some((d) => d.id === target.id);
     if (!hasPersistedDeck) {
@@ -286,7 +286,7 @@ export default function FlashcardsPage() {
                       </span>
                     )}
                     {/* Curated catalog subjects only offer delete once they actually
-                        have a deck (always true in practice — they're pre-seeded).
+                        have a deck (always true in practice - they're pre-seeded).
                         Custom subjects can be deleted immediately, even before their
                         first flashcard/deck exists, since that's exactly the state a
                         freshly "Add Subject"-ed entry starts in. */}
