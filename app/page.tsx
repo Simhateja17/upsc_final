@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
 import { studyGroupService } from '@/lib/services';
 import MainsEvaluatorDemo from '@/components/landing/demos/MainsEvaluatorDemo';
+import AiMentorChatDemo from '@/components/landing/demos/AiMentorChatDemo';
 import MockTestDemo from '@/components/landing/demos/MockTestDemo';
 import CurrentAffairsDemo from '@/components/landing/demos/CurrentAffairsDemo';
 import '@/styles/landing.css';
@@ -44,7 +45,7 @@ const NAV_DROPDOWNS = {
 // value, so the two stay in step.
 const AI_SLIDES = [
   { title: 'Mains Evaluator', dwellMs: 8000, iconSrc: '/sidebar-daily-answer-new.png', iconBg: 'rgba(232,184,75,0.14)', desc: 'Upload your handwritten or typed answers and receive structured feedback, marks, and personalized improvement tips. Our UPSC-examiner style analysis is delivered in under 60 seconds.' },
-  { title: 'Jeet AI Mentor Assistant', dwellMs: 5000, iconSrc: '/sidebar-jeet-gpt.png', iconBg: 'rgba(6,182,212,0.14)', desc: 'Get instant, precise answers for all your UPSC queries, covering everything from syllabus details and current affairs context to answer structuring and general doubt resolution.' },
+  { title: 'Jeet AI Mentor Assistant', dwellMs: 12000, iconSrc: '/sidebar-jeet-gpt.png', iconBg: 'rgba(6,182,212,0.14)', desc: 'Get instant, precise answers for all your UPSC queries, covering everything from syllabus details and current affairs context to answer structuring and general doubt resolution.' },
   { title: 'Adaptapic Mock Test Platform', dwellMs: 11000, iconSrc: '/sidebar-mock-tests-new.png', iconBg: 'rgba(139,92,246,0.14)', desc: 'Personalised mock tests targeting your weakest areas, ensuring every session moves the needle towards your goal.' },
   { title: 'Current Affairs Digest', dwellMs: 15000, iconSrc: '/sidebar-current-affairs.png', iconBg: 'rgba(16,185,129,0.14)', desc: 'Our platform instantly connects daily news articles with the relevant UPSC syllabus. For each article, we provide a detailed summary, related practice MCQs and Mains examination questions.' },
 ];
@@ -58,7 +59,6 @@ export default function LandingPage() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState(532);
-  const [aiTypingDone, setAiTypingDone] = useState(false);
 
   // Auth redirect
   useEffect(() => {
@@ -166,13 +166,6 @@ export default function LandingPage() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-
-  // Show AI reply after 2.5s on the assistant slide
-  useEffect(() => {
-    if (activeSlide !== 1) { setAiTypingDone(false); return; }
-    const t = setTimeout(() => setAiTypingDone(true), 2500);
-    return () => clearTimeout(t);
-  }, [activeSlide]);
 
   // Auto-advance the AI feature slides once the current slide's demo has
   // had time to play (see AI_SLIDES.dwellMs). Resets whenever activeSlide
@@ -441,34 +434,9 @@ export default function LandingPage() {
                   <MainsEvaluatorDemo />
                 </div>
 
-                {/* Slide 1: AI Assistant — still the hand-built demo; the
-                    client's chat animation asset has not been supplied yet
-                    (their link for it duplicated the Mains Evaluator file). */}
-                <div className={`demo-slide demo-slide-chat${activeSlide === 1 ? ' active' : ''}`}>
-                  <div className="chat-wrap">
-                    <div className="chat-bubble cb-user">How should I structure an answer on &quot;Judicial Overreach&quot;?</div>
-                    <div className="chat-bubble cb-ai">
-                      <strong>Ideal UPSC structure:</strong><br /><br />
-                      📌 <strong>Intro:</strong> Define judicial overreach vs activism<br />
-                      📌 <strong>Body 1:</strong> Constitutional provisions (Art 13, 32, 226)<br />
-                      📌 <strong>Body 2:</strong> Key SC judgements as examples<br />
-                      📌 <strong>Conclusion:</strong> Balance separation of powers
-                    </div>
-                    <div className="chat-bubble cb-user">Give me 3 recent examples for the body?</div>
-                    {aiTypingDone ? (
-                      <div className="chat-bubble cb-ai">
-                        1. <strong>NJAC Case (2015)</strong> – SC struck down 99th amendment on judicial appointments<br />
-                        2. <strong>Electoral Bonds Judgment (2024)</strong> – SC invalidated scheme citing transparency<br />
-                        3. <strong>Delhi LG vs AAP (2023)</strong> – SC defined Centre-State limits in Union Territory
-                      </div>
-                    ) : (
-                      <div className="chat-bubble cb-ai">
-                        <div className="cb-typing">
-                          <div className="cb-dot" /><div className="cb-dot" /><div className="cb-dot" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                {/* Slide 1: AI Mentor chat — client animation asset */}
+                <div className={`demo-slide demo-slide-asset${activeSlide === 1 ? ' active' : ''}`}>
+                  <AiMentorChatDemo active={activeSlide === 1} />
                 </div>
 
                 {/* Slide 2: Mock Tests — client animation asset */}

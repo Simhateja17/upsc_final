@@ -1392,7 +1392,16 @@ const BookDownloadIcon = () => (
   </svg>
 );
 
-export function StudyMaterialDownloadUpgradeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function StudyMaterialDownloadUpgradeModal({
+  open,
+  onClose,
+  upgradeHref,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /** Overrides the "Upgrade" destination (e.g. to keep a ?source= attribution param). */
+  upgradeHref?: string;
+}) {
   return (
     <UpgradeModalShell open={open} onClose={onClose}>
       <div className="upm-icon"><BookDownloadIcon /></div>
@@ -1406,7 +1415,11 @@ export function StudyMaterialDownloadUpgradeModal({ open, onClose }: { open: boo
           'Revision Notes &amp; Handouts',
         ]}
       />
-      <UpgradeActions onClose={onClose} backLabel="Back to Study Material" />
+      <UpgradeActions
+        onClose={onClose}
+        backLabel="Back to Study Material"
+        {...(upgradeHref ? { upgradeHref } : {})}
+      />
     </UpgradeModalShell>
   );
 }

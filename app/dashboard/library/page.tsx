@@ -170,7 +170,7 @@ export default function LibraryPage() {
   const [stageIndicator, setStageIndicator] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-  // Footer "Download PDFs" upgrade modal.
+  // Study material upgrade modal — footer "Download PDFs" CTA + "Get PDF" buttons.
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   // Filters the left subject list (mirrors the Syllabus Tracker "Filter subjects" box).
   const [subjectSearch, setSubjectSearch] = useState('');
@@ -252,9 +252,12 @@ export default function LibraryPage() {
     finally { setLoadingRead(null); }
   };
 
-  // Get PDF: always go to upgrade/billing
+  // Get PDF / Unlock & Get PDF: show the same study-material upgrade modal used by
+  // the footer "Download PDFs" CTA instead of jumping straight to billing.
+  // If the reader is open, close it first so only one modal is on screen.
   const handleGetPdf = () => {
-    window.location.href = '/dashboard/billing/plans?source=library';
+    setReadModal(null);
+    setShowDownloadModal(true);
   };
 
   const tabs = ['Notes', 'PYQ Notes', 'Tricks & Mnemonics', 'Current Affairs'] as const;
@@ -1296,10 +1299,12 @@ export default function LibraryPage() {
       />
     )}
 
-    {/* ── Download PDFs upgrade modal (footer CTA) ── */}
+    {/* ── Study material upgrade modal — shared by the footer "Download PDFs" CTA
+           and the card-level "Get PDF" / "Unlock & Get PDF" buttons ── */}
     <StudyMaterialDownloadUpgradeModal
       open={showDownloadModal}
       onClose={() => setShowDownloadModal(false)}
+      upgradeHref="/dashboard/billing/plans?source=library"
     />
     </>
   );

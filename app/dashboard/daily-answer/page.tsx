@@ -167,9 +167,10 @@ export default function DailyMainsChallengePage() {
             </div>
 
             {/* Stat boxes */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '10px', marginTop: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '10px', marginTop: '16px' }}>
               {[
                 { value: data.timeLimit, label: 'Minutes' },
+                { value: data.marks, label: 'Marks' },
                 { value: data.wordLimit, label: 'Word Limit' },
               ].map((s) => (
                 <div key={s.label} style={{ borderRadius: '16px', padding: '15px 0', textAlign: 'center', background: '#F8F9FB', border: '1px solid #EDEEF2' }}>

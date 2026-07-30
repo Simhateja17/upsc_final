@@ -67,6 +67,10 @@ type DailyAnswerSubmitResponse = {
 
 const READING_WINDOW_SECONDS = 15;
 
+// Past Challenges filter tabs. The GS Paper labels are the exact values stored
+// on dailyMainsQuestion.paper, so they pass straight through to the API.
+const PAPER_TABS = ['All', 'GS Paper I', 'GS Paper II', 'GS Paper III', 'GS Paper IV'] as const;
+
 function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -165,6 +169,8 @@ function DailyMainsChallengeInner() {
   const isToday = selectedDate === todayStr;
 
   const [recentItems, setRecentItems] = useState<CalendarItem[]>([]);
+  // Past Challenges paper tabs. Values match dailyMainsQuestion.paper exactly.
+  const [paperFilter, setPaperFilter] = useState<typeof PAPER_TABS[number]>('All');
   const [monthItems, setMonthItems] = useState<CalendarItem[]>([]);
   const [redirecting, setRedirecting] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState<string>(() => {
@@ -260,10 +266,17 @@ function DailyMainsChallengeInner() {
   }, [data?.id]);
 
   useEffect(() => {
-    dailyAnswerService.getCalendar({ to: addDaysStr(todayStr, -1), limit: 3 })
-      .then(res => setRecentItems(res.data?.items || []))
-      .catch(() => setRecentItems([]));
-  }, [todayStr]);
+    let cancelled = false;
+    dailyAnswerService.getCalendar({
+      to: addDaysStr(todayStr, -1),
+      limit: 3,
+      // 'All' sends no filter, so the endpoint returns every paper as before.
+      ...(paperFilter === 'All' ? {} : { paper: paperFilter }),
+    })
+      .then(res => { if (!cancelled) setRecentItems(res.data?.items || []); })
+      .catch(() => { if (!cancelled) setRecentItems([]); });
+    return () => { cancelled = true; };
+  }, [todayStr, paperFilter]);
 
   useEffect(() => {
     const { end } = getMonthRange(calendarMonth);
@@ -615,19 +628,27 @@ function DailyMainsChallengeInner() {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center" style={{ gap: '2px', padding: '3px', borderRadius: '12px', background: '#F5F6F8', border: '1px solid #E6E8EE' }}>
-                    {['All', 'GS Paper I', 'GS Paper II', 'GS Paper III', 'GS Paper IV'].map((t, i) => (
-                      <span
-                        key={t}
-                        style={{
-                          padding: '6px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap',
-                          color: i === 0 ? '#0B1020' : '#6B7280',
-                          background: i === 0 ? '#FFFFFF' : 'transparent',
-                          boxShadow: i === 0 ? '0 1px 2px rgba(15,23,42,.06)' : 'none',
-                        }}
-                      >
-                        {t}
-                      </span>
-                    ))}
+                    {PAPER_TABS.map((t) => {
+                      const active = paperFilter === t;
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setPaperFilter(t)}
+                          aria-pressed={active}
+                          style={{
+                            padding: '6px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap',
+                            color: active ? '#0B1020' : '#6B7280',
+                            background: active ? '#FFFFFF' : 'transparent',
+                            boxShadow: active ? '0 1px 2px rgba(15,23,42,.06)' : 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {t}
+                        </button>
+                      );
+                    })}
                   </div>
                   <Link href="/dashboard/daily-answer/history" className="hover:underline" style={{ fontSize: '13px', fontWeight: 600, color: '#3B82F6', whiteSpace: 'nowrap' }}>
                     View All →
@@ -636,7 +657,9 @@ function DailyMainsChallengeInner() {
               </div>
               <div className="flex flex-col gap-3">
                 {recentItems.length === 0 && (
-                  <p className="text-[#6A7282]" style={{ fontSize: '13px' }}>No past challenges yet.</p>
+                  <p className="text-[#6A7282]" style={{ fontSize: '13px' }}>
+                    {paperFilter === 'All' ? 'No past challenges yet.' : `No past ${paperFilter} challenges yet.`}
+                  </p>
                 )}
                 {recentItems.map((c, idx) => {
                   const ACCENTS = [
@@ -928,20 +951,9 @@ function DailyMainsChallengeInner() {
             className="bg-white rounded-[24px] p-5 sm:p-7 lg:px-9"
             style={{ boxShadow: '0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06), inset 0 0 0 1px #E6E8EE' }}
           >
-          {/* ── Free evaluation badge ── */}
-          {!entitlements.loading && mainsQuota?.allowed !== false && (
-            <div className="flex items-center gap-2 mb-4">
-              <span
-                className="flex items-center justify-center flex-shrink-0"
-                style={{ width: '18px', height: '18px', borderRadius: '5px', background: '#16A34A' }}
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M5 13l4 4L19 7" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#15803D' }}>Free evaluation available</span>
-            </div>
-          )}
+          {/* The free-evaluation quota is surfaced once, as the pill under the
+              Submit button (see below) — per the design reference it does not
+              also head this card. */}
 
           {/* ── Upload zone: hidden when text mode is active ── */}
           {!textExpanded && (
@@ -1080,14 +1092,18 @@ function DailyMainsChallengeInner() {
                 <div>
                   <p style={{ fontSize: '13px', fontWeight: 700, color: '#B91C1C' }}>🔒 Evaluation limit reached</p>
                   <p style={{ fontSize: '12px', color: '#6A7282', marginTop: '1px' }}>
-                    {mainsQuota.message || 'You have used your 1 free lifetime evaluation. Upgrade to continue.'}
+                    {/* The API sends plan-specific copy; the fallback reads the
+                        live quota so it can't drift from the plan's real limit. */}
+                    {mainsQuota.message
+                      || `You have used all ${mainsQuota.limit ?? 0} free evaluation${mainsQuota.limit === 1 ? '' : 's'}. Upgrade to continue.`}
                   </p>
                 </div>
               </div>
-              <Link href="/dashboard/billing/plans">
-                <button style={{ flexShrink: 0, padding: '8px 18px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                  Upgrade
-                </button>
+              <Link
+                href="/dashboard/billing/plans"
+                style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '8px 18px', borderRadius: '10px', background: '#17223E', color: '#FFFFFF', fontSize: '13px', fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                Upgrade
               </Link>
             </div>
           )}

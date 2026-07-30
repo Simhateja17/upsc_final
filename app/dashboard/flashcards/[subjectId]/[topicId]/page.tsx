@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { flashcardService } from '@/lib/services';
+import { ApiRequestError } from '@/lib/api';
 import Toast from '@/components/Toast';
 
 type Card = {
@@ -23,6 +24,22 @@ const SUBJECT_ICONS: Record<string, string> = {
 
 function pretty(slug: string) {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// Distinguishes *why* a delete failed instead of showing one blanket retry
+// message — a 404 means the card is already gone (or the API in front of us
+// predates the delete-card route), which retrying will never fix.
+function deleteErrorMessage(err: unknown): string {
+  if (err instanceof ApiRequestError) {
+    if (err.statusCode === 404) {
+      return 'This card is no longer available on the server. Please refresh the page.';
+    }
+    if (err.statusCode === 401 || err.statusCode === 403) {
+      return 'Your session has expired. Please sign in again to delete this card.';
+    }
+    if (typeof err.payload?.message === 'string') return err.payload.message;
+  }
+  return 'Could not delete this card. Please try again.';
 }
 
 const FLASHCARD_MARKDOWN_COMPONENTS = {
@@ -116,18 +133,28 @@ export default function FlashcardReviewPage() {
   };
   const handleDeleteCard = () => {
     if (!card || deletingCard) return;
+    const target = card;
     setDeletingCard(true);
-    flashcardService.deleteCard(card.id)
-      .then(() => {
-        const newCards = cards.filter((c) => c.id !== card.id);
+    flashcardService.deleteCard(target.id)
+      .then((res) => {
+        // api throws on non-2xx, but a 200 carrying status:'error' would
+        // otherwise be mistaken for a successful delete.
+        if (res?.status === 'error') {
+          setToast({ message: res.message || deleteErrorMessage(null), type: 'error' });
+          return;
+        }
+        const newCards = cards.filter((c) => c.id !== target.id);
         setCards(newCards);
+        // masteredCount is tracked separately from `cards`, so drop the deleted
+        // card from it too — otherwise the end-of-session mastery % overcounts.
+        if (target.mastered) setMasteredCount((n) => Math.max(0, n - 1));
         setToast({ message: 'Card deleted', type: 'success' });
         if (newCards.length === 0) { setShowSessionComplete(true); return; }
         setCurrentIndex((i) => Math.min(i, newCards.length - 1));
         setRevealed(false);
       })
-      .catch(() => {
-        setToast({ message: 'Could not delete this card. Please try again.', type: 'error' });
+      .catch((err) => {
+        setToast({ message: deleteErrorMessage(err), type: 'error' });
       })
       .finally(() => setDeletingCard(false));
   };

@@ -219,19 +219,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
           </div>
           <button
             type="button"
-            className="inline-flex items-center gap-[5px] px-[18px] py-[8px] rounded-[9px] text-[11.5px] font-extrabold text-[#0f1f3d] cursor-pointer border-none transition-all duration-200"
-            style={{
-              background: 'linear-gradient(135deg, #e8a820, #c9921a)',
-              boxShadow: '0 2px 8px rgba(201,146,26,.28)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 14px rgba(201,146,26,.36)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(201,146,26,.28)';
-            }}
+            className="btn-gold"
             onClick={(e) => {
               e.stopPropagation();
               router.push('/dashboard/study-planner');

@@ -8,6 +8,7 @@ import DashboardPageHero from '@/components/DashboardPageHero';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
 import { PerformanceAnalyticsUpgradeModal } from '@/components/upgrade/UpgradeModals';
 import { AnalyticsUiStyles, SectionDivider, StatCard } from '@/components/analytics/analyticsUi';
+import LeaderboardRankingCard from '@/components/LeaderboardRankingCard';
 
 type DayActivity = { questionsAttempted: number; hours: number };
 type SubjectRow = { name: string; accuracy: number; questions: number; tag?: string; color?: string };
@@ -197,6 +198,7 @@ export default function PerformancePage() {
   const [badgesData, setBadgesData] = useState<any>(null);
   const [streakCalendar, setStreakCalendar] = useState<any>(null);
   const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<any[] | null>(null);
+  const [myWeeklyRank, setMyWeeklyRank] = useState<any>(null);
   const [failedSections, setFailedSections] = useState<string[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -248,6 +250,18 @@ export default function PerformancePage() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  // "You" row on the weekly leaderboard — same source the Daily Mains Challenge
+  // league uses, scoped to the weekly range shown here.
+  useEffect(() => {
+    let cancelled = false;
+
+    leaderboardService.getMyRank('week')
+      .then(res => { if (!cancelled) setMyWeeklyRank(res.data); })
+      .catch(() => { if (!cancelled) setMyWeeklyRank(null); });
+
+    return () => { cancelled = true; };
   }, []);
 
   const mcq = data?.mcq ?? {};
@@ -350,13 +364,19 @@ export default function PerformancePage() {
     polity: '📚',
     'all-rounder': '🎓',
     centurion: '👑',
+    'night-owl': '🌟',
+    marathon: '💪',
   };
-  const earnedBadges = (badgesData?.badges ?? []).map((badge: any) => ({
-    icon: badgeIcons[badge.key] ?? '🏅',
-    title: badge.title,
-    earned: badge.status === 'earned',
-    note: badge.note,
-  }));
+  // Earned badges first, then the still-locked ones. Array.prototype.sort is
+  // stable, so both groups keep the catalog order the API returns them in.
+  const earnedBadges = (badgesData?.badges ?? [])
+    .map((badge: any) => ({
+      icon: badgeIcons[badge.key] ?? '🏅',
+      title: badge.title,
+      earned: badge.status === 'earned',
+      note: badge.note,
+    }))
+    .sort((a: any, b: any) => Number(b.earned) - Number(a.earned));
   const earnedBadgeCount = earnedBadges.filter((badge: any) => badge.earned).length;
 
   // Icon-left stat cards (reference stats row). Colours use the reference palette.
@@ -691,54 +711,45 @@ export default function PerformancePage() {
                 {earnedBadges.map((badge: any) => (
                   <div
                     key={badge.title}
-                    className="rounded-[12px] border px-3 py-4 text-center"
+                    className="pa-badge-card rounded-[12px] border px-3 py-4 text-center"
                     style={{
-                      borderColor: badge.earned ? '#F4D85A' : '#DDE8FF',
-                      background: badge.earned ? 'linear-gradient(180deg,#FFFCEA,#FFFFFF)' : '#F7F9FF',
-                      opacity: badge.earned ? 1 : 0.72,
+                      borderColor: badge.earned ? '#D4A843' : '#E2E8F0',
+                      background: badge.earned ? '#FFFBEB' : '#FFFFFF',
+                      opacity: badge.earned ? 1 : 0.6,
                     }}
                   >
                     <div className="mb-2 text-[28px]" aria-hidden>{badge.icon}</div>
-                    <div className="mb-[3px] text-[11.9px] font-bold text-[#101828]">{badge.title}</div>
-                    <div className="mb-[3px] text-[10.5px]" style={{ color: badge.earned ? '#C9821F' : '#6A7282' }}>
+                    <div className="mb-[3px] text-[11.9px] font-bold text-[#1E293B]">{badge.title}</div>
+                    <div
+                      className="mb-[3px] text-[10.5px]"
+                      style={{ color: badge.earned ? '#51CF66' : '#64748B', fontWeight: badge.earned ? 600 : 400 }}
+                    >
                       {badge.earned ? '✓ Earned' : 'Locked'}
                     </div>
-                    <div className="text-[10.5px] text-[#99A1AF]">{badge.note}</div>
+                    <div className="text-[10.5px] text-[#64748B]">{badge.note}</div>
                   </div>
                 ))}
               </div>
             </AnalyticsCard>
 
-            <AnalyticsCard className="p-6">
-              <CardHeading size={16.8} right={
-                <Link href="/dashboard/leaderboard?range=week" className="pa-link-gold text-[11.9px] font-semibold text-[#258F7D]">View All →</Link>
-              }>
-                <span aria-hidden>🏅</span> Weekly Leaderboard
-              </CardHeading>
-
-              {weeklyLeaderboard?.length ? (
-                <div className="space-y-3">
-                  {weeklyLeaderboard.slice(0, 8).map((entry: any, index: number) => (
-                    <div key={entry.userId ?? entry.name ?? index} className="flex items-center justify-between rounded-[8px] bg-[#F8FAFC] px-4 py-[14px]">
-                      <div className="flex items-center gap-4">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4A7DFF] text-[12.6px] font-bold text-white">
-                          {entry.rank ?? index + 1}
-                        </span>
-                        <span className="text-[13.3px] font-semibold text-[#101828]">{entry.name}</span>
-                      </div>
-                      <span className="text-[14px] font-bold text-[#258F7D]">{entry.totalScore}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-[10px] bg-[#F8FAFC] px-5 py-10 text-center">
-                  <div className="text-[15px] font-semibold text-[#101828]">No leaderboard data yet</div>
-                  <p className="mx-auto mt-2 max-w-[360px] text-[13px] leading-5 text-[#6A7282]">
-                    Attempt a few tests this week to appear on the weekly leaderboard.
-                  </p>
-                </div>
-              )}
-            </AnalyticsCard>
+            {/* Same ranking card the Daily Mains Challenge league uses. */}
+            <LeaderboardRankingCard
+              icon="🏅"
+              title="Weekly Leaderboard"
+              viewAllHref="/dashboard/leaderboard?range=week"
+              rows={(weeklyLeaderboard ?? []).slice(0, 10).map((entry: any, index: number) => ({
+                rank: entry.rank ?? index + 1,
+                userId: entry.userId ?? entry.name ?? String(index),
+                name: entry.name,
+                value: entry.totalScore,
+              }))}
+              you={{
+                rank: myWeeklyRank?.rank ?? '—',
+                name: myWeeklyRank?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You',
+              }}
+              loading={weeklyLeaderboard === null}
+              emptyMessage="Attempt a few tests this week to appear on the weekly leaderboard."
+            />
           </div>
         </div>
       </div>

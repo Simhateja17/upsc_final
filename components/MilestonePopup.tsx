@@ -166,10 +166,7 @@ export default function MilestonePopup({
               Close
             </button>
             <button
-              onClick={() => {
-                // Placeholder for share functionality
-                alert('Share feature coming soon!');
-              }}
+              onClick={onClose}
               className="flex-1 py-2.5 rounded-[12px] text-sm font-semibold cursor-pointer transition-all duration-200 hover:opacity-90"
               style={{
                 background: '#F5B041',
@@ -177,7 +174,7 @@ export default function MilestonePopup({
                 fontFamily: 'Inter, system-ui, sans-serif',
               }}
             >
-              Share on 𝕏
+              Continue Studying
             </button>
           </div>
         </div>
