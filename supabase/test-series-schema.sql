@@ -1,4 +1,4 @@
--- Test Series CMS — run in Supabase SQL Editor (or migrate via CLI).
+-- Test Series CMS - run in Supabase SQL Editor (or migrate via CLI).
 -- Requires: public schema, storage.
 
 create extension if not exists "pgcrypto";

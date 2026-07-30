@@ -208,7 +208,7 @@ export default function MainsEvaluatingScreen({
       if (evalStatus) {
         setStatus(evalStatus);
       }
-      // Step ticks are driven by elapsed time only — ignore backend completedSteps
+      // Step ticks are driven by elapsed time only - ignore backend completedSteps
 
       // Check results when backend signals completion, but honour MIN_DISPLAY_SECONDS
       const isComplete = data?.isComplete || evalStatus === 'completed' || evalStatus === 'done';

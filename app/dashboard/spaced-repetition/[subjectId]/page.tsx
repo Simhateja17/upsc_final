@@ -226,7 +226,7 @@ export default function SpacedRepetitionSubjectPage() {
     setShowAnswer(false);
   };
 
-  // All items for this subject — drives counts + the free-slot meter.
+  // All items for this subject - drives counts + the free-slot meter.
   const subjectItems = items.filter((item) => item.subject === subjectLabel && item.status !== 'completed');
 
   const counts: Record<FilterKey, number> = {

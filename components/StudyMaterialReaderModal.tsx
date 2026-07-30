@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 
 const PdfViewer = dynamic(() => import('@/components/PdfViewer'), { ssr: false });
 
-/* Page geometry — must stay in sync with PdfViewer so the fit-to-width
+/* Page geometry - must stay in sync with PdfViewer so the fit-to-width
    default zoom is computed against the same numbers the viewer renders at. */
 const BASE_PAGE_WIDTH = 980; // width of a page at 100% zoom (PdfViewer)
 const VIEWER_PADDING = 24;   // horizontal padding on each side of the scroller
@@ -272,7 +272,7 @@ export default function StudyMaterialReaderModal({
             </div>
           )}
 
-          {/* Self-hosted PDF renderer — continuous scroll, no pop-out, no download UI */}
+          {/* Self-hosted PDF renderer - continuous scroll, no pop-out, no download UI */}
           <div className="absolute inset-0" ref={viewerBodyRef}>
             <PdfViewer
               pages={pages}

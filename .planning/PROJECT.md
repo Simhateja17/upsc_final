@@ -1,4 +1,4 @@
-# UPSC Platform — Jeet App Backend Integration
+# UPSC Platform - Jeet App Backend Integration
 
 ## Overview
 

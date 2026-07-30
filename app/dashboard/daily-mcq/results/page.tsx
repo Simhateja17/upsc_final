@@ -200,7 +200,7 @@ export default function DailyMcqResultsPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showNextSteps, setShowNextSteps] = useState(false);
   const [streak, setStreak] = useState<number | null>(null);
-  // Real leaderboard rank (prelims/MCQ bucket) — replaces the old "Top X%" percentile bucket.
+  // Real leaderboard rank (prelims/MCQ bucket) - replaces the old "Top X%" percentile bucket.
   const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank: number; mcqRankedCount?: number; realRankedCount: number } | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -821,7 +821,7 @@ export default function DailyMcqResultsPage() {
                 </button>
               </Link>
 
-              {/* Result action buttons — colors per reference (.act-*) */}
+              {/* Result action buttons - colors per reference (.act-*) */}
               <style>{`
                 .qw-review-btn{color:#0B1426;background:radial-gradient(120% 140% at 100% 0%, rgba(245,197,24,.18) 0%, rgba(245,197,24,0) 55%),linear-gradient(135deg,#FBF6E7 0%,#F4ECD8 55%,#EFE3BE 100%);box-shadow:0 10px 22px -14px rgba(107,83,32,.45), inset 0 1px 0 rgba(255,255,255,.6);border:1px solid #E4D8B5;letter-spacing:.01em;}
                 .qw-review-btn::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#F5C518,#B7860B);border-radius:12px 0 0 12px;}
@@ -901,7 +901,7 @@ export default function DailyMcqResultsPage() {
         </main>
       </div>
 
-      {/* Download Report modal — mirrors the reference popup */}
+      {/* Download Report modal - mirrors the reference popup */}
       {showDownloadModal && (
         <div
           onClick={() => setShowDownloadModal(false)}
@@ -935,7 +935,7 @@ export default function DailyMcqResultsPage() {
                   <div style={{ width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 20, flexShrink: 0, background: 'linear-gradient(135deg,#2E3C5C,#1A2848)', boxShadow: '0 8px 18px -10px rgba(46,60,92,.55)' }}>📄</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 10.5, letterSpacing: '0.18em', fontWeight: 700, color: '#2E3C5C' }}>PDF · A4 · QUESTION-WISE REVIEW</div>
-                    <div className="font-jakarta font-extrabold" style={{ fontSize: 15.5, marginTop: 2, lineHeight: 1.25, color: '#17223E' }}>Your detailed performance dossier — ready to download</div>
+                    <div className="font-jakarta font-extrabold" style={{ fontSize: 15.5, marginTop: 2, lineHeight: 1.25, color: '#17223E' }}>Your detailed performance dossier - ready to download</div>
                     <p style={{ fontSize: 12.5, color: '#6B7689', marginTop: 4, lineHeight: 1.45 }}>A printable companion you can revise on the go and share with mentors.</p>
                   </div>
                 </div>
@@ -993,7 +993,7 @@ export default function DailyMcqResultsPage() {
         </div>
       )}
 
-      {/* Share Score modal — shared component (also used by the Prelims Mock Test score screen) */}
+      {/* Share Score modal - shared component (also used by the Prelims Mock Test score screen) */}
       <ShareScoreModal
         open={showShareModal}
         onClose={() => setShowShareModal(false)}

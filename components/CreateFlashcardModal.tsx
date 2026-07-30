@@ -16,7 +16,7 @@ function slugify(value: string): string {
 
 // Same Subject → Topics hierarchy the Syllabus Tracker renders (prelims + mains
 // merged, deduped by subject id) so this picker can never drift out of sync
-// with it — no separately maintained flashcard subject list.
+// with it - no separately maintained flashcard subject list.
 function buildSyllabusSubjectOptions(data: SyllabusData): SyllabusSubjectOption[] {
   const bySubjectId = new Map<string, SyllabusSubjectOption>();
   for (const list of [data.prelims, data.mains]) {
@@ -61,7 +61,7 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
   const [error, setError] = useState('');
   // Seeded synchronously from the same static file the Syllabus Tracker falls
   // back to, then refreshed from the same `/syllabus` endpoint it fetches live
-  // data from — so a subject/topic added in the tracker shows up here too.
+  // data from - so a subject/topic added in the tracker shows up here too.
   const [syllabusSubjects, setSyllabusSubjects] = useState<SyllabusSubjectOption[]>(
     () => buildSyllabusSubjectOptions(SYLLABUS_DATA),
   );
@@ -73,7 +73,7 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
         if (!cancelled && res.data) setSyllabusSubjects(buildSyllabusSubjectOptions(res.data));
       })
       .catch(() => {
-        // Keep the static SYLLABUS_DATA seed — still the same hierarchy the
+        // Keep the static SYLLABUS_DATA seed - still the same hierarchy the
         // tracker itself falls back to when the API is unavailable.
       });
     return () => {
@@ -96,7 +96,7 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
   );
 
   // A subject/deck prefilled from an existing (pre-syllabus-taxonomy) custom
-  // flashcard subject may not exist in the syllabus hierarchy — keep it
+  // flashcard subject may not exist in the syllabus hierarchy - keep it
   // selectable so the <select>'s value always matches a rendered option.
   const subjectSelectOptions = useMemo(() => {
     const names = syllabusSubjects.map((s) => s.name);
@@ -112,7 +112,7 @@ export default function CreateFlashcardModal({ open, onClose, initialSubject, in
 
   const handleSubjectChange = (name: string) => {
     setSubject(name);
-    setDeck(''); // topics belong to a subject — clear the stale pick when the subject changes
+    setDeck(''); // topics belong to a subject - clear the stale pick when the subject changes
   };
 
   const doSave = async (): Promise<boolean> => {

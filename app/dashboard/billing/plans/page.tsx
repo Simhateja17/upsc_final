@@ -22,15 +22,7 @@ function BillingHero() {
         padding: '40px 24px 44px',
       }}
     >
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          className="absolute left-0 w-full max-w-none"
-          style={{ height: '128%', top: '-14%' }}
-          src="/billing-hero-shine.png"
-        />
-      </div>
+
       <div className="relative z-10 flex items-center gap-3 mb-5">
         <span style={{ display: 'block', width: 44, height: 1, background: 'linear-gradient(to right, transparent, #C8972A)' }} />
         <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '2.5px', color: '#C8972A', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
@@ -709,7 +701,6 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
     },
   },
 };
-
 type CheckoutStep = 'checkout' | 'pending' | 'success' | 'failed';
 
 function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => void }) {
@@ -1259,16 +1250,15 @@ export default function ExplorePlansPage() {
   const currentRank = { free: 0, aspire: 1, rise: 2, ascent: 3 }[currentTier];
   const hasRealSubscription = currentTier !== 'free' && !!entitlements.subscription;
 
-  // Admins can preview any tier via the plan switcher in /admin. A pure simulation never
-  // attaches a real Subscription row, so treat a rise/ascent simulation as "paid" too —
-  // otherwise the My Plan & Billing preview they're testing for would never be reachable.
+  // Admins can preview any paid tier (including Aspire) via the plan switcher in /admin.
+  // A pure simulation never attaches a real Subscription row, so the My Plan & Billing card
+  // must render as a clearly-labeled preview whenever the override is active — Aspire is a
+  // paid tier like Rise/Ascent, not a free default, so it gets no special exemption here.
   const isAdminSimulating = Boolean(entitlements.summary?.override?.isAdminPlanSimulation);
-  const isPreviewTier = isAdminSimulating && (currentTier === 'rise' || currentTier === 'ascent');
-  const isPreview = isPreviewTier && !hasRealSubscription;
+  const isPreview = isAdminSimulating && !hasRealSubscription;
 
-  // Aspire is a real, always-on tier now (never "no plan") — every authenticated user has
-  // *something* to show on My Plan & Billing, not just paying subscribers. currentTier only
-  // stays 'free' while logged out or before entitlements have finished their first load.
+  // currentTier only stays 'free' while logged out or before entitlements have finished
+  // their first load — every other tier (including Aspire) has something real to show.
   const canViewMyPlan = isAuthenticated && currentTier !== 'free';
   const canShowPlan = (plan: PlanKey) => ({ aspire: 1, rise: 2, ascent: 3 }[plan] > currentRank);
 
@@ -1326,7 +1316,13 @@ export default function ExplorePlansPage() {
     if (!canShowPlan(plan)) return;
     setCheckoutPlan(plan);
   };
-  const handleAspireCta = () => handleOpenCheckout('aspire');
+  const handleAspireCta = () => {
+    if (!isAuthenticated) {
+      openAuthModal('signup');
+      return;
+    }
+    router.push('/dashboard');
+  };
   const handleOpenRiseCheckout = () => handleOpenCheckout('rise');
   const handleOpenAscentCheckout = () => handleOpenCheckout('ascent');
   const currentSubscription = entitlements.subscription;
@@ -1446,41 +1442,36 @@ export default function ExplorePlansPage() {
         {/* 3 plan cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 16, alignItems: 'stretch' }}>
 
-          {/* Aspire */}
+          {/* Aspire — forever free */}
           <article
             onMouseEnter={() => setHoveredPlan('aspire')}
             onMouseLeave={() => setHoveredPlan(null)}
             style={{ borderRadius: 20, border: '1px solid #E8E4DA', background: '#FFFFFF', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'aspire' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'aspire' ? '0 16px 40px rgba(11,22,40,0.12)' : '0 2px 8px rgba(0,0,0,0.06)' }}>
             <div style={{ padding: '35px 29px 39px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <p style={{ margin: '0 0 8px', fontSize: 10.2, fontWeight: 700, letterSpacing: '1.4px', textTransform: 'uppercase', color: '#D4900A', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Foundation</p>
+              <p style={{ margin: '0 0 8px', fontSize: 10.2, fontWeight: 700, letterSpacing: '1.4px', textTransform: 'uppercase', color: '#D4900A', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Forever Free</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Aspire</h3>
               <p style={{ margin: '8px 0 0', fontSize: 12.6, lineHeight: '19.6px', color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
-                Build strong UPSC fundamentals with daily practice, proper guidance, and consistent preparation.
+                Build daily study habits. Begin your UPSC prep without spending a rupee.
               </p>
               <div style={{ paddingTop: 21 }}>
-                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 41.6, fontWeight: 700, lineHeight: '41.6px', color: '#D4900A' }}>₹{cycle === 'monthly' ? '199' : cycle === 'quarterly' ? '159' : '119'}</span>
+                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 41.6, fontWeight: 700, lineHeight: '41.6px', color: '#D4900A' }}>Free</span>
               </div>
-              <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Billed monthly</p>
+              <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Always free, forever</p>
               <div style={{ height: 1, background: '#F0ECE4', margin: '20px 0' }} />
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {[
                   { text: 'Daily MCQ Challenge', limited: false },
-                  { text: 'Daily Answer Writing Challenge', limited: false },
-                  { text: 'Daily News Analysis – The Hindu & IE', limited: false },
+                  { text: 'Daily Mains Challenge', limited: false },
+                  { text: 'Daily News Analysis - Hindu & IE', limited: false },
                   { text: '10,000+ Previous Year Questions', limited: false },
-                  { text: '5 Mains Answer Evaluation / day', limited: false },
-                  { text: 'Simplified Video Lectures', limited: false },
-                  { text: 'Jeet AI Mentor – 10 Queries / day', limited: false },
+                  { text: '2 Mains Evaluations / day', limited: false },
+                  { text: 'Jeet AI - 10 conversations / day', limited: false },
                   { text: 'Study Planner & Time Tracker', limited: false },
-                  { text: 'Smart Syllabus Tracker', limited: false },
-                  { text: 'Daily Leaderboard', limited: false },
-                  { text: 'Live Study Room', limited: false },
-                  { text: 'Discussion Forum', limited: false },
+                  { text: 'Daily Leaderboard & Discussion Forum', limited: false },
                   { text: 'Mental Health Buddy', limited: false },
-                  { text: 'Mock Tests – Limited access', limited: true },
-                  { text: 'Revision Suite – Limited access', limited: true },
-                  { text: 'Test Analytics – Limited view', limited: true },
-                  { text: 'Performance Analytics – Limited view', limited: true },
+                  { text: 'Mock Tests - Limited access', limited: true },
+                  { text: 'Revision Suite - Limited access', limited: true },
+                  { text: 'Performance Analytics - Limited view', limited: true },
                 ].map((item) => (
                   <li key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13.1, color: '#4A4A68', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
                     <span style={{ flexShrink: 0, width: 17, height: 17, borderRadius: 8.5, display: 'flex', alignItems: 'center', justifyContent: 'center', background: item.limited ? '#FEF3DC' : '#DCFCE7', color: item.limited ? '#D4900A' : '#16A34A', fontWeight: 800, fontSize: item.limited ? 9 : 11 }}>{item.limited ? '~' : '✓'}</span>
@@ -1494,10 +1485,10 @@ export default function ExplorePlansPage() {
                 disabled={planCtaState('aspire').disabled}
                 style={{ marginTop: 24, width: '100%', borderRadius: 11, padding: '13px 16px', fontSize: 13.9, fontWeight: 700, cursor: planCtaState('aspire').disabled ? 'default' : 'pointer', border: 'none', background: planCtaState('aspire').disabled ? '#F3F1EC' : '#FFFFFF', boxShadow: planCtaState('aspire').disabled ? 'none' : '0px 1px 1.5px rgba(0,0,0,0.1)', color: planCtaState('aspire').disabled ? '#8A8AAA' : '#0F2040', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}
               >
-                {planCtaState('aspire').label || 'Get Aspire →'}
+                {planCtaState('aspire').label || 'Get Started Free →'}
               </button>
               <p style={{ margin: '8px 0 0', fontSize: 11.2, color: '#8A8AAA', textAlign: 'center', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
-                Upgrade anytime • Cancel at cycle end
+                No card needed • Upgrade anytime
               </p>
             </div>
           </article>
@@ -1909,7 +1900,7 @@ export default function ExplorePlansPage() {
           {/* 2-column FAQ grid */}
           {(() => {
             const faqs = [
-              { q: 'What does Aspire include?', a: 'Aspire is the entry paid plan with 5 mains evaluations/day, 5 Prelims tests/day, 10 Jeet AI Mentor queries/day, limited analytics and revision tools, plus the core study features.' },
+              { q: 'Is Aspire really free forever?', a: 'Yes, absolutely. Aspire is free for life, no card required. You get 2 mains evaluations/day, 10 MCQ Challenge questions/day, 10 Jeet AI conversations/day, 10,000+ PYQs, study planner, leaderboard and more, forever.' },
               { q: "What's the difference between Rise and Ascent?", a: 'Rise gives you 25 mains evaluations/day, 25 mock test attempts/day, 100 Jeet AI conversations/day, full performance & test analytics, and the complete revision suite. Ascent removes every limit entirely unlimited evaluations, mock tests and Jeet AI plus weekly 1-on-1 mentorship, a personalised roadmap, priority Q&A and a monthly performance review call.' },
               { q: 'Is there a money-back guarantee?', a: "Yes. Every paid plan comes with a 7-day money-back guarantee Rise's is no-questions-asked, and Ascent's is included as standard. Just reach out to support within 7 days of your purchase." },
               { q: 'How much do I save on quarterly & yearly plans?', a: "Quarterly billing saves you 20% compared to monthly, and yearly billing saves you 40% almost 5 months free. For example, Rise monthly is ₹499, but yearly brings it down to ₹299/month. Discounts are automatically applied at checkout." },
@@ -1977,11 +1968,11 @@ export default function ExplorePlansPage() {
             <br />the Right Way
           </h2>
           <p style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 14.9, color: 'rgba(255,255,255,0.52)', maxWidth: 480, margin: '0 auto 32px', lineHeight: '25.59px' }}>
-            Join 15,000+ aspirants. Start with Aspire and upgrade when you need higher limits.
+            Join 15,000+ aspirants. Start free with Aspire — no card, no commitment, no expiry. Upgrade only when you feel it.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
             <button type="button" onClick={handleAspireCta} style={{ borderRadius: 10, border: 'none', padding: '13px 34px', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 14.6, fontWeight: 800, color: '#0C1424', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              Get Aspire →
+              Start Free with Aspire →
             </button>
             <button type="button" onClick={() => router.push('/contact')} style={{ borderRadius: 10, border: '1px solid rgba(255,255,255,0.14)', padding: '14px 27px', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 14.6, fontWeight: 600, color: 'rgba(255,255,255,0.78)', background: 'rgba(255,255,255,0.07)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               Contact Us

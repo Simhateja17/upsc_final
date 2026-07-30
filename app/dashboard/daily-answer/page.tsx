@@ -16,9 +16,10 @@ interface AnswerData {
   timeLimit: number;
   attempted: boolean;
   attemptCount: number;
+  studentsAttemptedTodayCount: number;
 }
 
-// "26 Jun 2026" — matches the reference top strip.
+// "26 Jun 2026" - matches the reference top strip.
 function formatShortDate(d: Date) {
   const day = d.getDate();
   const month = d.toLocaleString('en-US', { month: 'short' });
@@ -43,6 +44,14 @@ export default function DailyMainsChallengePage() {
       .then(res => setData(res.data))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
+
+    // Re-fetch every minute so the "students attempted today" banner stays current.
+    const interval = setInterval(() => {
+      dailyAnswerService.getToday()
+        .then(res => setData(res.data))
+        .catch(() => {});
+    }, 60_000);
+    return () => clearInterval(interval);
   }, []);
 
   // Current streak for the top strip (best-effort; the page still works without it).
@@ -76,7 +85,7 @@ export default function DailyMainsChallengePage() {
     );
   }
 
-  const aspirants = data.attemptCount > 0 ? data.attemptCount.toLocaleString('en-US') : '1,248';
+  const aspirants = data.studentsAttemptedTodayCount.toLocaleString('en-US');
 
   return (
     <div className="bg-[#F5F6F8] font-jakarta text-[#0B1020]" style={{ minHeight: '100%', overflowY: 'auto' }}>
@@ -151,7 +160,7 @@ export default function DailyMainsChallengePage() {
               Daily Answer Writing
             </h1>
             <p style={{ color: '#6B7280', fontSize: '13px', lineHeight: 1.45, maxWidth: '340px', margin: '0 auto' }}>
-              Sharpen your answer writing with today&apos;s carefully crafted question — build structure, clarity, and depth, one day at a time.
+              Sharpen your answer writing with today&apos;s carefully crafted question - build structure, clarity, and depth, one day at a time.
             </p>
 
             {/* Chips */}
@@ -193,7 +202,7 @@ export default function DailyMainsChallengePage() {
                   <span className="da-av" style={{ background: '#F59E0B', marginLeft: '-8px', zIndex: 1 }}>R</span>
                 </div>
                 <div className="da-welcome-live-copy" style={{ fontSize: '12px', lineHeight: 1.4, textAlign: 'left' }}>
-                  <div style={{ whiteSpace: 'nowrap' }}><strong>{aspirants}</strong> aspirants attempting now</div>
+                  <div style={{ whiteSpace: 'nowrap' }}><strong>{aspirants}</strong> students attempted today</div>
                   <div style={{ fontSize: '10px', color: '#6B7280' }}>Join them - every day counts</div>
                 </div>
               </div>

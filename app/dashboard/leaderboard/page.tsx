@@ -254,14 +254,14 @@ export default function LeaderboardPage() {
           Updates every 30 min
         </div>
 
-        {/* Leaderboard Content — same ranking-card design as the Daily Mains Challenge's "Mains League" widget */}
+        {/* Leaderboard Content - same ranking-card design as the Daily Mains Challenge's "Mains League" widget */}
         <section className="mx-auto max-w-[964px] mb-8">
           <LeaderboardRankingCard
             icon={tab === 'mains' ? '✍️' : tab === 'mcq' ? '🎯' : '🏆'}
             title={tab === 'mains' ? 'Mains League' : tab === 'mcq' ? 'Daily MCQ League' : 'Overall Leaderboard'}
             rows={rankingRows}
             you={{
-              rank: myRank?.rank ?? '—',
+              rank: myRank?.rank ?? '-',
               name: myRank?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You',
             }}
             valueFormatter={(value) => value.toFixed(2)}

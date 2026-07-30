@@ -14,7 +14,7 @@ interface MCQData {
   timeLimit: number;
   totalMarks: number;
   attempted: boolean;
-  liveAspirantsCount: number;
+  studentsAttemptedTodayCount: number;
 }
 
 // "20th June 2026" style date for the landing header.
@@ -65,7 +65,7 @@ export default function DailyMcqIntroPage() {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
 
-    // Re-fetch every minute so the "aspirants attempting now" banner stays live.
+    // Re-fetch every minute so the "students attempted today" banner stays current.
     const interval = setInterval(() => {
       dailyMcqService.getToday()
         .then(res => setMcq(res.data))
@@ -609,12 +609,12 @@ export default function DailyMcqIntroPage() {
             <div className="dmcw-avatar dmcw-avatar-4">R</div>
           </div>
           <div className="dmcw-banner-text">
-            <div className="dmcw-line1">{mcq.liveAspirantsCount.toLocaleString('en-IN')} aspirants attempting now</div>
+            <div className="dmcw-line1">{mcq.studentsAttemptedTodayCount.toLocaleString('en-IN')} students attempted today</div>
             <div className="dmcw-line2">Join them — every day counts</div>
           </div>
           <div className="dmcw-badge-live">
             <span className="dmcw-dot" />
-            LIVE
+            TODAY
           </div>
         </div>
 

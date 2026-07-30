@@ -249,7 +249,7 @@ const AddTaskModal = ({
             </select>
           </div>
 
-          {/* Time — keep existing slot dropdowns + auto-fill logic */}
+          {/* Time - keep existing slot dropdowns + auto-fill logic */}
           <div>
             <label className="block text-sm font-semibold text-[#0e1430] mb-2">Time</label>
             <div className="flex items-center gap-3">
@@ -1089,7 +1089,7 @@ className={`rounded-[14px] border p-[clamp(0.75rem,1vw,1.25rem)] h-full flex fle
           </button>
         </div>
 
-        {/* Your Complete Test History Section — links to Test History (Test Analytics) */}
+        {/* Your Complete Test History Section - links to Test History (Test Analytics) */}
         <Link
           href="/dashboard/test-analytics"
           className="group block mb-[clamp(2rem,2.5vw,3rem)]"

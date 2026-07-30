@@ -75,7 +75,7 @@ export function UsageMeter({ status, label, className = '' }: { status?: Feature
   );
 }
 
-/** Sparkle used on the premium upgrade CTA — matches the SparkleIcon in UpgradeModals. */
+/** Sparkle used on the premium upgrade CTA - matches the SparkleIcon in UpgradeModals. */
 function PromptSparkle() {
   return (
     <svg

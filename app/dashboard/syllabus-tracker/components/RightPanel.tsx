@@ -30,6 +30,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
   const modalTitle = cms?.modal_title || 'Syllabus Progress Overview';
   const router = useRouter();
   const [showAllModal, setShowAllModal] = useState(false);
+  const [modalMode, setModalMode] = useState<Mode>(mode);
 
   const getSubjectStats = useCallback((subject: Subject) => {
     let total = 0;
@@ -92,9 +93,9 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
     ] as Array<SubjectProgress & { stage: string }>;
   }, [getSubjectStats, syllabusData]);
 
-  const subjectsWithProgress = useMemo(
-    () => allSubjects.filter((subject) => subject.tracked > 0),
-    [allSubjects]
+  const modalSubjects = useMemo(
+    () => allSubjects.filter((subject) => subject.stage.toLowerCase() === modalMode),
+    [allSubjects, modalMode]
   );
 
   return (
@@ -110,7 +111,10 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
           </div>
           <button
             type="button"
-            onClick={() => setShowAllModal(true)}
+            onClick={() => {
+              setModalMode(mode);
+              setShowAllModal(true);
+            }}
             className="text-[11px] font-bold text-[#0f1f3d] cursor-pointer no-underline transition-colors duration-150 hover:text-[#c9921a] bg-transparent border-none p-0"
           >
             {viewAllText}
@@ -254,23 +258,26 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
               {modeSummaries.map((item) => (
-                <div
+                <button
+                  type="button"
                   key={item.id}
-                  className="rounded-[12px] border p-3"
+                  className="rounded-[12px] border p-3 text-left transition-colors cursor-pointer"
                   style={{
-                    borderColor: mode === item.id ? '#1D4ED8' : '#E5E7EB',
-                    background: mode === item.id ? '#EFF6FF' : '#FFFFFF',
+                    borderColor: modalMode === item.id ? '#1D4ED8' : '#E5E7EB',
+                    background: modalMode === item.id ? '#EFF6FF' : '#FFFFFF',
                   }}
+                  onClick={() => setModalMode(item.id)}
+                  aria-pressed={modalMode === item.id}
                 >
                   <div className="text-[12px] font-semibold text-[#475569]">{item.label}</div>
                   <div className="text-[24px] font-bold text-[#0f1f3d] leading-tight mt-1">{item.pct}%</div>
                   <div className="text-[11px] text-[#64748B] mt-1">{item.done} of {item.total} topics done</div>
-                </div>
+                </button>
               ))}
             </div>
 
             <div className="space-y-2">
-              {subjectsWithProgress.map((subject) => (
+              {modalSubjects.map((subject) => (
                 <div key={subject.id} className="rounded-[10px] border border-[#E5E7EB] p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -296,9 +303,9 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
                   </div>
                 </div>
               ))}
-              {subjectsWithProgress.length === 0 && (
+              {modalSubjects.length === 0 && (
                 <div className="rounded-[10px] border border-dashed border-[#CBD5E1] bg-[#F8FAFC] px-4 py-8 text-center text-[13px] text-[#64748B]">
-                  No subject progress yet. Update a topic status to see it here.
+                  No {modalMode === 'prelims' ? 'Prelims' : modalMode === 'mains' ? 'Mains' : 'Optional'} subjects available.
                 </div>
               )}
             </div>

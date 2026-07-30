@@ -26,7 +26,7 @@ const FOCUS_SUBJECTS: Record<string, string[]> = {
   gs1: ['Art & Culture', 'Modern History', 'World History', 'Geography', 'Indian Society'],
   gs2: ['Polity', 'Governance', 'Social Justice', 'International Relations'],
   gs3: ['Economy', 'Agriculture', 'Science & Tech', 'Environment', 'Internal Security'],
-  gs4: ['Ethics — Theory', 'Case Studies'],
+  gs4: ['Ethics - Theory', 'Case Studies'],
   essay: [],
   optional: [],
 };
@@ -37,7 +37,7 @@ const MARK_OPTIONS = [
   { value: 20, mins: 15, words: 250 },
 ];
 
-// Essay paper is scored out of 125 — a single fixed option, auto-selected
+// Essay paper is scored out of 125 - a single fixed option, auto-selected
 // the moment "Essay" is chosen as the paper (no GS-style 10/15/20 tiers).
 const ESSAY_MARK_OPTIONS = [
   { value: 125, mins: 90, words: 1200 },
@@ -46,10 +46,10 @@ const ESSAY_MARK_OPTIONS = [
 const SAMPLE_QUESTION = 'Analyze the role of technology in transforming Indian agriculture. What are the key barriers to its adoption?';
 
 const QUICK_TIPS = [
-  { key: 'ink', icon: '✏️', label: 'Ink & Paper', points: ['Use dark blue or black ink only', 'Unruled sheets work best for evaluation', 'Avoid pencil — AI may miss faint marks'] },
-  { key: 'photo', icon: '📷', label: 'Photography', points: ['Take photos in bright, shadow-free lighting', 'Keep camera parallel to paper (no angle)', 'Avoid reflections — turn off flash if needed'] },
+  { key: 'ink', icon: '✏️', label: 'Ink & Paper', points: ['Use dark blue or black ink only', 'Unruled sheets work best for evaluation', 'Avoid pencil - AI may miss faint marks'] },
+  { key: 'photo', icon: '📷', label: 'Photography', points: ['Take photos in bright, shadow-free lighting', 'Keep camera parallel to paper (no angle)', 'Avoid reflections - turn off flash if needed'] },
   { key: 'format', icon: '📝', label: 'Writing Format', points: ['Leave proper margins on both sides', 'Write question numbers clearly at the top', 'Upload pages in correct order (P1, P2...)'] },
-  { key: 'accuracy', icon: '🎯', label: 'For Accuracy', points: ['Number each page if multi-page answer', 'Keep handwriting legible — not too rushed', 'Upload the right page for each question'] },
+  { key: 'accuracy', icon: '🎯', label: 'For Accuracy', points: ['Number each page if multi-page answer', 'Keep handwriting legible - not too rushed', 'Upload the right page for each question'] },
 ];
 
 const ACCEPTED_TYPES = '.jpg,.jpeg,.png,.webp,.pdf';
@@ -75,7 +75,7 @@ function StepHeader({ step, title, subtitle, badge, state }: {
   badge?: string;
   state: StepState;
 }) {
-  // Navy rounded-square numbered badge — same design as Step 1 (no green tick)
+  // Navy rounded-square numbered badge - same design as Step 1 (no green tick)
   const circleBg = '#1E2D4E';
   const numColor = '#FFFFFF';
   return (
@@ -220,7 +220,7 @@ export default function MainsAnswerEvaluatorPage() {
         setShowTypeAnswer(true);
       }
     } catch {
-      // no prefill available — start blank
+      // no prefill available - start blank
     }
   }, []);
 
@@ -350,7 +350,7 @@ export default function MainsAnswerEvaluatorPage() {
             <>
                 {/* ── Step 1: Select Your Paper (Exam Mode block copied from Mock Tests) ── */}
                 <div style={cardStyle}>
-                  {/* Step Header — navy numbered box */}
+                  {/* Step Header - navy numbered box */}
                   <div style={{ marginBottom: '22px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                     <div style={{
                       width: '36px', height: '36px', borderRadius: '10px',
@@ -369,7 +369,7 @@ export default function MainsAnswerEvaluatorPage() {
                     </div>
                   </div>
 
-                  {/* Paper Type Cards — 3-column grid */}
+                  {/* Paper Type Cards - 3-column grid */}
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(3, 1fr)',
@@ -803,7 +803,7 @@ export default function MainsAnswerEvaluatorPage() {
                 marginBottom: '16px',
                 boxShadow: '0 4px 24px 0 rgba(16,24,40,0.06)',
               }}>
-                {/* Header — blue gradient bar with gold dot (same as before) */}
+                {/* Header - blue gradient bar with gold dot (same as before) */}
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '10px',
                   padding: '16px 20px',
@@ -899,7 +899,7 @@ export default function MainsAnswerEvaluatorPage() {
                 </div>
               </div>
 
-              {/* Tips For Best Results (accordion — same as Mock Test reference) */}
+              {/* Tips For Best Results (accordion - same as Mock Test reference) */}
               <div
                 className="bg-white overflow-hidden"
                 style={{ borderRadius: 20, marginBottom: '16px', boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}

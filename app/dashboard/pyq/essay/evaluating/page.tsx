@@ -7,7 +7,7 @@ import MainsEvaluatingScreen, { MainsEvalService } from '@/components/mains-resu
 const RESULTS_SESSION_KEY = 'pyqMainsResultsSession';
 
 /**
- * PYQ Model Answer "evaluating" screen — thin wrapper around the shared
+ * PYQ Model Answer "evaluating" screen - thin wrapper around the shared
  * MainsEvaluatingScreen, same pattern as the Mains Answer Evaluator and Daily
  * Answer Writing flows. Replaces the old in-page progress modal that used to
  * sit inline in EssayModelAnswerClient. The PYQ status/results endpoints are

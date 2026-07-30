@@ -73,7 +73,7 @@ const CATEGORIES: BadgeCategory[] = [
         key: 'ignition',
         emoji: '🔥',
         title: 'Ignition',
-        quote: '"Seven days of fire — you are burning bright."',
+        quote: '"Seven days of fire - you are burning bright."',
         description: 'A full week of consistent login. You now have real momentum. This is where serious aspirants are made.',
         tag: 'STREAK',
         destination: 'Dashboard',
@@ -84,7 +84,7 @@ const CATEGORIES: BadgeCategory[] = [
         key: 'iron-discipline',
         emoji: '⚡',
         title: 'Iron Discipline',
-        quote: '"Two weeks strong — discipline is your edge."',
+        quote: '"Two weeks strong - discipline is your edge."',
         description: '14 days of showing up without fail. While others sleep in, you are building the habit that wins UPSC.',
         tag: 'STREAK',
         destination: 'Dashboard',
@@ -457,7 +457,7 @@ const CATEGORIES: BadgeCategory[] = [
         emoji: '🔎',
         title: 'Pattern Cracker',
         quote: '"50 PYQs down the exam is starting to make sense."',
-        description: 'Solved 50 Previous Year Questions. You are not just studying topics — you are studying how UPSC thinks.',
+        description: 'Solved 50 Previous Year Questions. You are not just studying topics - you are studying how UPSC thinks.',
         tag: 'PRACTICE',
         destination: 'PYQ Bank',
         destinationHref: '/dashboard/pyq',
@@ -491,7 +491,7 @@ const CATEGORIES: BadgeCategory[] = [
     key: 'revision',
     emoji: '🔄',
     iconKey: 'review-streak',
-    title: 'Revision Tools — Flashcards, Mindmaps & Spaced Repetition',
+    title: 'Revision Tools - Flashcards, Mindmaps & Spaced Repetition',
     earned: 0,
     total: 8,
     badges: [
@@ -978,10 +978,10 @@ export default function AchievementBadgesPage() {
         }
         subtitle="A complete achievement system for UPSC aspirants, designed to motivate, retain and recognise every kind of effort on the RiseWithJeet platform."
         stats={[
-          { value: loading ? '—' : String(earnedTotal), label: 'Badges Earned', color: '#FDC700' },
+          { value: loading ? '-' : String(earnedTotal), label: 'Badges Earned', color: '#FDC700' },
           { value: String(TOTAL_BADGE_COUNT), label: 'Total Badges', color: '#F87171' },
-          { value: loading ? '—' : String(dayStreak), label: 'Day Streak', color: '#4ADE80' },
-          { value: loading ? '—' : `${syllabusDone}%`, label: 'Syllabus Done', color: '#FFFFFF' },
+          { value: loading ? '-' : String(dayStreak), label: 'Day Streak', color: '#4ADE80' },
+          { value: loading ? '-' : `${syllabusDone}%`, label: 'Syllabus Done', color: '#FFFFFF' },
         ]}
       />
 

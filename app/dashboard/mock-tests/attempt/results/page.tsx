@@ -265,10 +265,10 @@ function MockTestResultsInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mainsData, setMainsData] = useState<MainsPerQuestion[] | null>(null);
-  // Real leaderboard rank (prelims/MCQ bucket) — powers the Rank stat tile.
+  // Real leaderboard rank (prelims/MCQ bucket) - powers the Rank stat tile.
   const [myRank, setMyRank] = useState<{ mcqRank: number | null; isRankUnlocked: boolean; attemptsToUnlockRank?: number; mcqRankedCount?: number; realRankedCount: number } | null>(null);
 
-  // Score-screen popups — mirror the Daily MCQ Challenge flow: Smart Next Steps
+  // Score-screen popups - mirror the Daily MCQ Challenge flow: Smart Next Steps
   // and Share Score open as modals (never inline sections below the score card).
   const [showNextSteps, setShowNextSteps] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -278,7 +278,7 @@ function MockTestResultsInner() {
   const [heroSubtitle, setHeroSubtitle] = useState("You've completed today's practice. Here's what the best aspirants do next to keep climbing.");
   const [showConfetti, setShowConfetti] = useState(false);
 
-  /* ─── Celebration confetti — fires once, only right after this specific
+  /* ─── Celebration confetti - fires once, only right after this specific
      attempt is completed. Guarded by sessionStorage so revisiting the same
      score screen (back button, refresh, re-opening the link) never replays
      it; a newly generated testId gets its own key and celebrates again. ─── */
@@ -382,7 +382,7 @@ function MockTestResultsInner() {
           skipped: data.skipped ?? 0,
           netScore: (Number(data.correct ?? 0) * 2 - Number(data.wrong ?? 0) * 0.67).toFixed(2),
           scorePct: data.accuracyPct ?? 0,
-          perfLabel: 'Keep Going — Every Attempt Makes You Better!',
+          perfLabel: 'Keep Going - Every Attempt Makes You Better!',
           timeTaken: 0,
           durationSeconds: 0,
           subjectStats: [],
@@ -450,8 +450,8 @@ function MockTestResultsInner() {
           const strongest = subjectStats.reduce((a: SubjectStat, b: SubjectStat) => (a.correct / (a.total || 1)) >= (b.correct / (b.total || 1)) ? a : b);
           const weakest = subjectStats.reduce((a: SubjectStat, b: SubjectStat) => (a.correct / (a.total || 1)) <= (b.correct / (b.total || 1)) ? a : b);
           analysis = [
-            { emoji: '💪', text: `Your strongest area is ${strongest.subject} — maintain momentum here.` },
-            { emoji: '🔥', text: `Focus on ${weakest.subject} — 20 min daily for two weeks will show major gains.` },
+            { emoji: '💪', text: `Your strongest area is ${strongest.subject} - maintain momentum here.` },
+            { emoji: '🔥', text: `Focus on ${weakest.subject} - 20 min daily for two weeks will show major gains.` },
             { emoji: '🎯', text: 'Accuracy is improving. Attempt similar difficulty tests to consolidate.' },
             { emoji: '🏆', text: 'Top rankers average 82%+. You\'re building momentum!' },
           ];
@@ -578,7 +578,7 @@ function MockTestResultsInner() {
   );
 
   /* ─── Mains Results View ─── */
-  // Rendered by the shared MainsResultsView — identical to the Daily Mains
+  // Rendered by the shared MainsResultsView - identical to the Daily Mains
   // Challenge results page (Feedback / Examiner's Markup / Score Breakdown /
   // What's Next, plus the Model Answer modal), with question selector chips
   // since a mock test has multiple mains questions. The Examiner's Markup tab
@@ -649,7 +649,7 @@ function MockTestResultsInner() {
   const rankBarPct = rankUnlocked && rankedTotal > 0
     ? Math.max(4, Math.min(100, Math.round((1 - ((myRank!.mcqRank as number) - 1) / rankedTotal) * 100)))
     : 0;
-  // Share Score: reuse the Daily MCQ Challenge share modal — build the same
+  // Share Score: reuse the Daily MCQ Challenge share modal - build the same
   // shareable slug URL (initials + date) so the popup behaves identically.
   const reportName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Aspirant';
   const reportInitials = (reportName.split(' ').map((w) => w[0]).join('').slice(0, 2) || 'AS').toUpperCase();
@@ -659,7 +659,7 @@ function MockTestResultsInner() {
   const retakeHref = mode === 'sample'
     ? `/dashboard/mock-tests/attempt?mode=sample&title=${encodeURIComponent(title)}`
     : `/dashboard/mock-tests/attempt?testId=${testId}`;
-  // Question-wise Review opens as its OWN screen (exactly like Daily MCQ) —
+  // Question-wise Review opens as its OWN screen (exactly like Daily MCQ) -
   // never expanded inline below the score card.
   const reviewHref = mode === 'sample'
     ? `/dashboard/mock-tests/attempt/results/review?mode=sample&title=${encodeURIComponent(title)}`
@@ -704,7 +704,7 @@ function MockTestResultsInner() {
           paddingRight: 24,
         }}
       >
-        {/* Completion card — mirrors Daily MCQ Challenge results (same narrow, centered width) */}
+        {/* Completion card - mirrors Daily MCQ Challenge results (same narrow, centered width) */}
         <div
           style={{
             width: 'clamp(640px, 42vw, 820px)',
@@ -881,7 +881,7 @@ function MockTestResultsInner() {
           </div>
         </div>
 
-        {/* Smart Next Steps + Share Score open as modals — the exact Daily MCQ
+        {/* Smart Next Steps + Share Score open as modals - the exact Daily MCQ
             Challenge flow (never inline sections below the score card). */}
         <SmartNextStepsModal open={showNextSteps} onClose={() => setShowNextSteps(false)} />
         <ShareScoreModal

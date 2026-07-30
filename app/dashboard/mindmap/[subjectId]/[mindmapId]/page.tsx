@@ -213,7 +213,7 @@ export default function MindmapViewPage() {
   const totalNodes = countNodes(data.root);
   const topBranches = data.root.children?.length ?? 0;
 
-  // Clicking a top-level branch (depth 1 — a direct child of root) marks it
+  // Clicking a top-level branch (depth 1 - a direct child of root) marks it
   // explored. Mastery is the % of top-level branches explored so far;
   // exploring every branch reaches 100%.
   function handleNodeClick(nodeId: string, nodeData: MindmapNodeData) {

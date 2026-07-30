@@ -23,7 +23,7 @@ import {
 const MAINS_TIME_LIMIT = 20 * 60;
 
 /** sessionStorage key the evaluating screen reads {questionId, attemptId} from
- *  — shared with /dashboard/pyq/results so a refresh there still resolves. */
+ *  - shared with /dashboard/pyq/results so a refresh there still resolves. */
 const PYQ_RESULTS_SESSION_KEY = 'pyqMainsResultsSession';
 
 type EssayQuestion = {
@@ -118,7 +118,7 @@ function ValueRepositorySection({ section, index }: { section: RepositorySection
           section.items.map((item, i) => (
             <div className="quote-item" key={i}>
               <p className="qt">{item.primary || item.body}</p>
-              {item.attribution ? <span className="qa">— {item.attribution}</span> : null}
+              {item.attribution ? <span className="qa">- {item.attribution}</span> : null}
               {item.tailText ? (
                 <span className="qr"><strong>{item.tailLabel || 'Relevance'}:</strong> {item.tailText}</span>
               ) : null}
@@ -493,7 +493,7 @@ export default function EssayModelAnswerClient() {
                 <div className="mb-8 text-center">
                   <div className="step-ribbon"><span className="num">2</span> STEP TWO · COMPOSE</div>
                   <h2 className="part-title mt-4">The Model <span className="accent">UPSC Essay</span></h2>
-                  <p className="part-subtitle">A model composition — polished, philosophical, and exam-ready.</p>
+                  <p className="part-subtitle">A model composition - polished, philosophical, and exam-ready.</p>
                 </div>
 
                 <div className="parchment">
@@ -553,7 +553,7 @@ export default function EssayModelAnswerClient() {
                     <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">Your Essay Blueprint Is Complete</span>
                   </div>
                   <h3 className="mb-3 text-3xl font-bold text-white md:text-4xl" style={{ fontFamily: 'var(--font-cormorant-garamond), Georgia, serif' }}>Now it’s your turn to write.</h3>
-                  <p className="mx-auto mb-6 max-w-lg text-[14px] text-white/60">Put your understanding into words and receive a comprehensive evaluation from Jeet AI across structure, multidimensional analysis, arguments and presentation — delivering actionable feedback in about 60 seconds.</p>
+                  <p className="mx-auto mb-6 max-w-lg text-[14px] text-white/60">Put your understanding into words and receive a comprehensive evaluation from Jeet AI across structure, multidimensional analysis, arguments and presentation - delivering actionable feedback in about 60 seconds.</p>
                   <button type="button" onClick={openWrite} className="shine-btn gold-gradient inline-flex items-center gap-2 rounded-[12px] px-7 py-3 text-[14px] font-bold text-[#0B1229] shadow-[0_4px_16px_rgba(212,175,55,0.35)] transition hover:-translate-y-px">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ transform: 'scaleX(-1)' }}><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
                     Write &amp; Get Evaluated
@@ -837,7 +837,7 @@ export default function EssayModelAnswerClient() {
                 Your UPSC Journey<br />Starts <span style={{ color: '#F5D06E' }}>Today</span>
               </h2>
               <p className="mx-auto mt-5 max-w-lg text-[16px] leading-relaxed text-white/60">
-                Smart preparation, structured planning, and AI-powered insights — everything serious aspirants need, in one place.
+                Smart preparation, structured planning, and AI-powered insights - everything serious aspirants need, in one place.
               </p>
 
               <div className="mt-10 flex items-center justify-center gap-4">

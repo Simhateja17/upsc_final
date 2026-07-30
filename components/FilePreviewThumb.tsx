@@ -34,7 +34,7 @@ export default function FilePreviewThumb({ file, size = 56 }: Props) {
     (async () => {
       try {
         // Load pdfjs as a native browser ESM from /public (copied from pdfjs-dist).
-        // webpackIgnore keeps Next's bundler from processing it — bundling pdfjs 5.x
+        // webpackIgnore keeps Next's bundler from processing it - bundling pdfjs 5.x
         // ESM throws "Object.defineProperty called on non-object" at import time.
         // @ts-ignore -- resolved at runtime, not by the bundler
         const pdfjs: any = await import(/* webpackIgnore: true */ '/pdf.min.mjs');

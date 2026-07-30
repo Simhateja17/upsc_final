@@ -7,7 +7,7 @@ import { mainsEvaluatorService } from '@/lib/services';
 import MainsResultsView, { MainsQuestionResultData } from '@/components/mains-results/MainsResultsView';
 
 /**
- * Standalone Mains Answer Evaluator results — thin wrapper around the shared
+ * Standalone Mains Answer Evaluator results - thin wrapper around the shared
  * MainsResultsView. Loads the attempt from sessionStorage and hits the
  * dedicated /mains-evaluator/results endpoint. Runs on its own route instead
  * of the old /daily-answer/challenge/attempt/results?source=custom.

@@ -129,9 +129,10 @@ export default function MyPlanBillingTab({
 }) {
   const isTabletOrBelow = useIsTabletOrBelow();
   const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
-  // Only the bare free tier has no billing record. Aspire is a paid plan and must have a
-  // subscription before it appears in My Plan & Billing.
-  const isFreeTierNoBilling = tier === 'free' && !subscription && !isPreview;
+  // The free tier genuinely has no Subscription row to show billing/renewal for.
+  // (Distinct from isPreview: an admin simulating any paid tier also has no subscription, but
+  // that's fake data being previewed, not a real free plan.)
+  const isFreeTierNoBilling = !subscription && !isPreview;
   const planName = plan?.name || (isPreview || isFreeTierNoBilling ? `${tierLabel} Plan` : 'Your Plan');
   const cycleLabel = CYCLE_LABEL[plan?.billingCycle || 'yearly'] || 'Annual';
   const renewDate = subscription?.currentEnd || subscription?.endDate;
@@ -213,7 +214,7 @@ export default function MyPlanBillingTab({
                     color: '#e8b84b',
                   }}
                 >
-                  Free tier
+                  Always Free
                 </span>
               ) : isActive && (
                 <span
@@ -438,3 +439,4 @@ export default function MyPlanBillingTab({
     </div>
   );
 }
+

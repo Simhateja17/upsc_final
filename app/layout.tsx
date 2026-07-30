@@ -53,7 +53,7 @@ const merriweather = Merriweather({
   display: 'swap',
 })
 
-// Plus Jakarta Sans — the reference's display font (used for share-card headlines).
+// Plus Jakarta Sans - the reference's display font (used for share-card headlines).
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   weight: ['500', '600', '700', '800'],
@@ -61,7 +61,7 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 })
 
-// DM Serif Display — the Daily Answer Writing reference's heading font.
+// DM Serif Display - the Daily Answer Writing reference's heading font.
 const dmSerif = DM_Serif_Display({
   subsets: ['latin'],
   weight: ['400'],
@@ -70,7 +70,7 @@ const dmSerif = DM_Serif_Display({
   display: 'swap',
 })
 
-// Fraunces — the Study Material reference's serif display font ("Built the way UPSC tests you").
+// Fraunces - the Study Material reference's serif display font ("Built the way UPSC tests you").
 const fraunces = Fraunces({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],

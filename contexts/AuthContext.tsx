@@ -21,7 +21,7 @@ function sessionIdFromToken(accessToken: string): string | null {
 }
 
 /**
- * Register this session as the account's single active session — but only once
+ * Register this session as the account's single active session - but only once
  * per session_id, so page reloads and token refreshes don't re-claim the slot
  * and wrongly kick a device that logged in more recently (last-login-wins).
  */

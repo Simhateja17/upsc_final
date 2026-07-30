@@ -19,7 +19,7 @@ export const formatWritingTime = (s: number) =>
 /**
  * Shared writing-timer watch used by both the Daily Mains Challenge and the
  * Mains Mock Test so the countdown UI stays uniform across modules. This is the
- * canonical timer design — do not fork a new one.
+ * canonical timer design - do not fork a new one.
  */
 export default function WritingTimer({ timeLeft, totalSeconds, statusLabel, children }: WritingTimerProps) {
   const timerPct = totalSeconds > 0 ? (timeLeft / totalSeconds) * 100 : 0;

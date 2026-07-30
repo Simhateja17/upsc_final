@@ -733,7 +733,7 @@ export default function PyqPage() {
         return next;
       });
     } catch {
-      // keep prior state — bookmark toggle failed
+      // keep prior state - bookmark toggle failed
     } finally {
       setMainsBookmarkBusyIds((prev) => {
         const next = new Set(prev);
@@ -765,7 +765,7 @@ export default function PyqPage() {
       const cardId = res?.data?.id;
       router.push(`/dashboard/flashcards/${subjectId}/${topicId}${cardId ? `?cardId=${cardId}` : ''}`);
     } catch {
-      // keep prior state — flashcard creation failed
+      // keep prior state - flashcard creation failed
     } finally {
       setMainsFlashcardBusyIds((prev) => {
         const next = new Set(prev);
@@ -796,7 +796,7 @@ export default function PyqPage() {
       });
       setMainsReviewIds((prev) => new Set(prev).add(q.id));
     } catch {
-      // keep prior state — review save failed
+      // keep prior state - review save failed
     } finally {
       setMainsReviewBusyIds((prev) => {
         const next = new Set(prev);
@@ -835,7 +835,7 @@ export default function PyqPage() {
         return next;
       });
     } catch {
-      // keep prior state — bookmark toggle failed
+      // keep prior state - bookmark toggle failed
     } finally {
       setPrelimsBookmarkBusyIds((prev) => {
         const next = new Set(prev);
@@ -870,7 +870,7 @@ export default function PyqPage() {
       const cardId = res?.data?.id;
       router.push(`/dashboard/flashcards/${subjectId}/${topicId}${cardId ? `?cardId=${cardId}` : ''}`);
     } catch {
-      // keep prior state — flashcard creation failed
+      // keep prior state - flashcard creation failed
     } finally {
       setPrelimsFlashcardBusyIds((prev) => {
         const next = new Set(prev);
@@ -898,7 +898,7 @@ export default function PyqPage() {
           return next;
         });
       } catch {
-        // keep prior state — review removal failed
+        // keep prior state - review removal failed
       } finally {
         setPrelimsReviewBusyIds((prev) => {
           const next = new Set(prev);
@@ -923,7 +923,7 @@ export default function PyqPage() {
       const itemId = res?.data?.id;
       if (itemId) setPrelimsReviewItemIds((prev) => ({ ...prev, [q.id]: itemId }));
     } catch {
-      // keep prior state — review save failed
+      // keep prior state - review save failed
     } finally {
       setPrelimsReviewBusyIds((prev) => {
         const next = new Set(prev);
@@ -2200,7 +2200,7 @@ export default function PyqPage() {
                       />
                     </Link>
 
-                    {/* Options — inline interactive (matches Daily MCQ Challenge design) */}
+                    {/* Options - inline interactive (matches Daily MCQ Challenge design) */}
                     {opts.length > 0 && (
                       <div className="mb-4" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                         {opts.map((opt) => {
@@ -3350,7 +3350,7 @@ export default function PyqPage() {
                 const isCorrect  = opt.label === selectedQuestion?.correctOption;
                 const showCorrect = hasSubmitted && isCorrect;
                 const showWrong = hasSubmitted && isSelected && !isCorrect;
-                // Default (unselected) state — matches Daily MCQ Challenge design
+                // Default (unselected) state - matches Daily MCQ Challenge design
                 let bg = '#FFFFFF', border = '1px solid #E5E7EB', pipBg = '#F1F4F9', pipColor = '#475067', textColor = '#1E293B', textWeight = 400;
                 if (!hasSubmitted && isSelected) {
                   bg = '#0B1426'; border = '1.5px solid #0B1426'; pipBg = '#F5C518'; pipColor = '#0B1426'; textColor = '#FFFFFF'; textWeight = 600;
