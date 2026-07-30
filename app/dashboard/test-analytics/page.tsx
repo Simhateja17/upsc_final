@@ -375,7 +375,7 @@ export default function TestAnalyticsPage() {
             badgeText="Analytics - Test Dashboard"
             title={<>{user?.firstName ?? 'Your'}&apos;s <span style={{ fontStyle: 'italic', color: '#e8b84b' }}>Test Analytics</span></>}
             subtitle="Your complete UPSC test analytics — score trends, subject mastery, rank history, time management and AI-powered next steps."
-            stats={topStripCards.map(c => ({ value: c.value, label: c.label, color: c.valueColor }))}
+            stats={summaryCards.map(c => ({ value: c.value, label: c.title, color: c.color }))}
           />
         </div>
         <div className="mx-auto w-full max-w-[1100px] px-4 sm:px-6 lg:px-8 py-8">
