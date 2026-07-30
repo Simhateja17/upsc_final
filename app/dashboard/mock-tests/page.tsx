@@ -1541,7 +1541,6 @@ function MockTestsPageInner() {
                     { initials: 'PS', bg: '#A855F7' },
                     { initials: 'RV', bg: '#14B8A6' },
                     { initials: 'MH', bg: '#F97316' },
-                    { initials: '+2k', bg: '#4B5563' },
                   ].map((a, i) => (
                     <span
                       key={a.initials}
