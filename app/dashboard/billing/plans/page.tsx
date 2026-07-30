@@ -62,7 +62,6 @@ function BillingHero() {
     </div>
   );
 }
-
 type BillingCycle = 'monthly' | 'quarterly' | 'yearly';
 type RazorpaySuccessResponse = {
   razorpay_payment_id: string;
@@ -640,67 +639,73 @@ type PlanConfig = {
 const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
   aspire: {
     name: 'Aspire',
-    badge: 'Forever Free',
-    description: 'Build daily study habits. Begin your UPSC prep without spending a rupee.',
+    badge: 'Aspire Plan',
+    description: 'Build strong UPSC fundamentals with daily practice, proper guidance, and consistent preparation.',
     features: [
       'Daily MCQ Challenge',
-      'Daily Mains Challenge',
-      'Daily News Analysis - Hindu & IE',
+      'Daily Answer Writing Challenge',
+      'Daily News Analysis – The Hindu & IE',
       '10,000+ Previous Year Questions',
-      '2 Mains Evaluations / day',
-      'Jeet AI - 10 conversations / day',
+      '5 Mains Answer Evaluation / day',
+      'Simplified Video Lectures',
+      'Jeet AI Mentor – 10 Queries / day',
       'Study Planner & Time Tracker',
-      'Daily Leaderboard & Discussion Forum',
+      'Smart Syllabus Tracker',
+      'Daily Leaderboard',
+      'Live Study Room',
+      'Discussion Forum',
       'Mental Health Buddy',
-      'Mock Tests - Limited access',
-      'Revision Suite - Limited access',
-      'Performance Analytics - Limited view',
+      'Mock Tests – Limited access',
+      'Revision Suite – Limited access',
+      'Test Analytics – Limited view',
+      'Performance Analytics – Limited view',
     ],
     cycles: {
-      monthly:   { label: 'Monthly',   total: '0.00', perMonth: '0', save: '', duration: '1 month',   gstStrike: '0' },
-      quarterly: { label: 'Quarterly', total: '0.00', perMonth: '0', save: '', duration: '3 months',  gstStrike: '0' },
-      yearly:    { label: 'Yearly',    total: '0.00', perMonth: '0', save: '', duration: '12 months', gstStrike: '0' },
+      monthly:   { label: 'Monthly',   total: '199.00',  perMonth: '199', save: '',         duration: '1 month',   gstStrike: '45.61'  },
+      quarterly: { label: 'Quarterly', total: '479.00',  perMonth: '159', save: 'Save 20%', duration: '3 months',  gstStrike: '73.07'  },
+      yearly:    { label: 'Yearly',    total: '1439.00', perMonth: '119', save: 'Save 40%', duration: '12 months', gstStrike: '219.51' },
     },
   },
   rise: {
     name: 'Rise',
-    badge: 'Dedicated Study',
-    description: 'For serious aspirants who study daily and want measurable progress.',
+    badge: 'Rise Plan',
+    description: 'The complete ecosystem for focused, daily UPSC preparation.',
     features: [
-      '25 Mains Evaluations / day',
-      '25 Mock Test attempts / day',
+      '25 Mains Answer Evaluation / day',
+      '50 Prelims Mock Test attempts / day',
+      'Jeet AI Mentor – 100 Queries / day',
       'Full Performance Analytics Dashboard',
-      'Test Analytics - In-depth insights',
-      'Full Revision Suite - Flashcards, Mindmaps, Spaced Rep.',
-      'Jeet AI - 100 conversations / day',
-      'Live Study Room 24×7',
-      'Smart Syllabus Tracker',
+      'Comprehensive Test Analytics',
+      'Flashcards',
+      'Mindmaps',
+      'Spaced Repetition',
+      'Smart Notes',
     ],
     cycles: {
       monthly:   { label: 'Monthly',   total: '499.00',  perMonth: '499', save: '',         duration: '1 month',   gstStrike: '89.82'  },
       quarterly: { label: 'Quarterly', total: '1197.00', perMonth: '399', save: 'Save 20%', duration: '3 months',  gstStrike: '239.46' },
-      yearly:    { label: 'Yearly',    total: '3588.00', perMonth: '299', save: 'Save 40%', duration: '12 months', gstStrike: '717.60' },
+      yearly:    { label: 'Yearly',    total: '3599.00', perMonth: '299', save: 'Save 40%', duration: '12 months', gstStrike: '718.56' },
     },
   },
   ascent: {
     name: 'Ascent',
-    badge: 'Maximum Edge',
-    description: 'Unlimited tools, zero limits. For aspirants who leave nothing to chance.',
+    badge: 'Ascent Plan',
+    description: 'Unlimited tools, personalised mentorship. For aspirants who leave nothing to chance.',
     features: [
-      'Unlimited Mains Evaluations',
-      'Unlimited Mock Test practice',
-      'Jeet AI - Unlimited conversations',
-      'Weekly 1-on-1 mentorship (30 min)',
+      'Unlimited Mains Answer Evaluations',
+      'Unlimited Prelims Mock Test practice',
+      'Jeet AI – Unlimited Queries',
+      'Bi-Weekly 1-on-1 Mentorship Sessions',
+      'Interview (Personality Test) prep module',
       'Personalised Study Roadmap',
-      'Dedicated Q&A - Priority Responses',
+      'Dedicated Support with Quick Responses',
       'Monthly Performance Review Call',
-      'Exclusive Ascent Community',
       'Early Access to New Features',
     ],
     cycles: {
-      monthly:   { label: 'Monthly',   total: '999.00',  perMonth: '999', save: '',         duration: '1 month',   gstStrike: '152.39' },
-      quarterly: { label: 'Quarterly', total: '2397.00', perMonth: '799', save: 'Save 20%', duration: '3 months',  gstStrike: '365.64' },
-      yearly:    { label: 'Yearly',    total: '7188.00', perMonth: '599', save: 'Save 40%', duration: '12 months', gstStrike: '1096.68' },
+      monthly:   { label: 'Monthly',   total: '1999.00', perMonth: '1999', save: '',         duration: '1 month',   gstStrike: '304.93'  },
+      quarterly: { label: 'Quarterly', total: '4799.00', perMonth: '1599', save: 'Save 20%', duration: '3 months',  gstStrike: '732.59'  },
+      yearly:    { label: 'Yearly',    total: '14399.00', perMonth: '1199', save: 'Save 40%', duration: '12 months', gstStrike: '2194.78' },
     },
   },
 };
@@ -1321,13 +1326,7 @@ export default function ExplorePlansPage() {
     if (!canShowPlan(plan)) return;
     setCheckoutPlan(plan);
   };
-  const handleAspireCta = () => {
-    if (!isAuthenticated) {
-      openAuthModal('signup');
-      return;
-    }
-    router.push('/dashboard');
-  };
+  const handleAspireCta = () => handleOpenCheckout('aspire');
   const handleOpenRiseCheckout = () => handleOpenCheckout('rise');
   const handleOpenAscentCheckout = () => handleOpenCheckout('ascent');
   const currentSubscription = entitlements.subscription;
@@ -1447,36 +1446,41 @@ export default function ExplorePlansPage() {
         {/* 3 plan cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: 16, alignItems: 'stretch' }}>
 
-          {/* Aspire — forever free */}
+          {/* Aspire */}
           <article
             onMouseEnter={() => setHoveredPlan('aspire')}
             onMouseLeave={() => setHoveredPlan(null)}
             style={{ borderRadius: 20, border: '1px solid #E8E4DA', background: '#FFFFFF', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s ease, box-shadow 0.2s ease', transform: hoveredPlan === 'aspire' ? 'translateY(-6px)' : 'translateY(0)', boxShadow: hoveredPlan === 'aspire' ? '0 16px 40px rgba(11,22,40,0.12)' : '0 2px 8px rgba(0,0,0,0.06)' }}>
             <div style={{ padding: '35px 29px 39px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <p style={{ margin: '0 0 8px', fontSize: 10.2, fontWeight: 700, letterSpacing: '1.4px', textTransform: 'uppercase', color: '#D4900A', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Forever Free</p>
+              <p style={{ margin: '0 0 8px', fontSize: 10.2, fontWeight: 700, letterSpacing: '1.4px', textTransform: 'uppercase', color: '#D4900A', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Foundation</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Aspire</h3>
               <p style={{ margin: '8px 0 0', fontSize: 12.6, lineHeight: '19.6px', color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
-                Build daily study habits. Begin your UPSC prep without spending a rupee.
+                Build strong UPSC fundamentals with daily practice, proper guidance, and consistent preparation.
               </p>
               <div style={{ paddingTop: 21 }}>
-                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 41.6, fontWeight: 700, lineHeight: '41.6px', color: '#D4900A' }}>Free</span>
+                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 41.6, fontWeight: 700, lineHeight: '41.6px', color: '#D4900A' }}>₹{cycle === 'monthly' ? '199' : cycle === 'quarterly' ? '159' : '119'}</span>
               </div>
-              <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Always free, forever</p>
+              <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Billed monthly</p>
               <div style={{ height: 1, background: '#F0ECE4', margin: '20px 0' }} />
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {[
                   { text: 'Daily MCQ Challenge', limited: false },
-                  { text: 'Daily Mains Challenge', limited: false },
-                  { text: 'Daily News Analysis - Hindu & IE', limited: false },
+                  { text: 'Daily Answer Writing Challenge', limited: false },
+                  { text: 'Daily News Analysis – The Hindu & IE', limited: false },
                   { text: '10,000+ Previous Year Questions', limited: false },
-                  { text: '2 Mains Evaluations / day', limited: false },
-                  { text: 'Jeet AI - 10 conversations / day', limited: false },
+                  { text: '5 Mains Answer Evaluation / day', limited: false },
+                  { text: 'Simplified Video Lectures', limited: false },
+                  { text: 'Jeet AI Mentor – 10 Queries / day', limited: false },
                   { text: 'Study Planner & Time Tracker', limited: false },
-                  { text: 'Daily Leaderboard & Discussion Forum', limited: false },
+                  { text: 'Smart Syllabus Tracker', limited: false },
+                  { text: 'Daily Leaderboard', limited: false },
+                  { text: 'Live Study Room', limited: false },
+                  { text: 'Discussion Forum', limited: false },
                   { text: 'Mental Health Buddy', limited: false },
-                  { text: 'Mock Tests - Limited access', limited: true },
-                  { text: 'Revision Suite - Limited access', limited: true },
-                  { text: 'Performance Analytics - Limited view', limited: true },
+                  { text: 'Mock Tests – Limited access', limited: true },
+                  { text: 'Revision Suite – Limited access', limited: true },
+                  { text: 'Test Analytics – Limited view', limited: true },
+                  { text: 'Performance Analytics – Limited view', limited: true },
                 ].map((item) => (
                   <li key={item.text} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13.1, color: '#4A4A68', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
                     <span style={{ flexShrink: 0, width: 17, height: 17, borderRadius: 8.5, display: 'flex', alignItems: 'center', justifyContent: 'center', background: item.limited ? '#FEF3DC' : '#DCFCE7', color: item.limited ? '#D4900A' : '#16A34A', fontWeight: 800, fontSize: item.limited ? 9 : 11 }}>{item.limited ? '~' : '✓'}</span>
@@ -1490,10 +1494,10 @@ export default function ExplorePlansPage() {
                 disabled={planCtaState('aspire').disabled}
                 style={{ marginTop: 24, width: '100%', borderRadius: 11, padding: '13px 16px', fontSize: 13.9, fontWeight: 700, cursor: planCtaState('aspire').disabled ? 'default' : 'pointer', border: 'none', background: planCtaState('aspire').disabled ? '#F3F1EC' : '#FFFFFF', boxShadow: planCtaState('aspire').disabled ? 'none' : '0px 1px 1.5px rgba(0,0,0,0.1)', color: planCtaState('aspire').disabled ? '#8A8AAA' : '#0F2040', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}
               >
-                {planCtaState('aspire').label || 'Get Started Free →'}
+                {planCtaState('aspire').label || 'Get Aspire →'}
               </button>
               <p style={{ margin: '8px 0 0', fontSize: 11.2, color: '#8A8AAA', textAlign: 'center', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
-                No card needed • Upgrade anytime
+                Upgrade anytime • Cancel at cycle end
               </p>
             </div>
           </article>
@@ -1905,7 +1909,7 @@ export default function ExplorePlansPage() {
           {/* 2-column FAQ grid */}
           {(() => {
             const faqs = [
-              { q: 'Is Aspire really free forever?', a: 'Yes, absolutely. Aspire is free for life, no card required. You get 2 mains evaluations/day, 10 MCQ Challenge questions/day, 10 Jeet AI conversations/day, 10,000+ PYQs, study planner, leaderboard and more, forever.' },
+              { q: 'What does Aspire include?', a: 'Aspire is the entry paid plan with 5 mains evaluations/day, 5 Prelims tests/day, 10 Jeet AI Mentor queries/day, limited analytics and revision tools, plus the core study features.' },
               { q: "What's the difference between Rise and Ascent?", a: 'Rise gives you 25 mains evaluations/day, 25 mock test attempts/day, 100 Jeet AI conversations/day, full performance & test analytics, and the complete revision suite. Ascent removes every limit entirely unlimited evaluations, mock tests and Jeet AI plus weekly 1-on-1 mentorship, a personalised roadmap, priority Q&A and a monthly performance review call.' },
               { q: 'Is there a money-back guarantee?', a: "Yes. Every paid plan comes with a 7-day money-back guarantee Rise's is no-questions-asked, and Ascent's is included as standard. Just reach out to support within 7 days of your purchase." },
               { q: 'How much do I save on quarterly & yearly plans?', a: "Quarterly billing saves you 20% compared to monthly, and yearly billing saves you 40% almost 5 months free. For example, Rise monthly is ₹499, but yearly brings it down to ₹299/month. Discounts are automatically applied at checkout." },
@@ -1973,11 +1977,11 @@ export default function ExplorePlansPage() {
             <br />the Right Way
           </h2>
           <p style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 14.9, color: 'rgba(255,255,255,0.52)', maxWidth: 480, margin: '0 auto 32px', lineHeight: '25.59px' }}>
-            Join 15,000+ aspirants. Start free with Aspire — no card, no commitment, no expiry. Upgrade only when you feel it.
+            Join 15,000+ aspirants. Start with Aspire and upgrade when you need higher limits.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
             <button type="button" onClick={handleAspireCta} style={{ borderRadius: 10, border: 'none', padding: '13px 34px', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 14.6, fontWeight: 800, color: '#0C1424', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              Start Free with Aspire →
+              Get Aspire →
             </button>
             <button type="button" onClick={() => router.push('/contact')} style={{ borderRadius: 10, border: '1px solid rgba(255,255,255,0.14)', padding: '14px 27px', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 14.6, fontWeight: 600, color: 'rgba(255,255,255,0.78)', background: 'rgba(255,255,255,0.07)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               Contact Us
