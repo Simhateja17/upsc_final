@@ -677,6 +677,19 @@
   padding: 20px 20px 28px; z-index: 199;
   flex-direction: column; gap: 0;
   animation: mobileNavFade 0.2s ease;
+  /* The panel is position:fixed with no bottom edge, so anything taller than
+     the screen (Pricing, the login buttons) was clipped and unreachable —
+     the page behind it is scroll-locked while the menu is open. Cap it to the
+     space under the 60px nav bar and let the panel itself scroll.
+     max-height (not bottom:0) keeps the panel hugging its content on short
+     menus, preserving the existing drop-down look. */
+  max-height: calc(100vh - 60px);
+  max-height: calc(100dvh - 60px); /* dvh tracks iOS/Android collapsing toolbars; vh above is the fallback */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* momentum scrolling on older iOS */
+  overscroll-behavior: contain; /* don't chain the scroll to the locked page behind */
+  /* Keep the last item clear of the iPhone home indicator. */
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
 }
 .mobile-nav.open { display: flex; }
 @keyframes mobileNavFade { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: translateY(0) } }

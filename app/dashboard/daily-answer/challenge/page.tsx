@@ -71,6 +71,12 @@ const READING_WINDOW_SECONDS = 15;
 // on dailyMainsQuestion.paper, so they pass straight through to the API.
 const PAPER_TABS = ['All', 'GS Paper I', 'GS Paper II', 'GS Paper III', 'GS Paper IV'] as const;
 
+// How many past challenges the list shows. When a paper tab is active we
+// over-fetch (server max is 31) so the client-side filter below still has
+// enough rows to fill the list.
+const PAST_CHALLENGE_COUNT = 3;
+const PAST_CHALLENGE_FETCH_LIMIT = 31;
+
 function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -269,11 +275,23 @@ function DailyMainsChallengeInner() {
     let cancelled = false;
     dailyAnswerService.getCalendar({
       to: addDaysStr(todayStr, -1),
-      limit: 3,
+      limit: paperFilter === 'All' ? PAST_CHALLENGE_COUNT : PAST_CHALLENGE_FETCH_LIMIT,
       // 'All' sends no filter, so the endpoint returns every paper as before.
       ...(paperFilter === 'All' ? {} : { paper: paperFilter }),
     })
-      .then(res => { if (!cancelled) setRecentItems(res.data?.items || []); })
+      .then(res => {
+        if (cancelled) return;
+        const items: CalendarItem[] = res.data?.items || [];
+        // The paper filter is applied here as well as being sent to the API.
+        // The currently deployed /daily-answer/calendar ignores ?paper= and
+        // returns every paper, which is why the tabs appeared to do nothing.
+        // Filtering client-side keeps the tabs correct on the old endpoint; on
+        // a backend that does filter, this pass is simply a no-op.
+        const filtered = paperFilter === 'All'
+          ? items
+          : items.filter(i => (i.paper || '').trim().toLowerCase() === paperFilter.toLowerCase());
+        setRecentItems(filtered.slice(0, PAST_CHALLENGE_COUNT));
+      })
       .catch(() => { if (!cancelled) setRecentItems([]); });
     return () => { cancelled = true; };
   }, [todayStr, paperFilter]);

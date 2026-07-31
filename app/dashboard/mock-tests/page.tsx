@@ -334,6 +334,11 @@ function MockTestsPageInner() {
   const minQuestionCount = 1;
   const maxQuestionCount = selectedExamMode === 'mains' ? 20 : 100;
   const questionSliderProgress = ((questionCount - minQuestionCount) / (maxQuestionCount - minQuestionCount)) * 100;
+  // Single source of truth for the Active Aspirants count: the platform-stats
+  // API (`usersCount`). Rendered in exactly one place on this page.
+  const activeAspirantsCount = platformStats
+    ? platformStats.usersCount.toLocaleString('en-IN') + '+'
+    : '2,400+';
   const subjectCountMap = subjects.reduce<Record<string, number>>((acc, subject) => {
     acc[subject.name] = subject.count;
     return acc;
@@ -1551,13 +1556,24 @@ function MockTestsPageInner() {
                     </span>
                   ))}
                 </div>
+<<<<<<< HEAD
+                {/* Active Aspirants — the page's only display of this count, sourced from the platform-stats API */}
+                <span style={{ textAlign: 'center' }}>{activeAspirantsCount} aspirants actively preparing on this platform</span>
+=======
                 <span>{(platformStats?.studentsAttemptedTodayCount ?? 0).toLocaleString('en-IN')} students took a test today</span>
+>>>>>>> 227f2923629426850781101685002916ea391043
               </div>
               </div>
             </div>
           </div>
 
         </div>
+<<<<<<< HEAD
+
+        {/* Bottom "Social Proof Banner: Aspirants" removed per client feedback —
+            the Active Aspirants count now renders only in the setup summary panel. */}
+=======
+>>>>>>> 227f2923629426850781101685002916ea391043
       </main>
     </div>
   );
