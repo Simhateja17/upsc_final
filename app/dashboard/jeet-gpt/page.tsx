@@ -536,7 +536,7 @@ export default function JeetGPTPage() {
       if (parsed.title === 'Limit reached') {
         setShowUpgradeModal(true);
       } else if (parsed.title === 'Slow down for a bit') {
-        // Internal hourly throttle — keep the wording generic, never surface the hourly cap.
+        // Internal hourly throttle - keep the wording generic, never surface the hourly cap.
         setError('Jeet AI Mentor is handling heavy queries right now. Please try again in a little while.');
       } else {
         setError(parsed.message || 'Failed to get response. Please try again.');
@@ -579,7 +579,7 @@ export default function JeetGPTPage() {
   const fillPct = quotaLimit ? Math.min(100, Math.round((quotaUsed / quotaLimit) * 100)) : 0;
   // Proactive "Explore Pro" nudge: shown once usage gets high (>= 50% of the daily
   // cap) but before the cap is hit. The at-limit case is handled by the upgrade modal.
-  // NOTE: 50% threshold is a business choice — adjust HIGH_USAGE_THRESHOLD as needed.
+  // NOTE: 50% threshold is a business choice - adjust HIGH_USAGE_THRESHOLD as needed.
   const HIGH_USAGE_THRESHOLD = 0.5;
   const showProBanner =
     quotaLimit !== null &&
@@ -698,7 +698,7 @@ export default function JeetGPTPage() {
               <div className="jai-main-title">
                 <span className="jai-brand-jeet">Jeet</span>{' '}
                 <span className="jai-brand-mentor">AI Mentor</span>{' '}
-                — Your UPSC Preparation Partner
+                - Your UPSC Preparation Partner
               </div>
               <div className="jai-main-sub">Ask anything about your preparation</div>
             </div>
@@ -718,7 +718,7 @@ export default function JeetGPTPage() {
                 <span className="jai-brand-jeet">Jeet</span>{' '}
                 <span className="jai-brand-mentor">AI Mentor</span>.
               </div>
-              <div className="jai-welcome-sub">Your intelligent UPSC preparation partner — from Ancient History to Current Affairs, revision strategy, ethics case studies, or just thinking through a tough concept together.</div>
+              <div className="jai-welcome-sub">Your intelligent UPSC preparation partner - from Ancient History to Current Affairs, revision strategy, ethics case studies, or just thinking through a tough concept together.</div>
 
               <div className="jai-prompt-cards">
                 {suggestionCards.map((card) => (

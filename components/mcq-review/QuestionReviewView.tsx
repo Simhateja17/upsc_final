@@ -6,7 +6,7 @@ import { flashcardService, bookmarkService, spacedRepService } from '@/lib/servi
 import { getSubjectBadgeStyle } from '@/lib/subjectPalette';
 
 /* ─────────────────────────────────────────────────────────────
-   QuestionReviewView — the shared Answer Review screen used by
+   QuestionReviewView - the shared Answer Review screen used by
    BOTH the Daily MCQ Challenge review page and the Prelims Mock
    Test review page. It owns the filter tabs, expandable question
    cards, per-question actions (Add to Flashcard / Need to Review /
@@ -211,7 +211,7 @@ export default function QuestionReviewView({
   };
 
   // Bulk-save every weak (wrong) question that isn't already in the Spaced
-  // Repetition queue — one click to stash the whole weak-areas list for revision.
+  // Repetition queue - one click to stash the whole weak-areas list for revision.
   const handleSaveAllWeak = async (weakQuestions: ReviewQuestion[]) => {
     const pending = weakQuestions.filter(q => !needReview[q.id]);
     if (pending.length === 0) {

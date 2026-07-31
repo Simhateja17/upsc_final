@@ -125,7 +125,7 @@ export default function SubjectChoiceCard({
         style={style}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        aria-label={`${title} — ${lockLabel}, upgrade to unlock`}
+        aria-label={`${title} - ${lockLabel}, upgrade to unlock`}
       >
         <div className="flex flex-1 flex-col w-full" style={{ filter: 'blur(4px)', pointerEvents: 'none', userSelect: 'none' }} aria-hidden>
           {content}

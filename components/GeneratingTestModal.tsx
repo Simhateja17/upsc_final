@@ -23,7 +23,7 @@ type Props = {
   variant?: Variant;
 };
 
-/* Only the wording differs between exam modes — the design, animation,
+/* Only the wording differs between exam modes - the design, animation,
    progress behavior, speed and layout are shared. Prelims swaps the
    Mains-only "evaluation rubric" step for an exam-simulation step and keeps
    the same emojis so the center dribble animation is unchanged. */
@@ -69,7 +69,7 @@ export default function GeneratingTestModal({ isReady, onComplete, variant = 'ma
     return () => clearInterval(id);
   }, [isReady]);
 
-  /* ── Center emoji "dribble" — cycles only the non-final emojis
+  /* ── Center emoji "dribble" - cycles only the non-final emojis
         (the green ✅ is reserved for completion) ── */
   useEffect(() => {
     const cycleCount = STEPS.length - 1; // exclude the final ✅
@@ -171,7 +171,7 @@ export default function GeneratingTestModal({ isReady, onComplete, variant = 'ma
           </div>
         </div>
 
-        {/* ── Title (no subtitle — steps live below) ── */}
+        {/* ── Title (no subtitle - steps live below) ── */}
         <h2
           style={{
             margin: 0,

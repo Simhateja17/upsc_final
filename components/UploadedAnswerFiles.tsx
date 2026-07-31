@@ -12,7 +12,7 @@ type Props = {
 
 /**
  * Uploaded-answer file list with visible thumbnails, in-page preview and a
- * remove action — extracted from the Mains Answer Evaluation module so the
+ * remove action - extracted from the Mains Answer Evaluation module so the
  * Daily Answer Writing (and any other upload area) reuse the exact same UI.
  */
 export default function UploadedAnswerFiles({ files, onRemove }: Props) {

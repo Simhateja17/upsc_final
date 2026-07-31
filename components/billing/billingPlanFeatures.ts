@@ -67,3 +67,4 @@ export const CANCELLATION_LOSSES = [
   'Mental Health Buddy',
   'Unlimited Mock Tests',
 ];
+

@@ -134,7 +134,7 @@ export default function SpacedRepetitionPage() {
     ];
   })();
 
-  // The subject grid is driven only by outstanding SR reviews — never by MCQ accuracy.
+  // The subject grid is driven only by outstanding SR reviews - never by MCQ accuracy.
   const subjectReviewState = (() => {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
@@ -175,7 +175,7 @@ export default function SpacedRepetitionPage() {
           stats={heroStats.map(s => ({ value: String(s.value), label: s.label, color: s.valueColor }))}
         />
 
-        {/* Everything below the blue hero — ported from the reference exactly. */}
+        {/* Everything below the blue hero - ported from the reference exactly. */}
         <div className="sr-scope">
           {/* SECTION 1: SUBJECT CARDS */}
           <section className="subjects-section">

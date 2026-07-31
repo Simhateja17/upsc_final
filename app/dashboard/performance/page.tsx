@@ -63,7 +63,7 @@ function AnalyticsCard({ children, className = '' }: { children: React.ReactNode
   );
 }
 
-/* Lockable analytics card — reference card treatment with the existing
+/* Lockable analytics card - reference card treatment with the existing
    entitlement blur/lock overlay (navy lock circle + gold lock + UPGRADE TO
    UNLOCK on hover). Locked cards open the tier-specific upgrade modal. */
 function LockedAnalyticsCard({
@@ -179,7 +179,7 @@ function DonutChart({ items, centerLabel }: { items: DistributionItem[]; centerL
 
 /* Chart/area heading with the reference's coloured dot marker.
    Reference font sizes vary by section (chart/area titles 14px, streak/trio
-   18.7→15.4px, badges/leaderboard 16.8px) — pass `size`/`mb` to match. */
+   18.7→15.4px, badges/leaderboard 16.8px) - pass `size`/`mb` to match. */
 function CardHeading({ dotColor, children, right, size = 14, mb = 16 }: { dotColor?: string; children: React.ReactNode; right?: React.ReactNode; size?: number; mb?: number }) {
   return (
     <div className="flex items-center justify-between gap-4" style={{ marginBottom: mb }}>
@@ -427,7 +427,7 @@ export default function PerformancePage() {
             </div>
           )}
 
-          {/* Stat cards — open on every plan */}
+          {/* Stat cards - open on every plan */}
           <div className="grid grid-cols-2 gap-[10px] sm:grid-cols-3 lg:grid-cols-6">
             {summaryCards.map((card) => (
               <StatCard
@@ -442,7 +442,7 @@ export default function PerformancePage() {
             ))}
           </div>
 
-          {/* Weekly Analytics — Study Time + Time Distribution */}
+          {/* Weekly Analytics - Study Time + Time Distribution */}
           <SectionDivider label="Weekly Analytics" />
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <LockedAnalyticsCard
@@ -628,7 +628,7 @@ export default function PerformancePage() {
                           label: 'Editorial',
                           value: selectedDayDetail.editorialsTotal > 0
                             ? `${selectedDayDetail.editorialsRead}/${selectedDayDetail.editorialsTotal}`
-                            : '—',
+                            : '-',
                         },
                       ].map((stat) => (
                         <div key={stat.label}>

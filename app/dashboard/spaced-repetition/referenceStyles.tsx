@@ -5,7 +5,7 @@ import React from 'react';
 /**
  * Scoped port of the reference HTML/CSS (RiseWithJeet | Spaced Repetition).
  * Everything is namespaced under `.sr-scope` so it never collides with the
- * surrounding dashboard styles. This reproduces — exactly — every section
+ * surrounding dashboard styles. This reproduces - exactly - every section
  * BELOW the blue hero: subject cards, the science/timeline/retention sections,
  * the notification preview, the CTA banner, the full question view and the
  * Add-Question / Review modals.
@@ -139,7 +139,7 @@ const CSS = `
 .sr-scope .retention-curve.visible .curve-svg{opacity:1;transform:translateY(0);transition-delay:.26s}
 .sr-scope .retention-curve.visible .retention-info{opacity:1;transform:translateY(0);transition-delay:.42s}
 
-/* Pulsing halo on each "review" marker, once revealed — same rhythm as the
+/* Pulsing halo on each "review" marker, once revealed - same rhythm as the
    reference's modal-icon ring pulse (scale + fade, ease-in-out, looping). */
 @keyframes sr-dot-pulse{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.7);opacity:.05}}
 .sr-scope .curve-dot-ring{transform-box:fill-box;transform-origin:center;opacity:0;animation:sr-dot-pulse 2.4s ease-in-out infinite}

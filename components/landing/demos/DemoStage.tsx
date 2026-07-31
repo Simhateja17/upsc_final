@@ -11,7 +11,7 @@ export const DEMO_H = 660;
  * Scales the fixed 380x660 asset down to whatever width the AI
  * section's column gives us, so the demos stay inside the device frame
  * on narrow viewports without any of the assets' internals needing to
- * become fluid. Never scales above 1 — the assets are pixel-tuned and
+ * become fluid. Never scales above 1 - the assets are pixel-tuned and
  * upscaling them looks soft.
  */
 export function useFitScale(ref: React.RefObject<HTMLElement | null>) {
@@ -39,7 +39,7 @@ export function useFitScale(ref: React.RefObject<HTMLElement | null>) {
  * Center of `el` relative to `root`, walking the offsetParent chain.
  *
  * The assets used getBoundingClientRect, which reports post-transform
- * pixels — wrong here, because DemoStage scales the whole card on
+ * pixels - wrong here, because DemoStage scales the whole card on
  * narrow viewports and the cursors live *inside* that scaled subtree.
  * offsetLeft/offsetTop ignore transforms, so these stay in the card's
  * own authored coordinate space at any scale.
@@ -82,7 +82,7 @@ export default function DemoStage({
 
   return (
     /* Height comes from .demo-content in landing.css, which derives the
-       same 380:660 ratio from its own width — so the stage just fills
+       same 380:660 ratio from its own width - so the stage just fills
        it and only has to work out the card's scale factor. */
     <div ref={stageRef} className="jd-stage" aria-hidden="true">
       <div className={`jd-card ${variant}`} style={{ '--jd-scale': scale } as React.CSSProperties}>

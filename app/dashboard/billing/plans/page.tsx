@@ -22,15 +22,7 @@ function BillingHero() {
         padding: '40px 24px 44px',
       }}
     >
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt=""
-          className="absolute left-0 w-full max-w-none"
-          style={{ height: '128%', top: '-14%' }}
-          src="/billing-hero-shine.png"
-        />
-      </div>
+
       <div className="relative z-10 flex items-center gap-3 mb-5">
         <span style={{ display: 'block', width: 44, height: 1, background: 'linear-gradient(to right, transparent, #C8972A)' }} />
         <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '2.5px', color: '#C8972A', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
@@ -62,7 +54,6 @@ function BillingHero() {
     </div>
   );
 }
-
 type BillingCycle = 'monthly' | 'quarterly' | 'yearly';
 type RazorpaySuccessResponse = {
   razorpay_payment_id: string;
@@ -640,71 +631,76 @@ type PlanConfig = {
 const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
   aspire: {
     name: 'Aspire',
-    badge: 'Forever Free',
-    description: 'Build daily study habits. Begin your UPSC prep without spending a rupee.',
+    badge: 'Aspire Plan',
+    description: 'Build strong UPSC fundamentals with daily practice, proper guidance, and consistent preparation.',
     features: [
       'Daily MCQ Challenge',
-      'Daily Mains Challenge',
-      'Daily News Analysis - Hindu & IE',
+      'Daily Answer Writing Challenge',
+      'Daily News Analysis – The Hindu & IE',
       '10,000+ Previous Year Questions',
-      '2 Mains Evaluations / day',
-      'Jeet AI - 10 conversations / day',
+      '5 Mains Answer Evaluation / day',
+      'Simplified Video Lectures',
+      'Jeet AI Mentor – 10 Queries / day',
       'Study Planner & Time Tracker',
-      'Daily Leaderboard & Discussion Forum',
+      'Smart Syllabus Tracker',
+      'Daily Leaderboard',
+      'Live Study Room',
+      'Discussion Forum',
       'Mental Health Buddy',
-      'Mock Tests - Limited access',
-      'Revision Suite - Limited access',
-      'Performance Analytics - Limited view',
+      'Mock Tests – Limited access',
+      'Revision Suite – Limited access',
+      'Test Analytics – Limited view',
+      'Performance Analytics – Limited view',
     ],
     cycles: {
-      monthly:   { label: 'Monthly',   total: '0.00', perMonth: '0', save: '', duration: '1 month',   gstStrike: '0' },
-      quarterly: { label: 'Quarterly', total: '0.00', perMonth: '0', save: '', duration: '3 months',  gstStrike: '0' },
-      yearly:    { label: 'Yearly',    total: '0.00', perMonth: '0', save: '', duration: '12 months', gstStrike: '0' },
+      monthly:   { label: 'Monthly',   total: '199.00',  perMonth: '199', save: '',         duration: '1 month',   gstStrike: '45.61'  },
+      quarterly: { label: 'Quarterly', total: '479.00',  perMonth: '159', save: 'Save 20%', duration: '3 months',  gstStrike: '73.07'  },
+      yearly:    { label: 'Yearly',    total: '1439.00', perMonth: '119', save: 'Save 40%', duration: '12 months', gstStrike: '219.51' },
     },
   },
   rise: {
     name: 'Rise',
-    badge: 'Dedicated Study',
-    description: 'For serious aspirants who study daily and want measurable progress.',
+    badge: 'Rise Plan',
+    description: 'The complete ecosystem for focused, daily UPSC preparation.',
     features: [
-      '25 Mains Evaluations / day',
-      '25 Mock Test attempts / day',
+      '25 Mains Answer Evaluation / day',
+      '50 Prelims Mock Test attempts / day',
+      'Jeet AI Mentor – 100 Queries / day',
       'Full Performance Analytics Dashboard',
-      'Test Analytics - In-depth insights',
-      'Full Revision Suite - Flashcards, Mindmaps, Spaced Rep.',
-      'Jeet AI - 100 conversations / day',
-      'Live Study Room 24×7',
-      'Smart Syllabus Tracker',
+      'Comprehensive Test Analytics',
+      'Flashcards',
+      'Mindmaps',
+      'Spaced Repetition',
+      'Smart Notes',
     ],
     cycles: {
       monthly:   { label: 'Monthly',   total: '499.00',  perMonth: '499', save: '',         duration: '1 month',   gstStrike: '89.82'  },
       quarterly: { label: 'Quarterly', total: '1197.00', perMonth: '399', save: 'Save 20%', duration: '3 months',  gstStrike: '239.46' },
-      yearly:    { label: 'Yearly',    total: '3588.00', perMonth: '299', save: 'Save 40%', duration: '12 months', gstStrike: '717.60' },
+      yearly:    { label: 'Yearly',    total: '3599.00', perMonth: '299', save: 'Save 40%', duration: '12 months', gstStrike: '718.56' },
     },
   },
   ascent: {
     name: 'Ascent',
-    badge: 'Maximum Edge',
-    description: 'Unlimited tools, zero limits. For aspirants who leave nothing to chance.',
+    badge: 'Ascent Plan',
+    description: 'Unlimited tools, personalised mentorship. For aspirants who leave nothing to chance.',
     features: [
-      'Unlimited Mains Evaluations',
-      'Unlimited Mock Test practice',
-      'Jeet AI - Unlimited conversations',
-      'Weekly 1-on-1 mentorship (30 min)',
+      'Unlimited Mains Answer Evaluations',
+      'Unlimited Prelims Mock Test practice',
+      'Jeet AI – Unlimited Queries',
+      'Bi-Weekly 1-on-1 Mentorship Sessions',
+      'Interview (Personality Test) prep module',
       'Personalised Study Roadmap',
-      'Dedicated Q&A - Priority Responses',
+      'Dedicated Support with Quick Responses',
       'Monthly Performance Review Call',
-      'Exclusive Ascent Community',
       'Early Access to New Features',
     ],
     cycles: {
-      monthly:   { label: 'Monthly',   total: '999.00',  perMonth: '999', save: '',         duration: '1 month',   gstStrike: '152.39' },
-      quarterly: { label: 'Quarterly', total: '2397.00', perMonth: '799', save: 'Save 20%', duration: '3 months',  gstStrike: '365.64' },
-      yearly:    { label: 'Yearly',    total: '7188.00', perMonth: '599', save: 'Save 40%', duration: '12 months', gstStrike: '1096.68' },
+      monthly:   { label: 'Monthly',   total: '1999.00', perMonth: '1999', save: '',         duration: '1 month',   gstStrike: '304.93'  },
+      quarterly: { label: 'Quarterly', total: '4799.00', perMonth: '1599', save: 'Save 20%', duration: '3 months',  gstStrike: '732.59'  },
+      yearly:    { label: 'Yearly',    total: '14399.00', perMonth: '1199', save: 'Save 40%', duration: '12 months', gstStrike: '2194.78' },
     },
   },
 };
-
 type CheckoutStep = 'checkout' | 'pending' | 'success' | 'failed';
 
 function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => void }) {
@@ -1254,16 +1250,15 @@ export default function ExplorePlansPage() {
   const currentRank = { free: 0, aspire: 1, rise: 2, ascent: 3 }[currentTier];
   const hasRealSubscription = currentTier !== 'free' && !!entitlements.subscription;
 
-  // Admins can preview any tier via the plan switcher in /admin. A pure simulation never
-  // attaches a real Subscription row, so treat a rise/ascent simulation as "paid" too —
-  // otherwise the My Plan & Billing preview they're testing for would never be reachable.
+  // Admins can preview any paid tier (including Aspire) via the plan switcher in /admin.
+  // A pure simulation never attaches a real Subscription row, so the My Plan & Billing card
+  // must render as a clearly-labeled preview whenever the override is active — Aspire is a
+  // paid tier like Rise/Ascent, not a free default, so it gets no special exemption here.
   const isAdminSimulating = Boolean(entitlements.summary?.override?.isAdminPlanSimulation);
-  const isPreviewTier = isAdminSimulating && (currentTier === 'rise' || currentTier === 'ascent');
-  const isPreview = isPreviewTier && !hasRealSubscription;
+  const isPreview = isAdminSimulating && !hasRealSubscription;
 
-  // Aspire is a real, always-on tier now (never "no plan") — every authenticated user has
-  // *something* to show on My Plan & Billing, not just paying subscribers. currentTier only
-  // stays 'free' while logged out or before entitlements have finished their first load.
+  // currentTier only stays 'free' while logged out or before entitlements have finished
+  // their first load — every other tier (including Aspire) has something real to show.
   const canViewMyPlan = isAuthenticated && currentTier !== 'free';
   const canShowPlan = (plan: PlanKey) => ({ aspire: 1, rise: 2, ascent: 3 }[plan] > currentRank);
 

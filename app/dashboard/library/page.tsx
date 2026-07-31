@@ -41,7 +41,7 @@ const LockIcon = () => (
   </svg>
 );
 
-/* "Why aspirants pick us" feature icons — lucide line icons, inherit `currentColor`. */
+/* "Why aspirants pick us" feature icons - lucide line icons, inherit `currentColor`. */
 const FeatureSvg = ({ children }: { children: React.ReactNode }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     {children}
@@ -360,7 +360,7 @@ export default function LibraryPage() {
             flexWrap: isMobile ? ('nowrap' as const) : ('wrap' as const),
           }}
         >
-          {/* ── Left Sidebar — mirrors the Syllabus Tracker "Subjects" box ── */}
+          {/* ── Left Sidebar - mirrors the Syllabus Tracker "Subjects" box ── */}
           <div
             className="bg-white rounded-[14px] border-[1.5px] border-[#e0e8f4] flex flex-col overflow-hidden shadow-sm"
             style={{
@@ -711,7 +711,7 @@ export default function LibraryPage() {
                 })}
               </div>
 
-              {/* Search — right side of tab bar */}
+              {/* Search - right side of tab bar */}
               <div className="flex items-center" style={{ gap: '8px', paddingBottom: '2px' }}>
                 {showSearch && (
                   <div className="flex items-center" style={{
@@ -937,7 +937,7 @@ export default function LibraryPage() {
                   {/* Action buttons */}
                   <div className="flex items-center" style={{ gap: '10px', flexShrink: 0, flexBasis: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-end' : undefined }}>
                     {material.isLocked ? (
-                      /* Unlock & Get PDF — glossy gold, dark text + lock icon */
+                      /* Unlock & Get PDF - glossy gold, dark text + lock icon */
                       <button
                         className="font-arimo font-bold sm-btn sm-btn-gold sm-shine"
                         onClick={handleGetPdf}
@@ -947,7 +947,7 @@ export default function LibraryPage() {
                       </button>
                     ) : (
                       <>
-                        {/* Read — ghost (light) button + open-book icon */}
+                        {/* Read - ghost (light) button + open-book icon */}
                         <button
                           className="font-arimo font-bold sm-btn sm-btn-ghost"
                           onClick={() => materialId && handleRead(material)}
@@ -956,7 +956,7 @@ export default function LibraryPage() {
                           <BookOpenIcon />
                           {loadingRead === materialId ? 'Opening…' : 'Read'}
                         </button>
-                        {/* Get PDF — glossy gold + download icon + shine */}
+                        {/* Get PDF - glossy gold + download icon + shine */}
                         <button
                           className="font-arimo font-bold sm-btn sm-btn-gold sm-shine"
                           onClick={handleGetPdf}
@@ -1085,7 +1085,7 @@ export default function LibraryPage() {
             marginBottom: 'clamp(40px, 4vw, 60px)',
           }}
         >
-          {/* Header — eyebrow + serif title */}
+          {/* Header - eyebrow + serif title */}
           <div className="flex flex-wrap items-end justify-between" style={{ gap: 'clamp(8px, 1vw, 16px)' }}>
             <div style={{ minWidth: 'min(280px, 100%)' }}>
               <div
@@ -1138,7 +1138,7 @@ export default function LibraryPage() {
                     boxShadow: '0 1px 0 rgba(13,20,36,.04), 0 0 0 1px rgba(13,20,36,.06)',
                   }}
                 >
-                  {/* Icon — rounded-square tinted box */}
+                  {/* Icon - rounded-square tinted box */}
                   <div
                     style={{
                       width: '40px',

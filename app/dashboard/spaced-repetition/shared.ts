@@ -1,5 +1,5 @@
 // Shared constants, types and helpers for the Spaced Repetition pages
-// (step 1: subject grid — page.tsx, step 2: questions list — [subjectId]/page.tsx).
+// (step 1: subject grid - page.tsx, step 2: questions list - [subjectId]/page.tsx).
 
 export type SpacedRepItem = {
   id: string;

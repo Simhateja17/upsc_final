@@ -5,7 +5,7 @@
    section's device frame. Every rule is scoped under a `.jd-*`
    root so the assets' generic class names (.card, .screen, .tag,
    .section, .divider …) cannot leak into or collide with
-   landing.css — or with each other.
+   landing.css - or with each other.
 
    Source assets:
      mains-evaluator-app-website.html   → .jd-mains
@@ -67,7 +67,7 @@
 }
 /* The demos scroll their own inner panes (the CA modal auto-scroll
    tweens scrollTop, so those panes must stay scrollable) but they are
-   non-interactive showcases — hide the scrollbars rather than letting
+   non-interactive showcases - hide the scrollbars rather than letting
    them read as controls. */
 .jd-card .jd-scroll {
   overflow-y: auto;
@@ -298,7 +298,7 @@
 }
 
 /* ── Phase 2.5: Jeet AI analysing ──
-   NOTE: the source asset ships this CSS but has no matching markup —
+   NOTE: the source asset ships this CSS but has no matching markup -
    its <body> only contains the upload, scan and eval phases. Kept
    here verbatim (delays converted from the asset's invalid percentage
    animation-delay values to seconds) so the screen drops straight in

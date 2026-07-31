@@ -159,7 +159,7 @@ function parseSections(md: string): { title: string; body: string }[] {
 
   const isSectionHeading = (line: string): string | null => {
     const trimmed = line.trim();
-    const h3Match = trimmed.match(/^#{3}\s*((?:\d+[.)]\s*)?.+?)(?:\s*[-–—]\s*.+)?$/);
+    const h3Match = trimmed.match(/^#{3}\s*((?:\d+[.)]\s*)?.+?)(?:\s*[-–-]\s*.+)?$/);
     if (h3Match) return h3Match[1].trim();
     const h12Match = trimmed.match(/^#{1,2}\s*((?:\d+[.)]\s*)?.+)$/);
     if (h12Match) return h12Match[1].trim();
@@ -1342,7 +1342,7 @@ export default function DailyEditorialPage() {
 
           const isSectionHeading = (line: string): string | null => {
             const trimmed = line.trim();
-            const h3Match = trimmed.match(/^#{3}\s*((?:\d+[.)]\s*)?.+?)(?:\s*[-–—]\s*.+)?$/);
+            const h3Match = trimmed.match(/^#{3}\s*((?:\d+[.)]\s*)?.+?)(?:\s*[-–-]\s*.+)?$/);
             if (h3Match) return h3Match[1].trim();
             const h12Match = trimmed.match(/^#{1,2}\s*((?:\d+[.)]\s*)?.+)$/);
             if (h12Match) return h12Match[1].trim();
@@ -1544,7 +1544,7 @@ export default function DailyEditorialPage() {
                     return filtered.map((sec, idx) => (
                       <div key={idx} style={{ marginBottom: idx === filtered.length - 1 ? 0 : 24 }}>
                         <div style={{ fontSize: 14, fontWeight: 700, color: '#0B1020', marginBottom: 10, paddingLeft: 12, borderLeft: '3px solid #F5B800' }}>
-                          {idx + 1}. {sec.title.replace(/^#{1,3}\s*/, '').replace(/^\d+[.)]\s*/, '').replace(/\s*[-–—]\s*.*$/, '').trim()}
+                          {idx + 1}. {sec.title.replace(/^#{1,3}\s*/, '').replace(/^\d+[.)]\s*/, '').replace(/\s*[-–-]\s*.*$/, '').trim()}
                         </div>
                         <div style={{ paddingLeft: 16 }}>{renderSectionBody(sec.title, sec.body)}</div>
                       </div>
@@ -1622,7 +1622,7 @@ export default function DailyEditorialPage() {
         .jeetSummary-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:100px;font-size:12px;font-weight:600;letter-spacing:.02em;}
         .jeetSummary-chip-purple{background:#EEF0FF;color:#4338CA;}
         .jeetSummary-chip-blue{background:#E8F0FF;color:#1d4ed8;}
-        /* Subtle, GPU-accelerated hover lift for news cards — no layout shift. */
+        /* Subtle, GPU-accelerated hover lift for news cards - no layout shift. */
         .ca-news-card{box-shadow:0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1);transition:transform .18s ease, box-shadow .18s ease, filter .25s ease, opacity .25s ease, background-color .25s ease;will-change:transform;}
         .ca-news-card:hover{transform:translateY(-3px);box-shadow:0px 12px 24px -6px rgba(16,24,40,0.12), 0px 4px 8px -4px rgba(16,24,40,0.08);}
         /* The whole card is a button (opens the Jeet AI summary) — give keyboard users a focus ring. */

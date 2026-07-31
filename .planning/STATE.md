@@ -17,7 +17,7 @@ progress:
 
 ## Project
 
-- **Name:** UPSC Platform — Jeet App Backend Integration
+- **Name:** UPSC Platform - Jeet App Backend Integration
 - **Current Phase:** 01-app-backend-integration
 - **Status:** planning
 

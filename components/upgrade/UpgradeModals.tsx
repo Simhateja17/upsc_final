@@ -2,7 +2,7 @@
 
 /**
  * Plan-limit upgrade modals.
- * Faithful ports of the approved designs in upgrade_htmls/ — one shell shared by
+ * Faithful ports of the approved designs in upgrade_htmls/ - one shell shared by
  * every feature, with per-feature icon/copy variants keyed by plan tier.
  */
 
@@ -353,7 +353,7 @@ const LOCKED_CARD_CSS = `
   transition: filter 0.3s ease;
 }
 /* The wrapped SubjectChoiceCard renders as a <button>/<a>, which sizes to its
-   content by default — force it to fill the grid cell like an unwrapped card. */
+   content by default - force it to fill the grid cell like an unwrapped card. */
 .upm-lock-wrap .upm-lock-blur > * { width: 100%; }
 .upm-lock-wrap:hover .upm-lock-blur { filter: blur(4px); }
 .upm-lock-overlay {

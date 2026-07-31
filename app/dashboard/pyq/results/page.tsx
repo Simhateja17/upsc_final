@@ -9,7 +9,7 @@ import MainsResultsView, { MainsQuestionResultData } from '@/components/mains-re
 const SESSION_KEY = 'pyqMainsResultsSession';
 
 /**
- * PYQ Mains results — same experience as the Daily Answer Writing results
+ * PYQ Mains results - same experience as the Daily Answer Writing results
  * page, rendered by the shared MainsResultsView. The PYQ practice page stores
  * { questionId, attemptId } in sessionStorage when an evaluation completes and
  * redirects here; ?questionId=&attemptId= query params work as a fallback so

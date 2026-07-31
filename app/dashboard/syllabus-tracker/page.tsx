@@ -19,7 +19,7 @@ import { SyllabusTrackerLimitModal } from '@/components/upgrade/UpgradeModals';
 export type Mode = 'prelims' | 'mains' | 'optional';
 export type Status = 'none' | 'done' | 'in-progress' | 'needs-revision' | 'weak';
 
-// UPSC optional subjects — kept in sync with the Profile settings selector.
+// UPSC optional subjects - kept in sync with the Profile settings selector.
 const OPTIONAL_SUBJECTS = [
   'Agriculture',
   'Animal Husbandry and Veterinary Science',
@@ -134,9 +134,9 @@ export default function SyllabusTrackerPage() {
     }
 
     // Deduplicate sub-topics where prelims and mains data was merged, keeping the more detailed entry.
-    // Normalizes British/American spelling and strips "— detail" suffixes before comparing.
+    // Normalizes British/American spelling and strips "- detail" suffixes before comparing.
     const dedupeBase = (s: string) =>
-      s.split(/\s*[—–]\s*/)[0]
+      s.split(/\s*[-–]\s*/)[0]
         .toLowerCase()
         .replace(/isation\b/g, 'ization')
         .replace(/\s+/g, ' ')

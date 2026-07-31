@@ -131,9 +131,9 @@ The codebase is a Next.js 14 frontend with an Express/TypeScript backend (`upsc_
 ## Maintenance Burden
 
 ### Outdated / Risky Dependencies
-- `pdf-parse` v2.4.5 — unmaintained, RCE risk.
-- `string-similarity` v4.0.4 — last published 4+ years ago.
-- `openai` v6.x — does not exist on npm registry; likely misconfigured.
+- `pdf-parse` v2.4.5 - unmaintained, RCE risk.
+- `string-similarity` v4.0.4 - last published 4+ years ago.
+- `openai` v6.x - does not exist on npm registry; likely misconfigured.
 
 ### Duplicated API Client Logic
 - **Problem:** Every service in `lib/services.ts` manually constructs `fetch` calls with Authorization headers. There is no centralized HTTP client with interceptors for retries, token refresh, or global error handling.
@@ -157,7 +157,7 @@ The codebase is a Next.js 14 frontend with an Express/TypeScript backend (`upsc_
 
 1. **Integrate real payment gateway** and remove mock `rzp_test_mock` key. Add webhook signature verification.
 2. **Replace `pdf-parse`** with a secure, maintained PDF text extractor (e.g., `pdfjs-dist` in a sandboxed worker).
-3. **Audit and fix `openai` package version** — downgrade to the latest v4 stable release.
+3. **Audit and fix `openai` package version** - downgrade to the latest v4 stable release.
 4. **Move JWT tokens from `localStorage` to httpOnly cookies** to mitigate XSS token theft.
 5. **Enable Zod validation** on all backend routes; write schemas for every controller.
 6. **Purge committed log/temp files** from the repo and update `.gitignore`.

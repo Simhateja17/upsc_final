@@ -50,7 +50,7 @@ export const TOPIC_ICONS: Record<string, string> = {
   'Space': '🚀', 'Nuclear': '☢️', 'Computer': '💻', 'IT': '💻',
   'Biotechnology': '🧬', 'Nanotechnology': '🔬', 'Defence': '🛡️',
   'Health': '🏥', 'Disease': '🦠',
-  // Cross-cutting keywords — appended last so the specific keys above win first.
+  // Cross-cutting keywords - appended last so the specific keys above win first.
   // These help long, descriptive mindmap titles resolve to a relevant icon
   // instead of the generic fallback.
   'Demographic': '👥', 'Population': '👥', 'Census': '👥', 'Migration': '🧳',

@@ -11,7 +11,7 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
 
 /**
- * Mock Test demo — client asset `mock-test-animation-website.html`.
+ * Mock Test demo - client asset `mock-test-animation-website.html`.
  *
  * A 20s loop: a hand cursor picks the wrong option on two MCQs, hits
  * Submit, and the explanation screen slides in. Option/badge states are

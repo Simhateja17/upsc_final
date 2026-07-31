@@ -230,7 +230,7 @@ export default function ContactPage() {
                   ) : (
                     <div className="mt-2">
                       <label className="mb-1 block text-[11px] font-semibold text-[#374560]" style={{ fontFamily: 'var(--font-dm-sans)' }}>
-                        Email address (no email on file — please add one)
+                        Email address (no email on file - please add one)
                       </label>
                       <input
                         type="email"

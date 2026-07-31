@@ -20,7 +20,7 @@ interface Props {
 
 function parseNumberedStatements(text: string): QuestionStructure | null {
   const normalized = text
-    .replace(/[–—]/g, '-')
+    .replace(/[–-]/g, '-')
     .replace(/\s+(\d+\.)\s+/g, '\n$1 ')
     .trim();
 

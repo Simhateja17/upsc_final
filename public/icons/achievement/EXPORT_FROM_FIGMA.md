@@ -1,4 +1,4 @@
-# Achievement Badge Icons — Manual 4× Export Guide
+# Achievement Badge Icons - Manual 4× Export Guide
 
 The icons here are placeholders pulled via Figma's MCP at the node's native **56×56**. The MCP doesn't expose a scale parameter, so to get a true high-resolution render you need to export them yourself from Figma at **4× scale**.
 
@@ -6,17 +6,17 @@ The icons here are placeholders pulled via Figma's MCP at the node's native **56
 
 1. Open the file: <https://www.figma.com/design/8V9xMITDodlUxuNAZGMKAl/upsc>
 2. Open the right panel → **Export** section.
-3. With nothing selected, set the default export to: **4x**, **PNG**. (Or set it per-node — the table below tells you which node to select.)
+3. With nothing selected, set the default export to: **4x**, **PNG**. (Or set it per-node - the table below tells you which node to select.)
 
 ## Recommended workflow (batch, fastest)
 
-1. On the canvas, frame-select all 54 `Overlay+Border` nodes — easiest way: click into the achievement-badges page, then on the layers panel hold **Ctrl** (Windows) and click each row named "Overlay+Border". You can also hover the badge tile and **Alt-click** to drill straight into it.
+1. On the canvas, frame-select all 54 `Overlay+Border` nodes - easiest way: click into the achievement-badges page, then on the layers panel hold **Ctrl** (Windows) and click each row named "Overlay+Border". You can also hover the badge tile and **Alt-click** to drill straight into it.
 2. With all 54 selected, in the **Export** panel pick **4x · PNG** and hit **Export 54**.
-3. Figma names the files `Overlay+Border.png`, `Overlay+Border-1.png`, etc. — **the order is unpredictable**, so the safer route is per-node export below, or rename them by matching the visible emoji against the table.
+3. Figma names the files `Overlay+Border.png`, `Overlay+Border-1.png`, etc. - **the order is unpredictable**, so the safer route is per-node export below, or rename them by matching the visible emoji against the table.
 
 ## Per-node export (most reliable)
 
-For each row, click the URL — Figma opens the file with that exact node selected. Then **Export · 4x · PNG** and save as the filename in column 2 (overwrite the existing file).
+For each row, click the URL - Figma opens the file with that exact node selected. Then **Export · 4x · PNG** and save as the filename in column 2 (overwrite the existing file).
 
 | Badge title | Save as | Open in Figma |
 |---|---|---|
@@ -77,7 +77,7 @@ For each row, click the URL — Figma opens the file with that exact node select
 
 ## After you replace the files
 
-Each PNG must be **224×224** (i.e. 4× of the original 56×56 design size). Just drop them into this folder — `public/icons/achievement/` — keeping the filenames above. The page (`app/dashboard/achievement-badges/page.tsx`) already references them by `key` so nothing else needs to change.
+Each PNG must be **224×224** (i.e. 4× of the original 56×56 design size). Just drop them into this folder - `public/icons/achievement/` - keeping the filenames above. The page (`app/dashboard/achievement-badges/page.tsx`) already references them by `key` so nothing else needs to change.
 
 ## Faster alternative: a Figma Personal Access Token
 

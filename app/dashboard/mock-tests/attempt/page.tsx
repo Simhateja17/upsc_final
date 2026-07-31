@@ -35,7 +35,7 @@ type QuestionStatus = 'unattempted' | 'answered' | 'marked' | 'current';
 
 function normalizeQuestionText(text: string): string {
   return text
-    .replace(/[–—]/g, '-')
+    .replace(/[–-]/g, '-')
     .replace(/\s+(\d+\.)\s+/g, '\n$1 ')
     .replace(/\s+-\s+/g, ' ');
 }
@@ -180,7 +180,7 @@ function MockTestAttemptInner() {
   const [mainsConfirmOpen, setMainsConfirmOpen] = useState(false);
   const [showMainsQuotaModal, setShowMainsQuotaModal] = useState(false);
   const [mainsAnswers, setMainsAnswers] = useState<Record<number, MainsAnswer>>({});
-  // Questions the user has explicitly marked as "didn't attempt" — these are
+  // Questions the user has explicitly marked as "didn't attempt" - these are
   // allowed through submission without an answer upload and are not evaluated.
   const [unattemptedQuestions, setUnattemptedQuestions] = useState<Record<number, boolean>>({});
   // Index of the question whose missing-answer popup is open (null = closed).
@@ -259,7 +259,7 @@ function MockTestAttemptInner() {
         });
         setQuestionStatuses(statuses);
         // Both modes derive total time deterministically from the question count
-        // so the timer always matches the setup summary and instructions — never a
+        // so the timer always matches the setup summary and instructions - never a
         // stale/random API duration.
         //   Mains:   7 min per 10-mark question (numberOfQuestions × 7).
         //   Prelims: 100 questions = 120 minutes, scaled proportionally (× 1.2).
@@ -453,7 +453,7 @@ function MockTestAttemptInner() {
     const missing = firstMissingAnswer();
     if (missing !== -1) {
       // A question is still missing an answer and hasn't been marked
-      // unattempted — re-open the prompt instead of blocking silently.
+      // unattempted - re-open the prompt instead of blocking silently.
       setMainsConfirmOpen(false);
       setMissingAnswerIdx(missing);
       return;
@@ -619,7 +619,7 @@ function MockTestAttemptInner() {
     }
   };
 
-  // Stats — Daily MCQ Challenge semantics: a flagged question counts as
+  // Stats - Daily MCQ Challenge semantics: a flagged question counts as
   // "Mark for Review"; answered/skipped/not-visited are mutually exclusive.
   const answeredCount = questions.filter((q, i) => selectedOptions[i] && !flagged[String(q.id)]).length;
   const skippedCount = questions.filter((q, i) => skipped[i] && !selectedOptions[i] && !flagged[String(q.id)]).length;
@@ -899,7 +899,7 @@ function MockTestAttemptInner() {
           .ams-card.ams-hand { order:1; }
           .ams-card.ams-type { order:2; }
 
-          /* Card hover — proper hover on BOTH cards */
+          /* Card hover - proper hover on BOTH cards */
           .ams-card:hover { transform:translateY(-8px); }
           .ams-card.ams-type:hover { border-color:rgba(35,103,255,0.55); box-shadow:0 44px 90px rgba(35,103,255,0.16), 0 10px 26px rgba(31,43,77,0.10); }
           .ams-card.ams-hand:hover { border-color:rgba(255,176,32,0.62); box-shadow:0 44px 90px rgba(204,91,5,0.15), 0 10px 26px rgba(31,43,77,0.10); }
@@ -1261,12 +1261,12 @@ function MockTestAttemptInner() {
               const answer = mainsAnswers[i] || { text: '', file: null, files: [] };
               const wordCount = answer.text.trim() ? answer.text.trim().split(/\s+/).filter(Boolean).length : 0;
               const isDone = !!tickedQuestions[i];
-              // Real upload state for this question — driven by the actual files
+              // Real upload state for this question - driven by the actual files
               // attached, never hardcoded. Powers the green "Uploaded" capsule.
               const isUploaded = answer.files.length > 0;
               const isUnattempted = !!unattemptedQuestions[i];
               // The card's green "success" styling reflects the Done tick while writing,
-              // but during the upload phase it must reflect a REAL upload — so the box
+              // but during the upload phase it must reflect a REAL upload - so the box
               // stays neutral/default until the answer is actually uploaded, then turns green.
               const isBoxComplete = showUpload ? isUploaded : isDone;
               return (
@@ -1331,7 +1331,7 @@ function MockTestAttemptInner() {
                       </button>
                     )}
                     {/* Upload screen: the completion capsule reflects the real
-                        upload state — green "Uploaded" once files are attached,
+                        upload state - green "Uploaded" once files are attached,
                         neutral "Not uploaded" until then. Never hardcoded. */}
                     {showUpload && (
                       <span
@@ -1387,14 +1387,14 @@ function MockTestAttemptInner() {
                     </div>
                   </div>
 
-                  {/* Question text — gold-bordered serif blockquote (matches Daily Answer Writing) */}
+                  {/* Question text - gold-bordered serif blockquote (matches Daily Answer Writing) */}
                   <div style={{ borderRadius: 10, background: '#F9FAFB', padding: 16, boxShadow: '0px 1px 2px -1px #0000001A', borderLeft: '4px solid #C9A84C' }}>
                     <p className="italic" style={{ fontSize: 16, lineHeight: '26px', color: '#101828', fontFamily: 'var(--font-merriweather), Georgia, serif', margin: 0 }}>
                       &quot;{stripMarksSuffix(q.text)}&quot;
                     </p>
                   </div>
 
-                  {/* Answer area — depends on the chosen mode */}
+                  {/* Answer area - depends on the chosen mode */}
                   {isHandwrite && showUpload && (
                     /* Handwrite mode, writing done: per-question multi-file upload */
                     <div className="flex flex-col gap-2">
@@ -1543,7 +1543,7 @@ function MockTestAttemptInner() {
               );
             })}
 
-            {/* Submit all — handwrite mode gates this behind "I'm done writing" */}
+            {/* Submit all - handwrite mode gates this behind "I'm done writing" */}
             <div className="flex flex-col gap-2">
               {isHandwrite && !showUpload ? (
                 <button
@@ -1599,7 +1599,7 @@ function MockTestAttemptInner() {
                       {examRunning ? '⏸ Pause' : '▶ Resume'}
                     </button>
 
-                    {/* Upload My Answer — descriptive (Write on Paper) only; reveals the
+                    {/* Upload My Answer - descriptive (Write on Paper) only; reveals the
                         upload step and scrolls to it. Never shown for objective/prelims. */}
                     {isHandwrite && (
                       <>
@@ -1627,7 +1627,7 @@ function MockTestAttemptInner() {
                   </div>
                 </WritingTimer>
 
-                {/* Progress — reflects the questions marked "Done" */}
+                {/* Progress - reflects the questions marked "Done" */}
                 <div
                   className="bg-white flex flex-col items-center"
                   style={{ borderRadius: 20, marginTop: 16, padding: 20, boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A' }}
@@ -1686,10 +1686,10 @@ function MockTestAttemptInner() {
                       <span className="font-bold text-[#101828]" style={{ fontSize: 13, letterSpacing: '0.04em' }}>QUICK TIPS FOR BEST EVALUATION</span>
                     </div>
                     {[
-                      { key: 'ink', icon: '✏️', label: 'Ink & Paper', points: ['Use dark blue or black ink only', 'Unruled sheets work best for evaluation', 'Avoid pencil — AI may miss faint marks'] },
-                      { key: 'photo', icon: '📷', label: 'Photography', points: ['Take photos in bright, shadow-free lighting', 'Keep camera parallel to paper (no angle)', 'Avoid reflections — turn off flash if needed'] },
+                      { key: 'ink', icon: '✏️', label: 'Ink & Paper', points: ['Use dark blue or black ink only', 'Unruled sheets work best for evaluation', 'Avoid pencil - AI may miss faint marks'] },
+                      { key: 'photo', icon: '📷', label: 'Photography', points: ['Take photos in bright, shadow-free lighting', 'Keep camera parallel to paper (no angle)', 'Avoid reflections - turn off flash if needed'] },
                       { key: 'format', icon: '📝', label: 'Writing Format', points: ['Leave proper margins on both sides', 'Write question numbers clearly at the top', 'Upload pages in correct order (P1, P2...)'] },
-                      { key: 'accuracy', icon: '🎯', label: 'For Accuracy', points: ['Number each page if multi-page answer', 'Keep handwriting legible — not too rushed', 'Upload the right page for each question'] },
+                      { key: 'accuracy', icon: '🎯', label: 'For Accuracy', points: ['Number each page if multi-page answer', 'Keep handwriting legible - not too rushed', 'Upload the right page for each question'] },
                     ].map((tip) => (
                       <div key={tip.key} style={{ borderBottom: '1px solid #F3F4F6' }}>
                         <button
@@ -1848,7 +1848,7 @@ function MockTestAttemptInner() {
               ⚠️ Please upload your answer page for Question {missingAnswerIdx + 1} before submitting.
             </h2>
             <p style={{ margin: '0 0 24px', color: '#4F5D7B', fontSize: 15, lineHeight: 1.55, fontWeight: 500 }}>
-              If you didn&apos;t attempt this question, you can mark it as unattempted and continue — it won&apos;t be sent for evaluation.
+              If you didn&apos;t attempt this question, you can mark it as unattempted and continue - it won&apos;t be sent for evaluation.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <button
@@ -1973,7 +1973,7 @@ function MockTestAttemptInner() {
         </div>
       )}
 
-      {/* In-page uploaded-answer preview — stays inside the upload flow (no new tab / no navigation) */}
+      {/* In-page uploaded-answer preview - stays inside the upload flow (no new tab / no navigation) */}
       <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
       </div>
     );

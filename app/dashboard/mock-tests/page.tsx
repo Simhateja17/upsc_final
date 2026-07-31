@@ -66,7 +66,7 @@ const MAINS_SUBJECTS = [
 
 // Focus Subjects available for each Mains GS Paper. The Focus Subject list in
 // the Exam Mode section is derived from the currently selected GS Paper using
-// this mapping — never a single hardcoded list for every paper.
+// this mapping - never a single hardcoded list for every paper.
 const MAINS_PAPER_FOCUS_SUBJECTS: Record<string, string[]> = {
   gs1: ['History', 'Geography', 'Society'],
   gs2: ['Polity', 'International Relations', 'Governance', 'Social Justice'],
@@ -154,7 +154,7 @@ const optionalSubjectIcons: Record<string, string> = {
 };
 
 // Mock Test Mains only uses 10-mark questions (cheaper to auto-evaluate),
-// so every question in the set is a 10-marker — including Full Length.
+// so every question in the set is a 10-marker - including Full Length.
 function buildMainsMarksPattern(questionCount: number) {
   return Array(Math.max(1, questionCount)).fill(10);
 }
@@ -312,7 +312,7 @@ function MockTestsPageInner() {
   const [optionalSubjects, setOptionalSubjects] = useState(fallbackOptionalSubjects);
   const [difficulties, setDifficulties] = useState(fallbackDifficulties);
   const [practiceStats, setPracticeStats] = useState<{ todayCount: number; streak: number } | null>(null);
-  const [platformStats, setPlatformStats] = useState<{ questionsCount: number; testsCount: number; usersCount: number } | null>(null);
+  const [platformStats, setPlatformStats] = useState<{ questionsCount: number; testsCount: number; usersCount: number; studentsAttemptedTodayCount: number } | null>(null);
   const [badgeCount, setBadgeCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -431,7 +431,7 @@ function MockTestsPageInner() {
             })));
           }
           if (cfg.examModes) setExamModes(cfg.examModes);
-          // mainsPaperTypes are fixed UPSC papers — always use the static fallback
+          // mainsPaperTypes are fixed UPSC papers - always use the static fallback
           if (cfg.optionalSubjects) setOptionalSubjects(cfg.optionalSubjects);
           if (Array.isArray(cfg.difficulties)) {
             const normalizedDifficulties = cfg.difficulties
@@ -470,7 +470,18 @@ function MockTestsPageInner() {
     return () => { cancelled = true; };
   }, []);
 
-  /* ─── Badges earned (independent, non-blocking — feeds the "Your Activity" card) ─── */
+  /* ─── Re-fetch platform stats every minute so the "students took a test
+     today" banner stays current. ─── */
+  useEffect(() => {
+    const interval = setInterval(() => {
+      mockTestService.getPlatformStats()
+        .then((res) => { if (res.data) setPlatformStats(res.data); })
+        .catch(() => {});
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  /* ─── Badges earned (independent, non-blocking - feeds the "Your Activity" card) ─── */
   useEffect(() => {
     let cancelled = false;
     dashboardService.getAchievements()
@@ -562,7 +573,7 @@ function MockTestsPageInner() {
       if (!testId) {
         throw new Error('No test ID returned from server');
       }
-      // Hand the id to the modal — it finishes its progress animation and
+      // Hand the id to the modal - it finishes its progress animation and
       // then navigates via onComplete.
       setGeneratedTestId(testId);
     } catch (err: any) {
@@ -619,7 +630,7 @@ function MockTestsPageInner() {
   );
 
   /* ─── If the user has already exhausted their plan's Custom Mock Tests, show
-     the upgrade popup immediately on page entry — don't wait for a Generate
+     the upgrade popup immediately on page entry - don't wait for a Generate
      click. Only fires once real usage has loaded, and only once per visit. ─── */
   useEffect(() => {
     if (!usageChecked || entitlements.loading) return;
@@ -1340,7 +1351,7 @@ function MockTestsPageInner() {
                 </span>
               </div>
 
-              {/* Activity Rows — streak, tests taken today, badges earned */}
+              {/* Activity Rows - streak, tests taken today, badges earned */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(14px, 1.1vw, 18px)', marginBottom: 'clamp(18px, 1.4vw, 26px)' }}>
                 {[
                   {
@@ -1388,7 +1399,7 @@ function MockTestsPageInner() {
                 ))}
               </div>
 
-              {/* Test Summary — keeps the selected configuration visible while
+              {/* Test Summary - keeps the selected configuration visible while
                   retaining the activity information above. */}
               <div style={{
                 borderTop: '1px solid rgba(255,255,255,0.1)',
@@ -1529,31 +1540,54 @@ function MockTestsPageInner() {
                 fontSize: 'clamp(10px, 0.68vw, 12px)',
                 color: '#64748B',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                  {['#22C55E', '#F97316', '#3B82F6'].map((color, i) => (
+                <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                  {[
+                    { initials: 'AK', bg: '#3B82F6' },
+                    { initials: 'PS', bg: '#A855F7' },
+                    { initials: 'RV', bg: '#14B8A6' },
+                    { initials: 'MH', bg: '#F97316' },
+                  ].map((a, i) => (
                     <span
-                      key={i}
+                      key={a.initials}
                       style={{
-                        width: '7px',
-                        height: '7px',
+                        width: '18px',
+                        height: '18px',
                         borderRadius: '50%',
-                        background: color,
+                        background: a.bg,
+                        border: '1.5px solid #0B1220',
+                        color: '#FFFFFF',
+                        fontFamily: 'var(--font-inter), Inter, sans-serif',
+                        fontWeight: 700,
+                        fontSize: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         flexShrink: 0,
+                        marginLeft: i === 0 ? 0 : '-6px',
                       }}
-                    />
+                    >
+                      {a.initials}
+                    </span>
                   ))}
                 </div>
+<<<<<<< HEAD
                 {/* Active Aspirants — the page's only display of this count, sourced from the platform-stats API */}
                 <span style={{ textAlign: 'center' }}>{activeAspirantsCount} aspirants actively preparing on this platform</span>
+=======
+                <span>{(platformStats?.studentsAttemptedTodayCount ?? 0).toLocaleString('en-IN')} students took a test today</span>
+>>>>>>> 227f2923629426850781101685002916ea391043
               </div>
               </div>
             </div>
           </div>
 
         </div>
+<<<<<<< HEAD
 
         {/* Bottom "Social Proof Banner: Aspirants" removed per client feedback —
             the Active Aspirants count now renders only in the setup summary panel. */}
+=======
+>>>>>>> 227f2923629426850781101685002916ea391043
       </main>
     </div>
   );

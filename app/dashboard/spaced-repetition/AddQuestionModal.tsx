@@ -18,7 +18,7 @@ type Props = {
   defaultSubjectId?: string;
   /**
    * When set, the modal edits this item instead of creating a new one. The schedule
-   * field is hidden — reviews are rescheduled from the day buttons on the question row.
+   * field is hidden - reviews are rescheduled from the day buttons on the question row.
    * Must be a stable reference (component state), not an object built during render.
    */
   editItem?: SpacedRepItem | null;
@@ -67,7 +67,7 @@ export default function AddQuestionModal({ open, onClose, defaultSubjectId, edit
 
   if (!open) return null;
 
-  // An item may sit in a subject outside the standard list — keep it selectable so editing
+  // An item may sit in a subject outside the standard list - keep it selectable so editing
   // never silently reassigns it.
   const subjectChoices = subjectOptions.some((s) => s.id === subjectId)
     ? subjectOptions

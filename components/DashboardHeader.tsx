@@ -138,7 +138,7 @@ const DashboardHeader = ({ onMenuClick }: DashboardHeaderProps) => {
         try { localStorage.setItem(seenKey, JSON.stringify(merged)); } catch {}
       }
     } catch {
-      // Silent fail — notification fetch is non-critical
+      // Silent fail - notification fetch is non-critical
     }
   }, [seenKey, dismissToast]);
 

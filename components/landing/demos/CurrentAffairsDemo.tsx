@@ -74,19 +74,19 @@ const easeOutPower2 = (t: number) => 1 - (1 - t) ** 2;
 const easeInOutPower1 = (t: number) => (t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) ** 2);
 
 /**
- * Current Affairs demo — client asset `daily-current-affairs-app-websit.html`.
+ * Current Affairs demo - client asset `daily-current-affairs-app-websit.html`.
  *
  * A cinematic one-shot: cards stagger in, a hand cursor glides to
  * "Jeet AI Summary", clicks, the summary modal opens and auto-scrolls
  * through its sections. Restarts each time the slide becomes active.
  *
- * Reimplemented without GSAP (the asset pulled 3.12 off cdnjs) — the
+ * Reimplemented without GSAP (the asset pulled 3.12 off cdnjs) - the
  * timeline is a handful of eased tweens, so it runs on one rAF loop
  * plus CSS transitions for the class-driven states. Everything is
  * scoped to the card: the asset positioned its cursor `fixed` against
  * window.innerHeight, which would have thrown it across the page.
  *
- * The asset's opening "phone flies in" beat is dropped — the card *is*
+ * The asset's opening "phone flies in" beat is dropped - the card *is*
  * the device frame's content here, so sliding it would expose the
  * frame's background. The ambient particles are dropped for the same
  * reason (tuned for that file's dark standalone backdrop).
@@ -149,13 +149,13 @@ export default function CurrentAffairsDemo({ active }: { active: boolean }) {
     glow.style.opacity = '0';
     ripple.style.opacity = '0';
 
-    // Phase 1 — cards stagger in (CSS transitions do the easing).
+    // Phase 1 - cards stagger in (CSS transitions do the easing).
     cards.forEach((card, i) => after(200 + i * 180, () => card.classList.add('is-in')));
 
-    // Phase 2 — bottom action bar rises.
+    // Phase 2 - bottom action bar rises.
     after(900, () => orbit?.classList.add('is-in'));
 
-    // Phase 3 — cursor glides to the summary button over 2s.
+    // Phase 3 - cursor glides to the summary button over 2s.
     after(1600, () => {
       if (!btn) return;
       const target = centerWithin(btn, screen);
@@ -170,7 +170,7 @@ export default function CurrentAffairsDemo({ active }: { active: boolean }) {
         glow.style.transform = `translate3d(${x - 30}px, ${y - 30}px, 0)`;
       });
 
-      // Phase 4 — click: ripple out of the button, glow fades.
+      // Phase 4 - click: ripple out of the button, glow fades.
       after(2200, () => {
         cursor.classList.add('clicking');
         ripple.style.left = `${target.x - 20}px`;
@@ -181,7 +181,7 @@ export default function CurrentAffairsDemo({ active }: { active: boolean }) {
         });
         tween(400, (t) => t, (t) => { glow.style.opacity = `${0.6 * (1 - t)}`; });
 
-        // Phase 5 — modal opens, cursor drifts off.
+        // Phase 5 - modal opens, cursor drifts off.
         after(550, () => {
           setModalOpen(true);
           cursor.classList.remove('clicking');
@@ -192,7 +192,7 @@ export default function CurrentAffairsDemo({ active }: { active: boolean }) {
             cursor.style.opacity = `${1 - t}`;
           });
 
-          // Phase 6 — walk the modal down section by section, then home.
+          // Phase 6 - walk the modal down section by section, then home.
           after(900, () => {
             const body = modalBodyRef.current;
             if (!body) return;

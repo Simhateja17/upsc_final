@@ -21,9 +21,9 @@
 **Plans:** 6 plans (created)
 
 Plans:
-- [x] 01-01-PLAN.md — Foundation: Network layer, auth, base architecture
-- [x] 01-02-PLAN.md — Core User: Dashboard, profile, settings, streaks
-- [x] 01-03-PLAN.md — Daily Features: Daily MCQ, answer writing, editorials
-- [x] 01-04-PLAN.md — Study Features: Mock tests, PYQ, flashcards, mindmaps
-- [x] 01-05-PLAN.md — Content Features: Videos, library, current affairs, study planner
-- [x] 01-06-PLAN.md — Advanced Features: AI chat, analytics, billing, search
+- [x] 01-01-PLAN.md - Foundation: Network layer, auth, base architecture
+- [x] 01-02-PLAN.md - Core User: Dashboard, profile, settings, streaks
+- [x] 01-03-PLAN.md - Daily Features: Daily MCQ, answer writing, editorials
+- [x] 01-04-PLAN.md - Study Features: Mock tests, PYQ, flashcards, mindmaps
+- [x] 01-05-PLAN.md - Content Features: Videos, library, current affairs, study planner
+- [x] 01-06-PLAN.md - Advanced Features: AI chat, analytics, billing, search

@@ -169,7 +169,7 @@ export default function FlashcardsSubjectPage() {
             </div>
           )}
 
-          {/* Step heading — just "2. Choose a Topic", no green tick */}
+          {/* Step heading - just "2. Choose a Topic", no green tick */}
           <div className="flex items-center justify-between gap-3 mb-5">
             <div className="flex items-center gap-3">
               <div

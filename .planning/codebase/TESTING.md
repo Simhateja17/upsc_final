@@ -35,7 +35,7 @@ Testing is minimal in this codebase. There is no formal test suite integrated in
 
 | Type | Framework | Location | Coverage |
 |------|-----------|----------|----------|
-| E2E | Playwright (ad-hoc) | `tmp.dashboard.spec.ts` (repo root) | Minimal — single smoke test |
+| E2E | Playwright (ad-hoc) | `tmp.dashboard.spec.ts` (repo root) | Minimal - single smoke test |
 | Unit | Not configured | N/A | None |
 | Integration | Not configured | N/A | None |
 | Component | Not configured | N/A | None |
@@ -81,9 +81,9 @@ test('dashboard screenshot issues verification', async ({ page }) => {
 - `lib/api.ts` uses native `fetch` against `NEXT_PUBLIC_API_URL`.
 
 **Where mocking would be needed:**
-- `lib/services.ts` — all service objects
-- `lib/supabase.ts` — Supabase client
-- `contexts/AuthContext.tsx` — auth state and session
+- `lib/services.ts` - all service objects
+- `lib/supabase.ts` - Supabase client
+- `contexts/AuthContext.tsx` - auth state and session
 
 ## Test Data
 
@@ -135,24 +135,24 @@ jobs:
 
 ## Recommendations
 
-**Priority 1 — Add unit test runner:**
+**Priority 1 - Add unit test runner:**
 - Install **Vitest** (fast, Vite-compatible, works well with Next.js 14).
 - Configure in `vitest.config.ts` with `@/` alias resolution.
 
-**Priority 2 — Add component tests:**
+**Priority 2 - Add component tests:**
 - Use **@testing-library/react** + Vitest for component unit testing.
 - Start with critical shared components: `Toast.tsx`, `PurchaseModal.tsx`, auth flows.
 
-**Priority 3 — Formalize E2E:**
+**Priority 3 - Formalize E2E:**
 - Move `tmp.dashboard.spec.ts` into an `e2e/` directory.
 - Add `playwright.config.ts` and `@playwright/test` to `devDependencies`.
 - Replace arbitrary timeouts with explicit wait conditions.
 - Add E2E step to CI workflow.
 
-**Priority 4 — Add API mocking for tests:**
+**Priority 4 - Add API mocking for tests:**
 - Use **MSW (Mock Service Worker)** to mock `lib/api.ts` and Supabase calls.
 - Enables offline, deterministic frontend tests.
 
-**Priority 5 — Coverage gating:**
+**Priority 5 - Coverage gating:**
 - Add `vitest --coverage` with `@vitest/coverage-v8`.
 - Set minimum thresholds (e.g., 60% branches, 70% functions) and enforce in CI.

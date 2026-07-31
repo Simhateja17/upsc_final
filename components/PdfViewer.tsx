@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 
 interface ScrollRequest {
   page: number;
-  /** nonce — bumped on every request so repeated jumps to the same page still fire */
+  /** nonce - bumped on every request so repeated jumps to the same page still fire */
   n: number;
 }
 

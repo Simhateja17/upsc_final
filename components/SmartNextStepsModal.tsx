@@ -20,7 +20,7 @@ interface NextStepCard {
   pulse?: boolean;
 }
 
-// Smart Next Steps cards — recreated from the reference design.
+// Smart Next Steps cards - recreated from the reference design.
 export const NEXT_STEP_CARDS: NextStepCard[] = [
   {
     icon: '🎯', accent: '#6366F1', iconBg: '#EEF2FF', iconColor: '#4338CA',
@@ -32,7 +32,7 @@ export const NEXT_STEP_CARDS: NextStepCard[] = [
   {
     icon: '✍️', accent: '#E11D48', iconBg: '#FFF1F2', iconColor: '#BE123C',
     title: 'Practice Answer Writing',
-    desc: "Attempt today's Mains question — builds on the concepts you missed.",
+    desc: "Attempt today's Mains question - builds on the concepts you missed.",
     chip: '10 marks · 150 words', chipBg: '#FFF1F2', chipColor: '#BE123C', chipBorder: '#FECDD3',
     cta: 'Write', href: '/dashboard/daily-answer/challenge',
   },

@@ -141,8 +141,8 @@ export function getSubjectMetaStyle(subjectName: string): SubjectMetaStyle {
   };
 
   // Second pass: stem match. Real task subjects arrive as morphological
-  // variants the word-boundary pass misses — "Economics" vs the `economic`
-  // alias, "Environmental" vs `environment`, "Geographical" vs `geog` — and
+  // variants the word-boundary pass misses - "Economics" vs the `economic`
+  // alias, "Environmental" vs `environment`, "Geographical" vs `geog` - and
   // those all fell through to the neutral default, so every such pill on the
   // dashboard rendered the same grey-blue. Here a token matches a label/alias
   // when one is a prefix of the other, guarded to length >= 4 so short stems
