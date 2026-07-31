@@ -102,6 +102,10 @@ function toDateParam(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+// Mirrors MAX_STUDY_PLANNER_SUBJECT_LENGTH on the backend so a too-long custom
+// subject is caught before the request is sent.
+const MAX_SUBJECT_LENGTH = 50;
+
 const AddTaskModal = ({
   onClose,
   onTaskAdded,
@@ -146,12 +150,30 @@ const AddTaskModal = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  // Dropdown and custom input are mutually exclusive, so the payload always has
+  // one unambiguous subject: picking a subject clears the typed one, and typing
+  // one clears the selection.
+  const handleSubjectSelect = (value: string) => {
+    setSubject(value);
+    if (value) setCustomSubject('');
+  };
+
+  const handleCustomSubjectChange = (value: string) => {
+    setCustomSubject(value);
+    if (value.trim()) setSubject('');
+  };
+
   async function handleSave() {
     if (!title.trim()) {
       setError('Please enter a task title.');
       return;
     }
-    const subjectValue = customSubject.trim() || subject;
+    // Collapse whitespace the same way the backend does before validating.
+    const subjectValue = (customSubject.trim() || subject).replace(/\s+/g, ' ');
+    if (subjectValue.length > MAX_SUBJECT_LENGTH) {
+      setError(`Subject must be ${MAX_SUBJECT_LENGTH} characters or fewer.`);
+      return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -221,12 +243,14 @@ const AddTaskModal = ({
           {/* Subject */}
           <div>
             <label className="block text-sm font-semibold text-[#0e1430] mb-2">Subject</label>
-            <SubjectSelect value={subject} onChange={setSubject} aria-label="Subject" />
+            <SubjectSelect value={subject} onChange={handleSubjectSelect} aria-label="Subject" />
             <input
               type="text"
               value={customSubject}
-              onChange={e => setCustomSubject(e.target.value)}
+              onChange={e => handleCustomSubjectChange(e.target.value)}
               placeholder="Or type your own subject"
+              aria-label="Custom subject"
+              maxLength={MAX_SUBJECT_LENGTH}
               className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#f5b400] focus:outline-none transition-colors text-sm mt-2"
             />
           </div>

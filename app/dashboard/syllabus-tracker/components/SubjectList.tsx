@@ -74,7 +74,9 @@ export default function SubjectList({
           </div>
         </div>
         <div className="relative">
-          <span className="absolute left-[9px] top-1/2 -translate-y-1/2 text-[#8795ae] text-[9px] font-bold uppercase tracking-[0.8px] pointer-events-none">
+          {/* Label reads "Search" (sentence case) — `uppercase` removed so it
+              no longer renders as "SEARCH". Search behaviour is unchanged. */}
+          <span className="absolute left-[9px] top-1/2 -translate-y-1/2 text-[#8795ae] text-[9px] font-bold tracking-[0.8px] pointer-events-none">
             Search
           </span>
           <input

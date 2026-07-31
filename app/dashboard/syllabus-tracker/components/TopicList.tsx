@@ -237,6 +237,14 @@ export default function TopicList({ subject, selectedTopic, onToggleTopic, state
           
           const topicEmoji = topicEmojis[topic.name] || '📄';
 
+          // The palette accent strip is no longer shown by default. It only
+          // appears when the card is in an intentional state — selected,
+          // active/in-progress, or completed — so untouched topics (e.g.
+          // Medieval India, Art & Culture) render with no coloured left border.
+          const isCompleted = topicStats.pct === 100;
+          const isActive = topicStats.active > 0 || topicStats.done > 0;
+          const showAccent = isSelected || isCompleted || isActive;
+
           return (
             <div
               key={ti}
@@ -248,8 +256,8 @@ export default function TopicList({ subject, selectedTopic, onToggleTopic, state
               `}
               style={isSelected ? { boxShadow: '0 2px 8px rgba(15,31,61,.05)' } : {}}
             >
-              {/* Palette left accent strip */}
-              {topicPalette && (
+              {/* Palette left accent strip — state-driven only, never default */}
+              {topicPalette && showAccent && (
                 <div
                   className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r-[2px]"
                   style={{ background: topicPalette.color }}

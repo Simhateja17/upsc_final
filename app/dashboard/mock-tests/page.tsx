@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { mockTestService, dashboardService } from '@/lib/services';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import GeneratingTestModal from '@/components/GeneratingTestModal';
-import { liveStudentCount } from '@/lib/liveCount';
 import { UPSC_SUBJECTS } from '@/lib/upscSubjects';
 import { mainsTimeLimit } from '@/lib/mainsPattern';
 import { handleEntitlementError } from '@/components/entitlements';
@@ -335,6 +334,11 @@ function MockTestsPageInner() {
   const minQuestionCount = 1;
   const maxQuestionCount = selectedExamMode === 'mains' ? 20 : 100;
   const questionSliderProgress = ((questionCount - minQuestionCount) / (maxQuestionCount - minQuestionCount)) * 100;
+  // Single source of truth for the Active Aspirants count: the platform-stats
+  // API (`usersCount`). Rendered in exactly one place on this page.
+  const activeAspirantsCount = platformStats
+    ? platformStats.usersCount.toLocaleString('en-IN') + '+'
+    : '2,400+';
   const subjectCountMap = subjects.reduce<Record<string, number>>((acc, subject) => {
     acc[subject.name] = subject.count;
     return acc;
@@ -1539,7 +1543,8 @@ function MockTestsPageInner() {
                     />
                   ))}
                 </div>
-                <span>{liveStudentCount('mock-tests')} students are taking tests right now</span>
+                {/* Active Aspirants — the page's only display of this count, sourced from the platform-stats API */}
+                <span style={{ textAlign: 'center' }}>{activeAspirantsCount} aspirants actively preparing on this platform</span>
               </div>
               </div>
             </div>
@@ -1547,59 +1552,8 @@ function MockTestsPageInner() {
 
         </div>
 
-        {/* ── Social Proof Banner: Aspirants ── */}
-        <div style={{ padding: '0 clamp(12px, 1.2vw, 20px) clamp(24px, 2vw, 40px)', maxWidth: '1320px', margin: '0 auto' }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #162456 0%, #0F172B 50%, #030712 100%)',
-            borderRadius: '20px',
-            padding: 'clamp(18px, 1.6vw, 28px) clamp(20px, 2vw, 32px)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'clamp(16px, 1.5vw, 24px)',
-            flexWrap: 'wrap',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-              {[
-                { initials: 'AK', bg: '#3B82F6' },
-                { initials: 'PS', bg: '#A855F7' },
-                { initials: 'RV', bg: '#14B8A6' },
-                { initials: 'MH', bg: '#F97316' },
-                { initials: '+2k', bg: '#4B5563' },
-              ].map((a, i) => (
-                <span
-                  key={a.initials}
-                  style={{
-                    width: 'clamp(38px, 2.6vw, 46px)',
-                    height: 'clamp(38px, 2.6vw, 46px)',
-                    borderRadius: '50%',
-                    background: a.bg,
-                    border: '2.5px solid #0F172B',
-                    color: '#FFFFFF',
-                    fontFamily: 'var(--font-inter), Inter, sans-serif',
-                    fontWeight: 700,
-                    fontSize: 'clamp(11px, 0.75vw, 13px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    marginLeft: i === 0 ? 0 : 'clamp(-14px, -1vw, -10px)',
-                  }}
-                >
-                  {a.initials}
-                </span>
-              ))}
-            </div>
-            <div>
-              <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 800, fontSize: 'clamp(18px, 1.4vw, 24px)' }}>
-                <span style={{ color: '#FB923C' }}>{platformStats ? platformStats.usersCount.toLocaleString('en-IN') + '+' : '2,400+'}</span>
-                <span style={{ color: '#FFFFFF' }}> aspirants</span>
-              </div>
-              <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 500, fontSize: 'clamp(12px, 0.85vw, 14px)', color: '#94A3B8', marginTop: '4px' }}>
-                actively preparing on this platform
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Bottom "Social Proof Banner: Aspirants" removed per client feedback —
+            the Active Aspirants count now renders only in the setup summary panel. */}
       </main>
     </div>
   );

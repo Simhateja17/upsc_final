@@ -755,6 +755,16 @@ footer { background:var(--navy-deep); padding:68px 56px 44px; border-top:1px sol
   flex-direction:column;
   gap:0;
   animation:mobileNavFade 0.2s ease;
+  /* Fixed panel with no bottom edge clipped everything past the screen height
+     (Pricing, the auth buttons) while the page behind was scroll-locked.
+     Cap the height under the 60px nav and let the menu scroll itself.
+     Mirrors the .mobile-nav rule in styles/landing.css. */
+  max-height:calc(100vh - 60px);
+  max-height:calc(100dvh - 60px); /* dvh follows collapsing mobile toolbars; vh above is the fallback */
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom, 0px));
 }
 .mobile-nav.open{display:flex;}
 @keyframes mobileNavFade{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
