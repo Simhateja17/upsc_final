@@ -1570,24 +1570,17 @@ function MockTestsPageInner() {
                     </span>
                   ))}
                 </div>
-<<<<<<< HEAD
                 {/* Active Aspirants — the page's only display of this count, sourced from the platform-stats API */}
                 <span style={{ textAlign: 'center' }}>{activeAspirantsCount} aspirants actively preparing on this platform</span>
-=======
-                <span>{(platformStats?.studentsAttemptedTodayCount ?? 0).toLocaleString('en-IN')} students took a test today</span>
->>>>>>> 227f2923629426850781101685002916ea391043
               </div>
               </div>
             </div>
           </div>
 
         </div>
-<<<<<<< HEAD
 
         {/* Bottom "Social Proof Banner: Aspirants" removed per client feedback —
             the Active Aspirants count now renders only in the setup summary panel. */}
-=======
->>>>>>> 227f2923629426850781101685002916ea391043
       </main>
     </div>
   );
