@@ -629,6 +629,7 @@ type PlanConfig = {
   cycles: Record<BillingCycle, {
     label: string;
     total: string;
+    originalTotal: string;
     perMonth: string;
     save: string;
     duration: string;
@@ -661,9 +662,9 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
       'Performance Analytics – Limited view',
     ],
     cycles: {
-      monthly:   { label: 'Monthly',   total: '199.00',  perMonth: '199', save: '',         duration: '1 month',   gstStrike: '45.61'  },
-      quarterly: { label: 'Quarterly', total: '479.00',  perMonth: '159', save: 'Save 20%', duration: '3 months',  gstStrike: '73.07'  },
-      yearly:    { label: 'Yearly',    total: '1439.00', perMonth: '119', save: 'Save 40%', duration: '12 months', gstStrike: '219.51' },
+      monthly:   { label: 'Monthly',   total: '199.00',  originalTotal: '299.00',  perMonth: '199', save: '',         duration: '1 month',   gstStrike: '45.61'  },
+      quarterly: { label: 'Quarterly', total: '479.00',  originalTotal: '747.00',  perMonth: '159', save: 'Save 20%', duration: '3 months',  gstStrike: '73.07'  },
+      yearly:    { label: 'Yearly',    total: '1439.00', originalTotal: '3588.00', perMonth: '119', save: 'Save 40%', duration: '12 months', gstStrike: '219.51' },
     },
   },
   rise: {
@@ -682,9 +683,9 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
       'Smart Notes',
     ],
     cycles: {
-      monthly:   { label: 'Monthly',   total: '499.00',  perMonth: '499', save: '',         duration: '1 month',   gstStrike: '89.82'  },
-      quarterly: { label: 'Quarterly', total: '1197.00', perMonth: '399', save: 'Save 20%', duration: '3 months',  gstStrike: '239.46' },
-      yearly:    { label: 'Yearly',    total: '3599.00', perMonth: '299', save: 'Save 40%', duration: '12 months', gstStrike: '718.56' },
+      monthly:   { label: 'Monthly',   total: '499.00',  originalTotal: '699.00',  perMonth: '499', save: '',         duration: '1 month',   gstStrike: '89.82'  },
+      quarterly: { label: 'Quarterly', total: '1197.00', originalTotal: '1797.00', perMonth: '399', save: 'Save 20%', duration: '3 months',  gstStrike: '239.46' },
+      yearly:    { label: 'Yearly',    total: '3599.00', originalTotal: '8388.00', perMonth: '299', save: 'Save 40%', duration: '12 months', gstStrike: '718.56' },
     },
   },
   ascent: {
@@ -703,9 +704,9 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
       'Early Access to New Features',
     ],
     cycles: {
-      monthly:   { label: 'Monthly',   total: '1999.00', perMonth: '1999', save: '',         duration: '1 month',   gstStrike: '304.93'  },
-      quarterly: { label: 'Quarterly', total: '4799.00', perMonth: '1599', save: 'Save 20%', duration: '3 months',  gstStrike: '732.59'  },
-      yearly:    { label: 'Yearly',    total: '14399.00', perMonth: '1199', save: 'Save 40%', duration: '12 months', gstStrike: '2194.78' },
+      monthly:   { label: 'Monthly',   total: '1999.00', originalTotal: '2499.00',  perMonth: '1999', save: '',         duration: '1 month',   gstStrike: '304.93'  },
+      quarterly: { label: 'Quarterly', total: '4799.00', originalTotal: '6747.00',  perMonth: '1599', save: 'Save 20%', duration: '3 months',  gstStrike: '732.59'  },
+      yearly:    { label: 'Yearly',    total: '14399.00', originalTotal: '29988.00', perMonth: '1199', save: 'Save 40%', duration: '12 months', gstStrike: '2194.78' },
     },
   },
 };
@@ -716,6 +717,12 @@ function planCardCycle(planKey: PlanKey, cycle: BillingCycle) {
 
 function formatPlanAmount(amount: string): string {
   return Number(amount).toLocaleString('en-IN');
+}
+
+function planCardOriginalPerMonth(planKey: PlanKey, cycle: BillingCycle): string {
+  const months = cycle === 'monthly' ? 1 : cycle === 'quarterly' ? 3 : 12;
+  const originalTotal = planCardCycle(planKey, cycle).originalTotal;
+  return formatPlanAmount(String(Number(originalTotal) / months));
 }
 
 function planCardBillingCopy(planKey: PlanKey, cycle: BillingCycle): string {
@@ -1476,8 +1483,10 @@ export default function ExplorePlansPage() {
               <p style={{ margin: '8px 0 0', fontSize: 12.6, lineHeight: '19.6px', color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
                 Build strong UPSC fundamentals with daily practice, proper guidance, and consistent preparation.
               </p>
-              <div style={{ paddingTop: 21 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, paddingTop: 21, whiteSpace: 'nowrap' }}>
+                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 18, fontWeight: 600, color: '#A3A3B5', textDecoration: 'line-through', textDecorationThickness: '1.5px' }}>₹{planCardOriginalPerMonth('aspire', cycle)}</span>
                 <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 41.6, fontWeight: 700, lineHeight: '41.6px', color: '#D4900A' }}>₹{formatPlanAmount(planCardCycle('aspire', cycle).perMonth)}</span>
+                <span style={{ fontSize: 12.2, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>/month</span>
               </div>
               <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>{planCardBillingCopy('aspire', cycle)}</p>
               <div style={{ height: 1, background: '#F0ECE4', margin: '20px 0' }} />
@@ -1536,6 +1545,7 @@ export default function ExplorePlansPage() {
                 For serious aspirants who study daily and want measurable progress.
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, paddingTop: 22 }}>
+                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.46)', textDecoration: 'line-through', textDecorationThickness: '1.5px', paddingBottom: 8, whiteSpace: 'nowrap' }}>₹{planCardOriginalPerMonth('rise', cycle)}</span>
                 <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 19.7, fontWeight: 600, color: '#E8B84B', paddingBottom: 6 }}>₹</span>
                 <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 49.2, fontWeight: 700, lineHeight: '49.2px', color: '#E8B84B' }}>
                   {formatPlanAmount(planCardCycle('rise', cycle).perMonth)}
@@ -1593,6 +1603,7 @@ export default function ExplorePlansPage() {
                 Unlimited tools, zero limits. For aspirants who leave nothing to chance.
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, paddingTop: 21 }}>
+                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 18, fontWeight: 600, color: '#A3A3B5', textDecoration: 'line-through', textDecorationThickness: '1.5px', paddingBottom: 8, whiteSpace: 'nowrap' }}>₹{planCardOriginalPerMonth('ascent', cycle)}</span>
                 <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 19.2, fontWeight: 600, color: '#D4900A', paddingBottom: 6 }}>₹</span>
                 <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 48, fontWeight: 700, lineHeight: '48px', color: '#D4900A' }}>
                   {formatPlanAmount(planCardCycle('ascent', cycle).perMonth)}
