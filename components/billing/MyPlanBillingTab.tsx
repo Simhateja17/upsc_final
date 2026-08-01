@@ -128,8 +128,8 @@ export default function MyPlanBillingTab({
 }) {
   const isTabletOrBelow = useIsTabletOrBelow();
   const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
-  // Only the bare free tier has no billing record. Aspire is a paid plan and must have a
-  // subscription before it appears in My Plan & Billing.
+  // Only the bare free tier has no billing record. Aspire is paid and should
+  // remain in the normal subscription/billing state path.
   const isFreeTierNoBilling = tier === 'free' && !subscription && !isPreview;
   const planName = plan?.name || (isPreview || isFreeTierNoBilling ? `${tierLabel} Plan` : 'Your Plan');
   const cycleLabel = CYCLE_LABEL[plan?.billingCycle || 'yearly'] || 'Annual';

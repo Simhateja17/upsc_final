@@ -1326,7 +1326,9 @@ export default function ExplorePlansPage() {
     if (!canShowPlan(plan)) return;
     setCheckoutPlan(plan);
   };
-  const handleAspireCta = () => handleOpenCheckout('aspire');
+  const handleAspireCta = () => {
+    handleOpenCheckout('aspire');
+  };
   const handleOpenRiseCheckout = () => handleOpenCheckout('rise');
   const handleOpenAscentCheckout = () => handleOpenCheckout('ascent');
   const currentSubscription = entitlements.subscription;
@@ -1460,7 +1462,7 @@ export default function ExplorePlansPage() {
               <div style={{ paddingTop: 21 }}>
                 <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 41.6, fontWeight: 700, lineHeight: '41.6px', color: '#D4900A' }}>₹{cycle === 'monthly' ? '199' : cycle === 'quarterly' ? '159' : '119'}</span>
               </div>
-              <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Billed monthly</p>
+              <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Billed {cycle}</p>
               <div style={{ height: 1, background: '#F0ECE4', margin: '20px 0' }} />
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {[
@@ -1697,7 +1699,7 @@ export default function ExplorePlansPage() {
                     { feature: 'Daily Mains Challenge', aspire: '✓', rise: '✓', ascent: '✓' },
                     { feature: 'Daily News Analysis', sub: 'The Hindu & Indian Express', aspire: '✓', rise: '✓', ascent: '✓' },
                     { feature: 'Daily Leaderboard', aspire: '✓', rise: '✓', ascent: '✓' },
-                    { feature: 'Mains Evaluations', sub: 'Instant UPSC marking scheme feedback', aspire: '2 / day', rise: '25 / day', ascent: 'Unlimited' },
+                    { feature: 'Mains Evaluations', sub: 'Instant UPSC marking scheme feedback', aspire: '5 / day', rise: '25 / day', ascent: 'Unlimited' },
                     { feature: '10,000+ Previous Year Questions', aspire: '✓', rise: '✓', ascent: '✓' },
                     { feature: 'Mock Test Attempts', sub: 'Full-length Prelims & Mains simulations', aspire: 'Limited', rise: '25 / day', ascent: 'Unlimited' },
                     { feature: 'Syllabus Tracker', sub: 'Personalized UPSC Syllabus Mapping', aspire: 'Limited', rise: 'Unlimited', ascent: 'Unlimited' },
@@ -1737,7 +1739,7 @@ export default function ExplorePlansPage() {
                       disabled={planCtaState('aspire').disabled}
                       style={{ borderRadius: 8, border: '1.5px solid #D1D5DB', background: 'transparent', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: planCtaState('aspire').disabled ? '#B8B8C4' : '#1A1A2E', cursor: planCtaState('aspire').disabled ? 'default' : 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}
                     >
-                      {planCtaState('aspire').disabled ? planCtaState('aspire').label : 'Start Free'}
+                      {planCtaState('aspire').disabled ? planCtaState('aspire').label : 'Get Aspire'}
                     </button>
                   </td>
                   <td style={{ padding: '20px 16px', textAlign: 'center', background: 'rgba(212,144,10,0.02)' }}>
