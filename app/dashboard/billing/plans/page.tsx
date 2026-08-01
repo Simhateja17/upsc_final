@@ -710,6 +710,23 @@ const PLAN_CONFIGS: Record<PlanKey, PlanConfig> = {
   },
 };
 
+function planCardCycle(planKey: PlanKey, cycle: BillingCycle) {
+  return PLAN_CONFIGS[planKey].cycles[cycle];
+}
+
+function formatPlanAmount(amount: string): string {
+  return Number(amount).toLocaleString('en-IN');
+}
+
+function planCardBillingCopy(planKey: PlanKey, cycle: BillingCycle): string {
+  if (cycle === 'monthly') return 'Billed monthly';
+  const details = planCardCycle(planKey, cycle);
+  const total = Number(details.total).toLocaleString('en-IN');
+  return cycle === 'quarterly'
+    ? `₹${total} every 3 months - ${details.save}`
+    : `₹${total} billed yearly - ${details.save}`;
+}
+
 type CheckoutStep = 'checkout' | 'pending' | 'success' | 'failed';
 
 function CheckoutModal({ planKey, onClose }: { planKey: PlanKey; onClose: () => void }) {
@@ -1460,9 +1477,9 @@ export default function ExplorePlansPage() {
                 Build strong UPSC fundamentals with daily practice, proper guidance, and consistent preparation.
               </p>
               <div style={{ paddingTop: 21 }}>
-                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 41.6, fontWeight: 700, lineHeight: '41.6px', color: '#D4900A' }}>₹{cycle === 'monthly' ? '199' : cycle === 'quarterly' ? '159' : '119'}</span>
+                <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 41.6, fontWeight: 700, lineHeight: '41.6px', color: '#D4900A' }}>₹{formatPlanAmount(planCardCycle('aspire', cycle).perMonth)}</span>
               </div>
-              <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Billed {cycle}</p>
+              <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>{planCardBillingCopy('aspire', cycle)}</p>
               <div style={{ height: 1, background: '#F0ECE4', margin: '20px 0' }} />
               <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 9 }}>
                 {[
@@ -1521,12 +1538,12 @@ export default function ExplorePlansPage() {
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, paddingTop: 22 }}>
                 <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 19.7, fontWeight: 600, color: '#E8B84B', paddingBottom: 6 }}>₹</span>
                 <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 49.2, fontWeight: 700, lineHeight: '49.2px', color: '#E8B84B' }}>
-                  {cycle === 'monthly' ? '499' : cycle === 'quarterly' ? '399' : '299'}
+                  {formatPlanAmount(planCardCycle('rise', cycle).perMonth)}
                 </span>
                 <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.38)', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', paddingBottom: 6 }}>/month</span>
               </div>
               <p style={{ margin: '4px 0 0', fontSize: 11.8, color: 'rgba(255,255,255,0.33)', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
-                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹1,197 every 3 months - Save 20%' : '₹3,588 yearly - Save 40%'}
+                {planCardBillingCopy('rise', cycle)}
               </p>
               <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '20px 0' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
@@ -1578,12 +1595,12 @@ export default function ExplorePlansPage() {
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, paddingTop: 21 }}>
                 <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 19.2, fontWeight: 600, color: '#D4900A', paddingBottom: 6 }}>₹</span>
                 <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 48, fontWeight: 700, lineHeight: '48px', color: '#D4900A' }}>
-                  {cycle === 'monthly' ? '999' : cycle === 'quarterly' ? '799' : '599'}
+                  {formatPlanAmount(planCardCycle('ascent', cycle).perMonth)}
                 </span>
                 <span style={{ fontSize: 12.2, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', paddingBottom: 6 }}>/month</span>
               </div>
               <p style={{ margin: '4px 0 0', fontSize: 11.5, color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
-                {cycle === 'monthly' ? 'Billed monthly' : cycle === 'quarterly' ? '₹2,397 every 3 months - Save 20%' : '₹7,188 yearly - Save 40%'}
+                {planCardBillingCopy('ascent', cycle)}
               </p>
               <div style={{ height: 1, background: '#F0ECE4', margin: '20px 0' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
