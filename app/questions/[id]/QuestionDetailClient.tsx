@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAuthModal } from '@/contexts/AuthModalContext';
 import { bookmarkService, flashcardService, pyqService, spacedRepService } from '@/lib/services';
 import { isEssayQuestion } from '@/lib/essayModelAnswer';
+import EssayModelAnswerClient from '@/app/dashboard/pyq/essay/[questionId]/EssayModelAnswerClient';
 import CuratedModelAnswer from '@/components/mains-results/CuratedModelAnswer';
 import MainsEvaluatingScreen from '@/components/mains-results/MainsEvaluatingScreen';
 import { handleEntitlementError } from '@/components/entitlements';
@@ -1068,6 +1069,15 @@ export default function QuestionDetailClient({ question, mode, relatedQuestions,
   const handleRevision = () => {
     setRevisionMarked((prev) => !prev);
   };
+
+  // Keep legacy public Essay URLs on the same dedicated UI as the dashboard route.
+  if (mode === 'mains' && isEssayQuestion(question)) {
+    return (
+      <EntitlementsProvider>
+        <EssayModelAnswerClient questionId={question.id} />
+      </EntitlementsProvider>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-[#1E293B]" style={{ fontFamily: 'var(--font-dm-sans), Inter, sans-serif' }}>
