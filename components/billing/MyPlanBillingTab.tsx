@@ -23,7 +23,6 @@ function formatDate(value?: string | Date | null): string {
   if (Number.isNaN(d.getTime())) return 'Not available';
   return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
 }
-
 function formatRupees(amount?: number | null): string {
   if (amount === undefined || amount === null) return '—';
   return `₹${amount.toLocaleString('en-IN')}`;
