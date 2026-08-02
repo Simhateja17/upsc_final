@@ -1481,7 +1481,7 @@ export default function ExplorePlansPage() {
               <p style={{ margin: '0 0 8px', fontSize: 10.2, fontWeight: 700, letterSpacing: '1.4px', textTransform: 'uppercase', color: '#D4900A', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Foundation</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Aspire</h3>
               <p style={{ margin: '8px 0 0', fontSize: 12.6, lineHeight: '19.6px', color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
-                Build strong UPSC fundamentals with daily practice, proper guidance, and consistent preparation.
+                Build strong UPSC fundamentals with daily practice, proper guidance &amp; consistent preparation.
               </p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, paddingTop: 21, whiteSpace: 'nowrap' }}>
                 <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 18, fontWeight: 600, color: '#A3A3B5', textDecoration: 'line-through', textDecorationThickness: '1.5px' }}>₹{planCardOriginalPerMonth('aspire', cycle)}</span>
@@ -1542,7 +1542,7 @@ export default function ExplorePlansPage() {
               <p style={{ margin: '0 0 8px', fontSize: 10.5, fontWeight: 700, letterSpacing: '1.47px', textTransform: 'uppercase', color: '#E8B84B', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Dedicated Study</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28.7, fontWeight: 700, lineHeight: 'normal', color: '#fff' }}>Rise</h3>
               <p style={{ margin: '8px 0 0', fontSize: 12.9, lineHeight: '20px', color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
-                For serious aspirants who study daily and want measurable progress.
+                Everything in Aspire, plus:
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, paddingTop: 22 }}>
                 <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.46)', textDecoration: 'line-through', textDecorationThickness: '1.5px', paddingBottom: 8, whiteSpace: 'nowrap' }}>₹{planCardOriginalPerMonth('rise', cycle)}</span>
@@ -1561,9 +1561,9 @@ export default function ExplorePlansPage() {
                 <span style={{ fontSize: 13.1, color: '#fff', fontWeight: 700, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Everything in Aspire, plus:</span>
               </div>
               {[
-                { title: 'Evaluation', items: ['25 Mains Evaluations / day', '25 Mock Test attempts / day'] },
-                { title: 'Analytics', items: ['Full Performance Analytics Dashboard', 'Test Analytics - In-depth insights'] },
-                { title: 'Revision Tools', items: ['Full Revision Suite - Flashcards, Mindmaps, Spaced Rep.', 'Jeet AI - 100 conversations / day', 'Live Study Room 24×7', 'Smart Syllabus Tracker'] },
+                { title: 'EVALUATION', items: ['25 Mains Answer Evaluation / day', '50 Prelims Mock Tests attempts / day', 'Jeet AI Mentor – 100 Queries / day'] },
+                { title: 'ANALYTICS', items: ['Full Performance Analytics Dashboard', 'Comprehensive Test Analytics'] },
+                { title: 'REVISION & AI TOOLS', items: ['Flashcards', 'Mindmaps', 'Spaced Repetition', 'Smart Notes'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
                   <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 800, letterSpacing: '1.95px', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>{section.title}</p>
@@ -1581,7 +1581,7 @@ export default function ExplorePlansPage() {
                 disabled={planCtaState('rise').disabled}
                 style={{ marginTop: 'auto', width: '100%', borderRadius: 10, padding: '13px 16px', fontSize: 14, fontWeight: 700, cursor: planCtaState('rise').disabled ? 'default' : 'pointer', border: 'none', background: planCtaState('rise').disabled ? 'rgba(255,255,255,0.1)' : '#E8B84B', color: planCtaState('rise').disabled ? 'rgba(255,255,255,0.5)' : '#090E1C', fontFamily: 'var(--font-dm-sans), "DM Sans", Inter, sans-serif' }}
               >
-                {planCtaState('rise').label || 'Unlock Rise Now →'}
+                {planCtaState('rise').label || 'Get Rise →'}
               </button>
               {!planCtaState('rise').disabled && (
                 <p style={{ margin: '9px 0 0', fontSize: 11.5, color: '#15803D', textAlign: 'center', fontWeight: 600, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -1600,7 +1600,7 @@ export default function ExplorePlansPage() {
               <p style={{ margin: '0 0 8px', fontSize: 10.2, fontWeight: 700, letterSpacing: '1.43px', textTransform: 'uppercase', color: '#D4900A', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Maximum Edge</p>
               <h3 style={{ margin: 0, fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 28, fontWeight: 700, lineHeight: 'normal', color: '#1A1A2E' }}>Ascent</h3>
               <p style={{ margin: '8px 0 0', fontSize: 12.6, lineHeight: '19.6px', color: '#8A8AAA', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>
-                Unlimited tools, zero limits. For aspirants who leave nothing to chance.
+                Everything in Rise, plus:
               </p>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, paddingTop: 21 }}>
                 <span style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 18, fontWeight: 600, color: '#A3A3B5', textDecoration: 'line-through', textDecorationThickness: '1.5px', paddingBottom: 8, whiteSpace: 'nowrap' }}>₹{planCardOriginalPerMonth('ascent', cycle)}</span>
@@ -1619,8 +1619,8 @@ export default function ExplorePlansPage() {
                 <span style={{ fontSize: 13.1, color: '#1A1A2E', fontWeight: 700, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>Everything in Rise, plus:</span>
               </div>
               {[
-                { title: 'Evaluation', items: ['Unlimited Mains Evaluations', 'Unlimited Mock Test practice', 'Jeet AI - Unlimited conversations'] },
-                { title: 'Mentor-Led Growth', items: ['Weekly 1-on-1 mentorship (30 min)', 'Personalised Study Roadmap', 'Dedicated Q&A - Priority Responses', 'Monthly Performance Review Call', 'Exclusive Ascent Community', 'Early Access to New Features'] },
+                { title: 'EVALUATION', items: ['Unlimited Mains Answer Evaluations', 'Unlimited Prelims Mock Test practice', 'Jeet AI – Unlimited Queries'] },
+                { title: 'MENTOR-LED GROWTH', items: ['Bi-Weekly 1-on-1 mentorship sessions', 'Interview (Personality Test) prep module', 'Personalised Study Roadmap', 'Dedicated Support with Quick Responses', 'Monthly Performance Review Call', 'Early Access to New Features'] },
               ].map((section) => (
                 <div key={section.title} style={{ marginBottom: 12 }}>
                   <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 800, letterSpacing: '1.29px', color: '#8A8AAA', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}>{section.title}</p>
@@ -1638,7 +1638,7 @@ export default function ExplorePlansPage() {
                 disabled={planCtaState('ascent').disabled}
                 style={{ marginTop: 'auto', width: '100%', borderRadius: 11, padding: '13px 16px', fontSize: 13.9, fontWeight: 700, cursor: planCtaState('ascent').disabled ? 'default' : 'pointer', border: 'none', background: planCtaState('ascent').disabled ? '#F3F1EC' : '#0C1424', color: planCtaState('ascent').disabled ? '#8A8AAA' : '#fff', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif' }}
               >
-                {planCtaState('ascent').label || 'Get Ascent Plan→'}
+                {planCtaState('ascent').label || 'Join Ascent →'}
               </button>
               {!planCtaState('ascent').disabled && (
                 <p style={{ margin: '9px 0 0', fontSize: 11.2, color: '#15803D', textAlign: 'center', fontWeight: 600, fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -1648,15 +1648,6 @@ export default function ExplorePlansPage() {
             </div>
           </article>
 
-        </div>
-
-        {/* Trust badges */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center', justifyContent: 'center' }}>
-          {['🔒 Secure Payments', '↩️ 7-Day Money-Back Guarantee', '❌ Cancel Anytime', '👥15,000+ UPSC aspirants'].map((label) => (
-            <div key={label} style={{ background: '#fff', border: '1px solid #E8E4DA', borderRadius: 50, boxShadow: '0 2px 8px rgba(0,0,0,0.06)', padding: '8px 17px' }}>
-              <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 12.2, color: '#4a4a68', whiteSpace: 'nowrap' }}>{label}</span>
-            </div>
-          ))}
         </div>
 
         {/* ── Feature Breakdown ── */}
@@ -1672,7 +1663,7 @@ export default function ExplorePlansPage() {
               <span style={{ display: 'block', width: 36, height: 1, background: 'linear-gradient(to left, transparent, #C8972A)' }} />
             </div>
             <h2 style={{ fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 44, fontStyle: 'normal', fontWeight: 700, lineHeight: '51.92px', color: '#1A1A2E', textAlign: 'center', margin: 0 }}>
-              Everything, Side by Side
+              Compare All Features &amp; Pricing
             </h2>
           </div>
 
@@ -1691,17 +1682,21 @@ export default function ExplorePlansPage() {
             <table className="cmp-table">
               {/* Header row */}
               <thead>
-                <tr style={{ background: '#0c1424' }}>
-                  <th className="cmp-th" style={{ padding: '22px 20px', textAlign: 'left', width: '40%', color: '#fff', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 600 }}>
+                <tr style={{ background: '#0B1525' }}>
+                  <th className="cmp-th" style={{ padding: '18px 20px', textAlign: 'left', width: '40%', color: '#fff', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 600 }}>
                     Features
                   </th>
-                  <th className="cmp-th" style={{ padding: '22px 16px', textAlign: 'center', color: '#fff', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 700 }}>
+                  <th className="cmp-th" style={{ padding: '18px 16px', textAlign: 'center', color: '#fff', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 700 }}>
+                    Free
+                  </th>
+                  <th className="cmp-th" style={{ padding: '18px 16px', textAlign: 'center', color: '#fff', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 700 }}>
                     Aspire
                   </th>
-                  <th className="cmp-th" style={{ padding: '22px 16px', textAlign: 'center', background: 'rgba(212,144,10,0.13)' }}>
-                    <span style={{ color: '#f2ab2e', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 700 }}>Rise ⭐</span>
+                  <th className="cmp-th" style={{ padding: '18px 16px', textAlign: 'center', background: 'rgba(232,184,75,0.12)' }}>
+                    <span style={{ color: '#E8B84B', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 700 }}>Rise</span>
+                    <span style={{ marginLeft: 6, fontSize: 20 }}>⭐</span>
                   </th>
-                  <th className="cmp-th" style={{ padding: '22px 16px', textAlign: 'center', color: '#fff', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 700 }}>
+                  <th className="cmp-th" style={{ padding: '18px 16px', textAlign: 'center', color: '#fff', fontFamily: 'var(--font-cormorant-garamond), "Cormorant Garamond", Georgia, serif', fontSize: 20, fontWeight: 700 }}>
                     Ascent
                   </th>
                 </tr>
@@ -1712,54 +1707,91 @@ export default function ExplorePlansPage() {
                     padding: '13px 16px',
                     whiteSpace: 'nowrap' as const,
                     textAlign: 'center' as const,
-                    fontSize: val === '✓' ? 16 : 13,
-                    fontWeight: val === '✓' ? 400 : 700,
+                    fontSize: 13,
+                    fontWeight: val === '✓' || val === '–' ? 600 : 500,
                     color: val === '✓' ? '#15803d'
-                      : val === '—' ? '#CBD5E1'
-                      : ['Limited', 'Unlimited', 'Full Access', 'Weekly'].includes(val) || val.includes('/') ? '#d4900a'
-                      : '#1a1a2e',
-                    background: isRise ? 'rgba(212,144,10,0.02)' : 'transparent',
+                      : val === '–' ? '#CBD5E1'
+                      : val === 'Limited' || val === 'Unlimited' || val === 'Full Access' || val === 'Weekly' ? '#E8B84B'
+                      : '#1A2540',
+                    background: isRise ? 'rgba(232,184,75,0.04)' : 'transparent',
                     borderBottom: '1px solid #f0ece4',
                   });
 
-                  const rows: { feature: string; sub?: string; aspire: string; rise: string; ascent: string }[] = [
-                    { feature: 'Daily MCQ Challenge', sub: 'Subject & topic-wise with explanations', aspire: '10 / day', rise: 'Unlimited', ascent: 'Unlimited' },
-                    { feature: 'Daily Mains Challenge', aspire: '✓', rise: '✓', ascent: '✓' },
-                    { feature: 'Daily News Analysis', sub: 'The Hindu & Indian Express', aspire: '✓', rise: '✓', ascent: '✓' },
-                    { feature: 'Daily Leaderboard', aspire: '✓', rise: '✓', ascent: '✓' },
-                    { feature: 'Mains Evaluations', sub: 'Instant UPSC marking scheme feedback', aspire: '5 / day', rise: '25 / day', ascent: 'Unlimited' },
-                    { feature: '10,000+ Previous Year Questions', aspire: '✓', rise: '✓', ascent: '✓' },
-                    { feature: 'Mock Test Attempts', sub: 'Full-length Prelims & Mains simulations', aspire: 'Limited', rise: '25 / day', ascent: 'Unlimited' },
-                    { feature: 'Syllabus Tracker', sub: 'Personalized UPSC Syllabus Mapping', aspire: 'Limited', rise: 'Unlimited', ascent: 'Unlimited' },
-                    { feature: 'Jeet AI Conversations', sub: 'UPSC-preparation partner', aspire: '10 / day', rise: '100 / day', ascent: 'Unlimited' },
-                    { feature: 'Performance Analytics Dashboard', aspire: 'Limited', rise: '✓', ascent: '✓' },
-                    { feature: 'Test Analytics', sub: 'Deep score breakdowns', aspire: '—', rise: '✓', ascent: '✓' },
-                    { feature: 'Revision Suite', sub: 'Flashcards, Mindmaps, Spaced Repetition', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
-                    { feature: 'Discussion Forum', aspire: '✓', rise: '✓', ascent: '✓' },
-                    { feature: 'Live Study Room 24×7', aspire: 'Limited', rise: '✓', ascent: '✓' },
-                    { feature: 'Mental Health Buddy', aspire: '✓', rise: '✓', ascent: '✓' },
-                    { feature: 'Weekly 1-on-1 Mentorship', sub: '30 minutes per session', aspire: '—', rise: '—', ascent: 'Weekly' },
-                    { feature: 'Personalised Study Roadmap', aspire: '—', rise: '—', ascent: '✓' },
-                    { feature: 'Dedicated Q&A Priority Responses', aspire: '—', rise: '—', ascent: '✓' },
-                    { feature: 'Monthly Performance Review Call', aspire: '—', rise: '—', ascent: '✓' },
+                  const sections: { icon: string; title: string; rows: { feature: string; free: string; aspire: string; rise: string; ascent: string }[] }[] = [
+                    { icon: '📝', title: 'DAILY PRACTICE', rows: [
+                      { feature: 'Daily MCQ Challenge', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
+                      { feature: 'Daily Answer Writing Challenge', free: '3 Evaluations / Lifetime', aspire: '✓', rise: '✓', ascent: '✓' },
+                      { feature: 'Daily News Analysis – The Hindu & IE', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
+                      { feature: '10,000+ Previous Year Questions', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
+                      { feature: 'Study Planner & Time Tracker', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
+                      { feature: 'Daily Leaderboard', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
+                    ] },
+                    { icon: '🔥', title: 'PRACTICE (EVALUATIONS & MOCK TESTS)', rows: [
+                      { feature: 'Mains Answer Evaluation', free: '3 / Lifetime', aspire: '5 / day', rise: '25 / day, 7 / hour', ascent: 'Unlimited / day, 10 / hour' },
+                      { feature: 'Prelims Mock Test', free: '1 Test / Lifetime', aspire: '5 Tests / day', rise: '50 / day, 5 / hour', ascent: 'Unlimited / day, 15 / hour' },
+                    ] },
+                    { icon: '💬', title: '24*7 DOUBT RESOLUTION', rows: [
+                      { feature: 'Jeet AI Mentor', free: '20 lifetime, 10 / hour', aspire: '10 Queries / day', rise: '25 / hour, 100 / day', ascent: '50 / hour, unlimited / day' },
+                    ] },
+                    { icon: '📊', title: 'ANALYTICS & TRACKER', rows: [
+                      { feature: 'Performance Analytics Dashboard', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
+                      { feature: 'Test Analytics', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
+                      { feature: 'Smart Syllabus Tracker', free: '5 tracked items', aspire: '5 tracked items', rise: 'Full Access', ascent: 'Full Access' },
+                    ] },
+                    { icon: '🗂️', title: 'REVISION SUITE', rows: [
+                      { feature: 'Flashcards', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
+                      { feature: 'Mindmaps', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
+                      { feature: 'Spaced Repetition', free: '–', aspire: 'Limited', rise: 'Full Access', ascent: 'Full Access' },
+                    ] },
+                    { icon: '👥', title: 'COMMUNITY & WELLNESS', rows: [
+                      { feature: 'Discussion Forum', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
+                      { feature: 'Mental Health Buddy', free: '–', aspire: '✓', rise: '✓', ascent: '✓' },
+                      { feature: 'Study Groups', free: '✓', aspire: '✓', rise: '✓', ascent: '✓' },
+                    ] },
+                    { icon: '👑', title: 'MENTOR-LED GROWTH (ASCENT ONLY)', rows: [
+                      { feature: 'Bi-Weekly 1-on-1 Mentorship', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
+                      { feature: 'Personalised Study Roadmap', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
+                      { feature: 'Interview (Personality Test) prep module', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
+                      { feature: 'Dedicated Support with Quick Responses', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
+                      { feature: 'Monthly Performance Review Call', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
+                      { feature: 'Early Access to New Features', free: '–', aspire: '–', rise: '–', ascent: 'Full Access' },
+                    ] },
                   ];
 
-                  return rows.map((row) => (
-                    <tr key={row.feature} style={{ background: '#fff' }}>
-                      <td className="cmp-td-feature" style={{ padding: '13px 20px', borderBottom: '1px solid #f0ece4' }}>
-                        <span style={{ fontSize: 13.4, fontWeight: 500, color: '#4a4a68', display: 'block' }}>{row.feature}</span>
-                        {row.sub && <span style={{ fontSize: 11.2, color: '#8a8aaa', display: 'block', marginTop: 2 }}>{row.sub}</span>}
+                  let rowIdx = 0;
+                  return sections.flatMap((section) => [
+                    <tr key={section.title}>
+                      <td colSpan={5} style={{ padding: '11px 20px', background: '#F5F1EA', borderBottom: '1px solid #f0ece4' }}>
+                        <span style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '1.2px', color: '#C8972A', textTransform: 'uppercase' }}>
+                          {section.icon} {section.title}
+                        </span>
                       </td>
-                      <td className="cmp-td" style={cellStyle(row.aspire)}>{row.aspire}</td>
-                      <td className="cmp-td" style={cellStyle(row.rise, true)}>{row.rise}</td>
-                      <td className="cmp-td" style={cellStyle(row.ascent)}>{row.ascent}</td>
-                    </tr>
-                  ));
+                    </tr>,
+                    ...section.rows.map((row) => {
+                      const bg = rowIdx++ % 2 === 0 ? '#fff' : '#FAFAFA';
+                      return (
+                        <tr key={row.feature} style={{ background: bg }}>
+                          <td className="cmp-td-feature" style={{ padding: '13px 20px', borderBottom: '1px solid #f0ece4' }}>
+                            <span style={{ fontSize: 13.4, fontWeight: 500, color: '#4a4a68', display: 'block' }}>{row.feature}</span>
+                          </td>
+                          <td className="cmp-td" style={cellStyle(row.free)}>{row.free}</td>
+                          <td className="cmp-td" style={cellStyle(row.aspire)}>{row.aspire}</td>
+                          <td className="cmp-td" style={cellStyle(row.rise, true)}>{row.rise}</td>
+                          <td className="cmp-td" style={cellStyle(row.ascent)}>{row.ascent}</td>
+                        </tr>
+                      );
+                    }),
+                  ]);
                 })()}
 
                 {/* CTA row */}
                 <tr style={{ background: '#fff' }}>
                   <td style={{ padding: '20px' }} />
+                  <td style={{ padding: '20px 16px', textAlign: 'center' }}>
+                    <button type="button" onClick={handleUpgrade} style={{ borderRadius: 8, border: '1.5px solid #D1D5DB', background: 'transparent', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: '#1A1A2E', cursor: 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}>
+                      Start Free
+                    </button>
+                  </td>
                   <td style={{ padding: '20px 16px', textAlign: 'center' }}>
                     <button
                       type="button"
@@ -1770,7 +1802,7 @@ export default function ExplorePlansPage() {
                       {planCtaState('aspire').disabled ? planCtaState('aspire').label : 'Get Aspire'}
                     </button>
                   </td>
-                  <td style={{ padding: '20px 16px', textAlign: 'center', background: 'rgba(212,144,10,0.02)' }}>
+                  <td style={{ padding: '20px 16px', textAlign: 'center', background: 'rgba(232,184,75,0.04)' }}>
                     <button
                       type="button"
                       onClick={planCtaState('rise').disabled ? undefined : handleOpenRiseCheckout}
@@ -1787,7 +1819,7 @@ export default function ExplorePlansPage() {
                       disabled={planCtaState('ascent').disabled}
                       style={{ borderRadius: 8, border: 'none', background: planCtaState('ascent').disabled ? '#EDEBE6' : '#090E1C', padding: '10px 20px', fontSize: 13, fontWeight: 600, color: planCtaState('ascent').disabled ? '#8A8AAA' : '#fff', cursor: planCtaState('ascent').disabled ? 'default' : 'pointer', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', whiteSpace: 'nowrap' }}
                     >
-                      {planCtaState('ascent').disabled ? planCtaState('ascent').label : 'Get Ascent'}
+                      {planCtaState('ascent').disabled ? planCtaState('ascent').label : 'Join Ascent'}
                     </button>
                   </td>
                 </tr>
@@ -1809,7 +1841,7 @@ export default function ExplorePlansPage() {
               Why Rise With Jeet?
             </h2>
             <p style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 15.2, color: '#8A8AAA', margin: 0, maxWidth: 480, marginInline: 'auto', lineHeight: '26.14px', textAlign: 'center' }}>
-              Not just another coaching the complete UPSC operating system for India&apos;s brightest minds.
+              Not just another coaching – the complete UPSC operating system for India&apos;s brightest minds.
             </p>
           </div>
 
@@ -1822,8 +1854,8 @@ export default function ExplorePlansPage() {
               { icon: '👥', title: 'Live Community', desc: 'Study alongside 15,000 aspirants in live rooms and accountability groups.' },
               { icon: '📰', title: 'Daily Current Affairs', desc: 'Hindu & IE analysis connecting today\'s news directly to the UPSC syllabus.' },
               { icon: '✍️', title: 'Daily Answer Writing', desc: 'Daily mains practice with AI-powered instant evaluation and UPSC-style marking schemes.' },
-              { icon: '🧠', title: 'Smart Revision', desc: 'Flashcards, mindmaps, spaced repetition — study once, remember forever.' },
-              { icon: '📃', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.' },
+              { icon: '🧠', title: 'Smart Revision', desc: 'Flashcards, mindmaps, spaced repetition – study once, remember forever.' },
+              { icon: '📚', title: 'Previous Year Questions', desc: '30 years of PYQs with trend analysis, topic clustering, and examiner insights.' },
             ].map((card) => (
               <div key={card.title} className="ecosystem-card" style={{ background: '#fff', borderRadius: 15, border: '1px solid #E8E4DA', padding: '23px 19px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
                 <span className="ecosystem-card-accent" style={{ background: '#E8B84B' }} />
@@ -1882,13 +1914,13 @@ export default function ExplorePlansPage() {
                 stars: 5,
                 quote: '"The AI evaluation changed everything. Waiting weeks for mains feedback was killing my momentum now I get detailed marking in seconds. My answer quality improved significantly."',
                 name: 'Priya Sharma',
-                role: 'UPSC CSE 2025 Prelims Aspirant',
+                role: 'UPSC CSE 2025 Mains Aspirant',
                 initial: 'P',
                 gradient: 'linear-gradient(135deg, rgb(233, 160, 18) 0%, rgb(184, 120, 10) 100%)',
               },
               {
                 stars: 5,
-                quote: '"Daily MCQs and the leaderboard kept me disciplined across 6 months. Analytics showed me exactly which paper needed attention saved me months of scattered prep."',
+                quote: '"Daily MCQs and the leaderboard kept me disciplined across 6 months. Analytics showed me exactly which paper needed attention – saved me months of scattered prep."',
                 name: 'Rahul',
                 role: 'UPSC CSE 2025 Mains Qualified',
                 initial: 'R',
@@ -1939,14 +1971,14 @@ export default function ExplorePlansPage() {
           {/* 2-column FAQ grid */}
           {(() => {
             const faqs = [
-              { q: 'What does Aspire include?', a: 'Aspire is the entry paid plan with 5 mains evaluations/day, 5 Prelims tests/day, 10 Jeet AI Mentor queries/day, limited analytics and revision tools, plus the core study features.' },
-              { q: "What's the difference between Rise and Ascent?", a: 'Rise gives you 25 mains evaluations/day, 25 mock test attempts/day, 100 Jeet AI conversations/day, full performance & test analytics, and the complete revision suite. Ascent removes every limit entirely unlimited evaluations, mock tests and Jeet AI plus weekly 1-on-1 mentorship, a personalised roadmap, priority Q&A and a monthly performance review call.' },
-              { q: 'Is there a money-back guarantee?', a: "Yes. Every paid plan comes with a 7-day money-back guarantee Rise's is no-questions-asked, and Ascent's is included as standard. Just reach out to support within 7 days of your purchase." },
-              { q: 'How much do I save on quarterly & yearly plans?', a: "Quarterly billing saves you 20% compared to monthly, and yearly billing saves you 40% almost 5 months free. For example, Rise monthly is ₹499, but yearly brings it down to ₹299/month. Discounts are automatically applied at checkout." },
-              { q: 'Can I upgrade or cancel anytime?', a: 'Absolutely. You can upgrade from Aspire to Rise or Ascent instantly (pro-rated). Cancellation is self-serve from your dashboard - you keep full access until the end of your billing cycle. No cancellation fees, no hassle.' },
+              { q: 'Is free plan really free forever?', a: 'Yes, absolutely. Our Free plan gives you lifetime free access to daily MCQ, daily news analysis, 10,000+ PYQs, study planner, leaderboard, plus 3 mains evaluations (lifetime), 1 Prelims test (lifetime) and 1 Jeet AI chat session. No card, no expiry, no hidden upgrades.' },
+              { q: 'Are the current prices a promotional offer?', a: 'Yes! We are running a limited-time promotional offer. All prices you see are discounted. The offers may change in the future, and any updated pricing will apply to all users.' },
+              { q: 'Can I upgrade or cancel my subscription anytime?', a: 'Absolutely. You can upgrade from Aspire to Rise or Ascent instantly (pro-rated). Cancellation is self-serve from your dashboard - you keep full access until the end of your billing cycle. No cancellation fees, no hassle.' },
+              { q: 'What is the refund policy?', a: 'We offer a 3-day, no-questions-asked refund on all paid subscriptions. Just reach out to support within 3 days of your purchase and we will process the refund within 24 hours. After 3 days, refunds are not applicable but you can cancel future billing.' },
+              { q: "What's the difference between Aspire, Rise and Ascent?", a: 'Aspire: 5 mains evaluations/day, 5 Prelims tests/day, 5 Jeet AI messages/day, limited analytics & revision suite. Rise: 25 mains evals/day, 50 Prelims tests/day, 100 AI messages, full analytics dashboard, full revision suite (flashcards, mindmaps, spaced repetition), smart syllabus tracker, live study room. Ascent: Everything in Rise, plus unlimited evaluations & tests, unlimited AI messages, bi-weekly 1-on-1 mentorship, interview prep module, personalised roadmap, priority support, monthly review call and early access.' },
+              { q: 'How much do I save on quarterly & yearly plans?', a: "As we are running promotional offers currently, Quarterly plans save you 20% compared to monthly billing. Yearly plans save you 40% - that's almost 5 months free. For example, Rise monthly is ₹499, but yearly brings it down to ₹299/month. Discounts are automatically applied at checkout." },
               { q: 'How does AI Mains Evaluation work?', a: 'You can upload a photo of your handwritten answer. Jeet AI evaluates it against UPSC marking schemes - structure, content, keyword density, presentation, relevance etc. You get detailed feedback in under 60 seconds, including a score and actionable suggestions to improve.' },
-              { q: 'What is the refund policy?', a: 'We offer a 7-day, no-questions-asked refund on all paid subscriptions. Just reach out to support within 7 days of your purchase and we will process the refund within 24 hours. After 7 days, refunds are not applicable but you can cancel future billing.' },
-              { q: 'Is this suitable for first-attempt aspirants?', a: "Absolutely. Our study planner, syllabus tracker, daily MCQs and mains answer evaluation are designed to guide you from day one - whether it's your first attempt or your third. Start with Aspire to build momentum, then upgrade as you get more serious." },
+              { q: 'Is this suitable for first-attempt aspirants?', a: "Absolutely. Our study planner, syllabus tracker, daily MCQs, mains answer evaluation and simplified video lectures are designed to guide you from day one - whether it's your first attempt or your third. Start with the Aspire to build momentum, then upgrade as you get more serious as you master consistency." },
             ];
             const left = faqs.filter((_, i) => i % 2 === 0);
             const right = faqs.filter((_, i) => i % 2 === 1);
@@ -2007,7 +2039,7 @@ export default function ExplorePlansPage() {
             <br />the Right Way
           </h2>
           <p style={{ fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 14.9, color: 'rgba(255,255,255,0.52)', maxWidth: 480, margin: '0 auto 32px', lineHeight: '25.59px' }}>
-            Join 15,000+ aspirants. Start with Aspire and upgrade when you need higher limits.
+            Join 15,000+ aspirants. Start with free access, or choose Aspire, Rise, or Ascent when you need higher limits.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
             <button type="button" onClick={handleAspireCta} style={{ borderRadius: 10, border: 'none', padding: '13px 34px', fontFamily: 'var(--font-jakarta), "Plus Jakarta Sans", Inter, sans-serif', fontSize: 14.6, fontWeight: 800, color: '#0C1424', background: '#E8B84B', cursor: 'pointer', whiteSpace: 'nowrap' }}>
