@@ -58,7 +58,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
   const modeSummaries = useMemo(() => {
     const keys: Mode[] = ['prelims', 'mains', 'optional'];
     return keys.map((modeKey) => {
-      const list = syllabusData[modeKey];
+      const list = modeKey === 'optional' ? (optionalSubject ? [optionalSubject] : []) : syllabusData[modeKey];
       const aggregate = list.reduce(
         (acc, subject) => {
           const s = getSubjectStats(subject);
@@ -77,7 +77,7 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
         total: aggregate.total,
       };
     });
-  }, [getSubjectStats, syllabusData]);
+  }, [getSubjectStats, syllabusData, optionalSubject]);
 
   const allSubjects = useMemo(() => {
     const withMode = (list: Subject[], stage: string): SubjectProgress[] =>
@@ -89,9 +89,9 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
     return [
       ...withMode(syllabusData.prelims, 'Prelims'),
       ...withMode(syllabusData.mains, 'Mains'),
-      ...withMode(syllabusData.optional, 'Optional'),
+      ...withMode(optionalSubject ? [optionalSubject] : [], 'Optional'),
     ] as Array<SubjectProgress & { stage: string }>;
-  }, [getSubjectStats, syllabusData]);
+  }, [getSubjectStats, syllabusData, optionalSubject]);
 
   const modalSubjects = useMemo(
     () => allSubjects.filter((subject) => subject.stage.toLowerCase() === modalMode),
@@ -305,7 +305,9 @@ export default function RightPanel({ mode, subjects, states, syllabusData, cms, 
               ))}
               {modalSubjects.length === 0 && (
                 <div className="rounded-[10px] border border-dashed border-[#CBD5E1] bg-[#F8FAFC] px-4 py-8 text-center text-[13px] text-[#64748B]">
-                  No {modalMode === 'prelims' ? 'Prelims' : modalMode === 'mains' ? 'Mains' : 'Optional'} subjects available.
+                  {modalMode === 'optional'
+                    ? 'Select your optional subject to see its progress here.'
+                    : `No ${modalMode === 'prelims' ? 'Prelims' : 'Mains'} subjects available.`}
                 </div>
               )}
             </div>
