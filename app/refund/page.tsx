@@ -139,7 +139,7 @@ export default function RefundPolicyPage() {
                 </li>
                 <li className="flex gap-2 text-base leading-relaxed text-[#374560]">
                   <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-[#e8b84b]" />
-                  <span><strong className="text-[#0c1424]">What happens after cancellation:</strong> Your access to paid features continues until the end of your current billing period. After that, your account moves to the free Aspire plan and you keep your study data and streak history.</span>
+                  <span><strong className="text-[#0c1424]">What happens after cancellation:</strong> Your access to paid features continues until the end of your current billing period. After that, your account moves to the free tier and you keep your study data and streak history.</span>
                 </li>
                 <li className="flex gap-2 text-base leading-relaxed text-[#374560]">
                   <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-[#e8b84b]" />

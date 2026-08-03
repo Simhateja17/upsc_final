@@ -71,7 +71,7 @@ const faqData: FAQSection[] = [
       },
       {
         question: 'Is there a free plan?',
-        answer: '<p>Yes. The <strong>Aspire plan is completely free</strong> and includes Daily MCQ practice, Daily Answer Writing, Daily Current affairs, Jeet AI Mentor conversations. You can use these features for as long as you like at no cost. Paid plans unlock the full platform including AI evaluation, mock tests, mentorship, and the complete revision suite.</p>',
+        answer: '<p>Yes. There is a free tier with Daily MCQ practice, Daily Answer Writing, Daily Current affairs, and limited Jeet AI Mentor access. Aspire is the entry paid plan; paid tiers unlock higher limits, AI evaluation, mock tests, mentorship, and the complete revision suite.</p>',
       },
       {
         question: 'Is there a mobile app?',

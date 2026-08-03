@@ -8,7 +8,6 @@ import { supabase } from '@/lib/supabase';
 import DashboardHeader from '@/components/DashboardHeader';
 import Sidebar from '@/components/Sidebar';
 import MilestonePopup from '@/components/MilestonePopup';
-import OnboardingFlow from '@/components/OnboardingFlow';
 import PhoneLinkPrompt from '@/components/PhoneLinkPrompt';
 import { EntitlementsProvider } from '@/contexts/EntitlementsContext';
 import { isDisabledDashboardRoute } from '@/lib/featureAvailability';
@@ -231,10 +230,6 @@ export default function DashboardLayout({
           </main>
         </div>
 
-        {/* Onboarding flow – disabled for now: feedback says it's too many
-            questions right after login and feels like a barrier. Plan is to
-            replace it with a lighter, deferrable "profile X% complete" prompt. */}
-        {/* <OnboardingFlow /> */}
         {/* Temporarily disabled for local dev */}
         {/* <PhoneLinkPrompt /> */}
 

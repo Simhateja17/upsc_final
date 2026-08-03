@@ -219,6 +219,15 @@ const SG_CSS = `
 .sg-overlay { position:fixed; inset:0; z-index:500; background:rgba(11,16,33,0.62); backdrop-filter:blur(8px);
   display:flex; align-items:center; justify-content:center; padding:20px; animation:sgScaleIn 0.2s ease; }
 
+/* Join Room modal open/close transition - animation plays on mount, the
+   .closing class (toggled briefly before unmount) plays a matching fade/scale
+   out so the modal never just pops away. */
+@keyframes sgFadeIn { from{opacity:0;} to{opacity:1;} }
+.sg-modal-overlay { animation:sgFadeIn 0.18s ease; transition:opacity 0.18s ease; }
+.sg-modal-overlay.closing { opacity:0; }
+.sg-modal-pop { animation:sgScaleIn 0.22s cubic-bezier(0.2,0.9,0.35,1.1); transition:opacity 0.18s ease, transform 0.18s ease; }
+.sg-modal-pop.closing { opacity:0; transform:scale(0.96); }
+
 /* Preview modal */
 .sg-preview-box { background:#fff; border-radius:24px; width:600px; max-width:92vw; max-height:88vh;
   box-shadow:0 24px 80px rgba(0,0,0,0.25); animation:sgScaleIn 0.3s ease; overflow:hidden; display:flex; flex-direction:column; }

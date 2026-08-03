@@ -23,7 +23,6 @@ function formatDate(value?: string | Date | null): string {
   if (Number.isNaN(d.getTime())) return 'Not available';
   return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
 }
-
 function formatRupees(amount?: number | null): string {
   if (amount === undefined || amount === null) return '—';
   return `₹${amount.toLocaleString('en-IN')}`;
@@ -129,10 +128,9 @@ export default function MyPlanBillingTab({
 }) {
   const isTabletOrBelow = useIsTabletOrBelow();
   const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
-  // The free tier genuinely has no Subscription row to show billing/renewal for.
-  // (Distinct from isPreview: an admin simulating any paid tier also has no subscription, but
-  // that's fake data being previewed, not a real free plan.)
-  const isFreeTierNoBilling = !subscription && !isPreview;
+  // Only the bare free tier has no billing record. Aspire is paid and should
+  // remain in the normal subscription/billing state path.
+  const isFreeTierNoBilling = tier === 'free' && !subscription && !isPreview;
   const planName = plan?.name || (isPreview || isFreeTierNoBilling ? `${tierLabel} Plan` : 'Your Plan');
   const cycleLabel = CYCLE_LABEL[plan?.billingCycle || 'yearly'] || 'Annual';
   const renewDate = subscription?.currentEnd || subscription?.endDate;
@@ -214,7 +212,7 @@ export default function MyPlanBillingTab({
                     color: '#e8b84b',
                   }}
                 >
-                  Always Free
+                  Free tier
                 </span>
               ) : isActive && (
                 <span
@@ -439,4 +437,3 @@ export default function MyPlanBillingTab({
     </div>
   );
 }
-

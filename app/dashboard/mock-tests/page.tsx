@@ -1047,7 +1047,6 @@ function MockTestsPageInner() {
               {(selectedExamMode === 'mains' ? mainsQuestionSources : questionSources).map(src => {
                 const isSelected = selectedSource === src.id;
                 const isHovered = hoveredSource === src.id && !isSelected;
-                const badge = (src as any).badge as string | undefined;
                 return (
                   <button
                     key={src.id}
@@ -1064,7 +1063,7 @@ function MockTestsPageInner() {
                     onMouseLeave={() => setHoveredSource(null)}
                     style={{
                       flex: '1 1 0',
-                      minWidth: '110px',
+                      minWidth: '96px',
                       background: isSelected ? '#EFF6FF' : isHovered ? '#F5F8FF' : '#FFF',
                       border: isSelected
                         ? '2px solid #155DFC'
@@ -1072,7 +1071,7 @@ function MockTestsPageInner() {
                         ? '1.5px solid #155DFC'
                         : '1.5px solid #E5E7EB',
                       borderRadius: '14px',
-                      padding: '16px 16px',
+                      padding: '12px 12px',
                       cursor: 'pointer',
                       textAlign: 'left',
                       position: 'relative',
@@ -1086,31 +1085,18 @@ function MockTestsPageInner() {
                       alignItems: 'flex-start',
                     }}
                   >
-                    <div style={{ marginBottom: '8px', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div style={{ marginBottom: '6px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       {(src as any).icon?.startsWith('/') ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={(src as { icon?: string }).icon} alt={src.label} style={{ width: '44px', height: '44px', objectFit: 'contain' }} />
+                        <img src={(src as { icon?: string }).icon} alt={src.label} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
                       ) : (
-                        <span style={{ fontSize: '40px', lineHeight: '44px', display: 'block', textAlign: 'center' }}>{(src as any).icon}</span>
+                        <span style={{ fontSize: '32px', lineHeight: '36px', display: 'block', textAlign: 'center' }}>{(src as any).icon}</span>
                       )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
                       <span style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontWeight: 700, fontSize: '15px', color: '#101828' }}>
                         {src.label}
                       </span>
-                      {badge && (
-                        <span style={{
-                          fontFamily: 'var(--font-inter), Inter, sans-serif',
-                          fontWeight: 600,
-                          fontSize: '11px',
-                          padding: '2px 8px',
-                          borderRadius: '999px',
-                          background: badge === 'PYQ' ? '#FEF3E2' : '#EDE9FE',
-                          color: badge === 'PYQ' ? '#C2410C' : '#7C3AED',
-                        }}>
-                          {badge}
-                        </span>
-                      )}
                     </div>
                     <div style={{ fontFamily: 'var(--font-inter), Inter, sans-serif', fontSize: '12px', color: '#6B7280', lineHeight: 1.4 }}>
                       {src.description}
