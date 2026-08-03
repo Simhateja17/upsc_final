@@ -13,7 +13,7 @@ import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 import Toast from '@/components/Toast';
 import WritingTimer from '@/components/WritingTimer';
 import LeaderboardRankingCard from '@/components/LeaderboardRankingCard';
-import { stripMarksSuffix } from '@/lib/mainsPattern';
+import { stripMarksSuffix, stripSurroundingQuotes } from '@/lib/mainsPattern';
 
 interface QuestionData {
   id: string;
@@ -614,7 +614,7 @@ function DailyMainsChallengeInner() {
               className="italic"
               style={{ borderLeft: '4px solid #F5B800', padding: '16px 20px', background: '#F5F6F8', borderRadius: '10px 16px 16px 10px', fontSize: '15px', lineHeight: '1.7', color: '#0B1020', marginTop: '20px', fontFamily: 'var(--font-merriweather), Inter, sans-serif', fontWeight: 400 }}
             >
-              &quot;{data.questionText}&quot;
+              {stripSurroundingQuotes(data.questionText)}
             </blockquote>
 
             {/* Meta */}
@@ -952,7 +952,7 @@ function DailyMainsChallengeInner() {
             {/* Question text */}
             <div className="rounded-[10px] bg-[#F9FAFB] p-4 mb-4" style={{ boxShadow: '0px 1px 2px -1px #0000001A', borderLeft: '4px solid #C9A84C' }}>
               <p className="text-[#101828] italic" style={{ fontSize: '16px', lineHeight: '26px', fontFamily: 'var(--font-merriweather)' }}>
-                &quot;{data.questionText}&quot;
+                {stripSurroundingQuotes(data.questionText)}
               </p>
             </div>
 

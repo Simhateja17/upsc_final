@@ -157,17 +157,32 @@ export default function MindmapViewPage() {
         if (res.status === 'success') {
           const raw = res.data;
           const parsed = parseData(raw);
-          setData(parsed);
-          if (!raw.viewed) {
-            mindmapService.updateProgress(raw.id, raw.mastery, true).catch(() => {});
-          }
+
+          let explored = new Set<string>();
           if (typeof window !== 'undefined') {
             const saved = localStorage.getItem(`rwj_mindmap_explored_${raw.id}`);
             if (saved) {
               try {
-                setExploredBranches(new Set(JSON.parse(saved)));
+                explored = new Set(JSON.parse(saved));
               } catch {}
             }
+          }
+          setExploredBranches(explored);
+
+          // Branch clicks live only in this browser's localStorage - the
+          // backend just stores one aggregate mastery number. Reconcile the
+          // two by taking whichever is higher, so mastery never regresses
+          // (e.g. opening on a device that already fully explored the map
+          // server-side, but has no local click history yet) while still
+          // fixing drift where this device's explored branches outpace a
+          // stale/never-persisted backend value.
+          const topBranchCount = parsed.root.children?.length ?? 0;
+          const localMastery = topBranchCount > 0 ? Math.round((explored.size / topBranchCount) * 100) : 0;
+          const mastery = Math.max(localMastery, parsed.mastery);
+          setData({ ...parsed, mastery });
+
+          if (!raw.viewed || mastery !== parsed.mastery) {
+            mindmapService.updateProgress(raw.id, mastery, true).catch(() => {});
           }
         }
       })
