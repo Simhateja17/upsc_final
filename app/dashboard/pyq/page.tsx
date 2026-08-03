@@ -7,6 +7,7 @@ import { LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import DashboardPageHero from '@/components/DashboardPageHero';
+import Toast from '@/components/Toast';
 import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
 import CuratedModelAnswer from '@/components/mains-results/CuratedModelAnswer';
 import { bookmarkService, flashcardService, pyqService, spacedRepService } from '@/lib/services';
@@ -584,6 +585,7 @@ export default function PyqPage() {
   const entitlements = useEntitlements();
   const mainsQuota = entitlements.featureStatus('mains_evaluation');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [flashcardToast, setFlashcardToast] = useState<string | null>(null);
   const [selectedQuestion, setSelectedQuestion] = useState<any | null>(null);
   const [questionStates, setQuestionStates] = useState<Record<string, { selected: string | null; submitted: boolean }>>({});
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -592,6 +594,9 @@ export default function PyqPage() {
   const [prelimsSubmitError, setPrelimsSubmitError] = useState<string | null>(null);
   const [showMainsWriteModal, setShowMainsWriteModal] = useState(false);
   const [showMainsQuotaModal, setShowMainsQuotaModal] = useState(false);
+  // Exact used/limit from the freshest source available (a refresh or the
+  // blocking error itself) - the cached EntitlementsContext value can be stale.
+  const [mainsQuotaOverride, setMainsQuotaOverride] = useState<{ used: number | null; limit: number | null } | null>(null);
   const [expandedModelAnswerIds, setExpandedModelAnswerIds] = useState<Set<string>>(new Set());
   const [essayPartOrder, setEssayPartOrder] = useState<'decode-first' | 'essay-first'>('decode-first');
   const router = useRouter();
@@ -752,7 +757,7 @@ export default function PyqPage() {
       const topic = String(q.topic || q.paper || 'Custom');
       const topicId = slugify(topic);
       const answer = q.modelAnswer || q.answer || getExplanationText(q) || 'Refer to the model answer on RiseWithJeet.';
-      const res = await flashcardService.createCard({
+      await flashcardService.createCard({
         subjectId,
         subject,
         topicId,
@@ -762,8 +767,7 @@ export default function PyqPage() {
         difficulty: q.difficulty || undefined,
       });
       setMainsFlashcardIds((prev) => new Set(prev).add(q.id));
-      const cardId = res?.data?.id;
-      router.push(`/dashboard/flashcards/${subjectId}/${topicId}${cardId ? `?cardId=${cardId}` : ''}`);
+      setFlashcardToast('Added to Flashcards');
     } catch {
       // keep prior state - flashcard creation failed
     } finally {
@@ -857,7 +861,7 @@ export default function PyqPage() {
         ? q.options.find((option: any) => option.label === q.correctOption)
         : null;
       const answer = getExplanationText(q) || correctOption?.text || q.correctOption || 'Refer to the explanation on RiseWithJeet.';
-      const res = await flashcardService.createCard({
+      await flashcardService.createCard({
         subjectId,
         subject,
         topicId,
@@ -867,8 +871,7 @@ export default function PyqPage() {
         difficulty: q.difficulty || undefined,
       });
       setPrelimsFlashcardIds((prev) => new Set(prev).add(q.id));
-      const cardId = res?.data?.id;
-      router.push(`/dashboard/flashcards/${subjectId}/${topicId}${cardId ? `?cardId=${cardId}` : ''}`);
+      setFlashcardToast('Added to Flashcards');
     } catch {
       // keep prior state - flashcard creation failed
     } finally {
@@ -1988,10 +1991,18 @@ export default function PyqPage() {
         open={showMainsQuotaModal}
         onClose={() => setShowMainsQuotaModal(false)}
         tier={entitlements.tier}
-        used={mainsQuota?.used}
-        limit={mainsQuota?.limit}
+        used={mainsQuotaOverride?.used ?? mainsQuota?.used}
+        limit={mainsQuotaOverride?.limit ?? mainsQuota?.limit}
         backLabel="Back to Dashboard"
       />
+      {flashcardToast && (
+        <Toast
+          message={flashcardToast}
+          type="success"
+          onClose={() => setFlashcardToast(null)}
+          autoCloseDuration={2500}
+        />
+      )}
       {navigatingQuestionHref ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#F8F9FB]/85 backdrop-blur-sm">
           <div className="rounded-[18px] border border-[#E5E7EB] bg-white px-8 py-7 text-center shadow-[0_16px_50px_rgba(15,23,42,0.16)]">
@@ -3143,8 +3154,15 @@ export default function PyqPage() {
                   onClick={async () => {
                     if (!selectedQuestion) return;
                     if (!entitlements.loading && mainsQuota?.allowed === false) {
-                      setShowMainsQuotaModal(true);
-                      return;
+                      // Refresh first: the cached context value may not reflect
+                      // evaluations submitted earlier in this session elsewhere.
+                      const fresh = await entitlements.refreshEntitlements();
+                      const freshQuota = fresh?.features?.['mains_evaluation'] ?? mainsQuota;
+                      if (freshQuota?.allowed === false) {
+                        setMainsQuotaOverride({ used: freshQuota.used, limit: freshQuota.limit });
+                        setShowMainsQuotaModal(true);
+                        return;
+                      }
                     }
                     setMainsSubmitting(true);
                     try {
@@ -3161,6 +3179,7 @@ export default function PyqPage() {
                     } catch (err: any) {
                       const entitlementError = handleEntitlementError(err);
                       if (entitlementError.title === 'Limit reached' || entitlementError.title === 'Upgrade required') {
+                        setMainsQuotaOverride({ used: entitlementError.used, limit: entitlementError.limit });
                         setShowMainsQuotaModal(true);
                       } else {
                         const resetAt = formatResetAt(entitlementError.resetAt);

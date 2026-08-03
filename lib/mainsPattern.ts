@@ -76,6 +76,16 @@ export function stripMarksSuffix(text: string): string {
   return text.replace(/\s*\(\s*\d+\s*marks?\s*\)\s*$/i, '').trim();
 }
 
+/**
+ * Strip quote characters the source text already carries at its edges.
+ * Screens that display a question inside their own quote styling (e.g.
+ * `&quot;{text}&quot;`) must run this first, or a question that already
+ * starts/ends with a quote renders doubled.
+ */
+export function stripSurroundingQuotes(text: string): string {
+  return text.replace(/^["'“‘]|["'”’]+$/g, '').trim();
+}
+
 /** Presentation helper for the results-page word-count chip. */
 export function wordCountChip(wordCount: number, marks: number): {
   status: WordCountStatus;

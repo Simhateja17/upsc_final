@@ -387,6 +387,9 @@ function MainsAnswerWorkspaceContent({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  // Exact used/limit from the freshest source available (a refresh or the
+  // blocking error itself) - the cached EntitlementsContext value can be stale.
+  const [mainsQuotaOverride, setMainsQuotaOverride] = useState<{ used: number | null; limit: number | null } | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [timeLeft, setTimeLeft] = useState(() => getQuestionMainsTimeLimit(question));
   const [readTimeLeft, setReadTimeLeft] = useState<number | null>(15);
@@ -448,8 +451,15 @@ function MainsAnswerWorkspaceContent({
   const submitForEvaluation = async () => {
     if (!answerText.trim() && files.length === 0) return;
     if (!entitlements.loading && mainsQuota?.allowed === false) {
-      setShowQuotaModal(true);
-      return;
+      // Refresh first: the cached context value may not reflect evaluations
+      // submitted earlier in this session on a different page.
+      const fresh = await entitlements.refreshEntitlements();
+      const freshQuota = fresh?.features?.['mains_evaluation'] ?? mainsQuota;
+      if (freshQuota?.allowed === false) {
+        setMainsQuotaOverride({ used: freshQuota.used, limit: freshQuota.limit });
+        setShowQuotaModal(true);
+        return;
+      }
     }
     setSubmitting(true);
     setSubmitError(null);
@@ -469,6 +479,7 @@ function MainsAnswerWorkspaceContent({
     } catch (error) {
       const entitlementError = handleEntitlementError(error);
       if (entitlementError.title === 'Limit reached' || entitlementError.title === 'Upgrade required') {
+        setMainsQuotaOverride({ used: entitlementError.used, limit: entitlementError.limit });
         setShowQuotaModal(true);
       } else {
         const resetAt = formatQuestionPageResetAt(entitlementError.resetAt);
@@ -513,8 +524,8 @@ function MainsAnswerWorkspaceContent({
         open={showQuotaModal}
         onClose={() => setShowQuotaModal(false)}
         tier={entitlements.tier}
-        used={mainsQuota?.used}
-        limit={mainsQuota?.limit}
+        used={mainsQuotaOverride?.used ?? mainsQuota?.used}
+        limit={mainsQuotaOverride?.limit ?? mainsQuota?.limit}
         backLabel="Back to question"
       />
       {open && (
@@ -610,20 +621,19 @@ function QuestionActionButtons({
   isLoggedIn: boolean;
   onRequireAuth: () => void;
 }) {
-  const router = useRouter();
   const [reviewStatus, setReviewStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle');
-  const [flashcardStatus, setFlashcardStatus] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [flashcardStatus, setFlashcardStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   const addFlashcard = async () => {
     if (!isLoggedIn) return onRequireAuth();
-    if (flashcardStatus === 'saving') return;
+    if (flashcardStatus === 'saving' || flashcardStatus === 'saved') return;
     setFlashcardStatus('saving');
     try {
       const subjectId = slugify(subject);
       const topic = cleanText(question.topic) || cleanText(question.paper) || 'Custom';
       const topicId = slugify(topic);
-      const res = await flashcardService.createCard({
+      await flashcardService.createCard({
         subjectId,
         subject,
         topicId,
@@ -632,8 +642,7 @@ function QuestionActionButtons({
         answer: getModelAnswerText(question) || 'Refer to the model answer on RiseWithJeet.',
         difficulty: cleanText(question.difficulty) || undefined,
       });
-      const cardId = res?.data?.id;
-      router.push(`/dashboard/flashcards/${subjectId}/${topicId}${cardId ? `?cardId=${cardId}` : ''}`);
+      setFlashcardStatus('saved');
     } catch {
       setFlashcardStatus('error');
     }
@@ -678,10 +687,10 @@ function QuestionActionButtons({
         type="button"
         onClick={addFlashcard}
         className="flex items-center gap-2 rounded-[10px] border border-[#E2E6EE] bg-white px-4 py-2.5 text-[13px] font-medium text-[#4A5568] transition hover:border-[#D4AF37] hover:text-[#B8941E] disabled:opacity-60"
-        disabled={flashcardStatus === 'saving'}
+        disabled={flashcardStatus === 'saving' || flashcardStatus === 'saved'}
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" /></svg>
-        {flashcardStatus === 'saving' ? 'Adding...' : flashcardStatus === 'error' ? 'Try again' : 'Add to Flashcard'}
+        {flashcardStatus === 'saving' ? 'Adding...' : flashcardStatus === 'saved' ? 'Added to Flashcards ✓' : flashcardStatus === 'error' ? 'Try again' : 'Add to Flashcard'}
       </button>
       <button
         type="button"

@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { flashcardService, bookmarkService, spacedRepService } from '@/lib/services';
 import { getSubjectBadgeStyle } from '@/lib/subjectPalette';
 
@@ -62,6 +64,35 @@ export function isReviewFilter(value: unknown): value is ReviewFilter {
 function getOptionKey(option: { id: string; text: string }, idx: number): string {
   const labels = ['A', 'B', 'C', 'D'];
   return option.id || labels[idx] || String(idx);
+}
+
+// AI-generated explanations often write "* **Statement 1...** – text * **Statement 2...**"
+// as one run-on line instead of putting each bullet on its own line, so CommonMark never
+// recognises the `*` as a list marker. Force a paragraph break before each inline bullet
+// so remark can parse it into a real list.
+function normalizeExplanationMarkdown(text: string): string {
+  return text
+    .replace(/\s*\*\s+(?=\S)/g, '\n\n* ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function ExplanationMarkdown({ text }: { text: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        p: ({ children }) => <p className="font-arimo mb-2 text-sm leading-relaxed text-[#374151] last:mb-0">{children}</p>,
+        ul: ({ children }) => <ul className="font-arimo mb-2 ml-4 list-disc space-y-1.5 text-sm leading-relaxed text-[#374151]">{children}</ul>,
+        ol: ({ children }) => <ol className="font-arimo mb-2 ml-4 list-decimal space-y-1.5 text-sm leading-relaxed text-[#374151]">{children}</ol>,
+        li: ({ children }) => <li className="pl-1">{children}</li>,
+        strong: ({ children }) => <strong className="font-bold text-[#1F2937]">{children}</strong>,
+        em: ({ children }) => <em className="italic">{children}</em>,
+      }}
+    >
+      {normalizeExplanationMarkdown(text)}
+    </ReactMarkdown>
+  );
 }
 
 function getStatus(q: ReviewQuestion) {
@@ -467,9 +498,13 @@ export default function QuestionReviewView({
                         <h4 className="mb-2 font-arimo text-xs font-bold uppercase tracking-wider text-[#17223E] flex items-center gap-1.5">
                           <span>💡</span> Explanation
                         </h4>
-                        <p className="font-arimo text-sm leading-relaxed text-[#374151]">
-                          {question.explanation || 'Explanation is not available for this question yet.'}
-                        </p>
+                        {question.explanation ? (
+                          <ExplanationMarkdown text={question.explanation} />
+                        ) : (
+                          <p className="font-arimo text-sm leading-relaxed text-[#374151]">
+                            Explanation is not available for this question yet.
+                          </p>
+                        )}
                       </div>
 
                       <div className="pt-1 border-t border-[#E5E7EB]">

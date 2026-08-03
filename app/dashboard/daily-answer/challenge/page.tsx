@@ -13,7 +13,7 @@ import { getSubjectMetaStyle } from '@/lib/subjectPalette';
 import Toast from '@/components/Toast';
 import WritingTimer from '@/components/WritingTimer';
 import LeaderboardRankingCard from '@/components/LeaderboardRankingCard';
-import { stripMarksSuffix } from '@/lib/mainsPattern';
+import { stripMarksSuffix, stripSurroundingQuotes } from '@/lib/mainsPattern';
 
 interface QuestionData {
   id: string;
@@ -228,6 +228,9 @@ function DailyMainsChallengeInner() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  // Exact used/limit from the freshest source available (a refresh or the
+  // blocking error itself) - the cached EntitlementsContext value can be stale.
+  const [mainsQuotaOverride, setMainsQuotaOverride] = useState<{ used: number | null; limit: number | null } | null>(null);
 
   // Bookmark ("Save Question") state → stored in the Bookmarks Vault under Answer Writing
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -365,16 +368,23 @@ function DailyMainsChallengeInner() {
       open={showQuotaModal}
       onClose={() => setShowQuotaModal(false)}
       tier={entitlements.tier}
-      used={mainsQuota?.used}
-      limit={mainsQuota?.limit}
+      used={mainsQuotaOverride?.used ?? mainsQuota?.used}
+      limit={mainsQuotaOverride?.limit ?? mainsQuota?.limit}
       backLabel="Back to Dashboard"
     />
   );
 
-  const handleBeginChallenge = () => {
+  const handleBeginChallenge = async () => {
     if (!entitlements.loading && mainsQuota?.allowed === false) {
-      setShowQuotaModal(true);
-      return;
+      // Refresh first: the cached context value may not reflect evaluations
+      // submitted earlier in this session elsewhere.
+      const fresh = await entitlements.refreshEntitlements();
+      const freshQuota = fresh?.features?.['mains_evaluation'] ?? mainsQuota;
+      if (freshQuota?.allowed === false) {
+        setMainsQuotaOverride({ used: freshQuota.used, limit: freshQuota.limit });
+        setShowQuotaModal(true);
+        return;
+      }
     }
     setChallengeStarted(true);
     setIsActive(false);
@@ -450,8 +460,15 @@ function DailyMainsChallengeInner() {
   const handleSubmit = async () => {
     const quota = entitlements.featureStatus('mains_evaluation');
     if (quota?.allowed === false) {
-      setShowQuotaModal(true);
-      return;
+      // Refresh first: the cached context value may not reflect evaluations
+      // submitted earlier in this session elsewhere.
+      const fresh = await entitlements.refreshEntitlements();
+      const freshQuota = fresh?.features?.['mains_evaluation'] ?? quota;
+      if (freshQuota?.allowed === false) {
+        setMainsQuotaOverride({ used: freshQuota.used, limit: freshQuota.limit });
+        setShowQuotaModal(true);
+        return;
+      }
     }
     if (!answerText.trim() && selectedFiles.length === 0) {
       setSubmitError('Please write your answer or upload a file before submitting.');
@@ -474,6 +491,7 @@ function DailyMainsChallengeInner() {
     } catch (err: any) {
       const parsed = handleEntitlementError(err);
       if (parsed.title === 'Limit reached' || parsed.title === 'Upgrade required') {
+        setMainsQuotaOverride({ used: parsed.used, limit: parsed.limit });
         setShowQuotaModal(true);
       } else {
         setSubmitError(parsed.message || 'Failed to submit answer. Please try again.');
@@ -614,7 +632,7 @@ function DailyMainsChallengeInner() {
               className="italic"
               style={{ borderLeft: '4px solid #F5B800', padding: '16px 20px', background: '#F5F6F8', borderRadius: '10px 16px 16px 10px', fontSize: '15px', lineHeight: '1.7', color: '#0B1020', marginTop: '20px', fontFamily: 'var(--font-merriweather), Inter, sans-serif', fontWeight: 400 }}
             >
-              &quot;{data.questionText}&quot;
+              {stripSurroundingQuotes(data.questionText)}
             </blockquote>
 
             {/* Meta */}
@@ -952,7 +970,7 @@ function DailyMainsChallengeInner() {
             {/* Question text */}
             <div className="rounded-[10px] bg-[#F9FAFB] p-4 mb-4" style={{ boxShadow: '0px 1px 2px -1px #0000001A', borderLeft: '4px solid #C9A84C' }}>
               <p className="text-[#101828] italic" style={{ fontSize: '16px', lineHeight: '26px', fontFamily: 'var(--font-merriweather)' }}>
-                &quot;{data.questionText}&quot;
+                {stripSurroundingQuotes(data.questionText)}
               </p>
             </div>
 
