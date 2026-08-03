@@ -196,6 +196,9 @@ export default function MainsAnswerEvaluatorPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  // Exact used/limit from the freshest source available (a refresh or the
+  // blocking error itself) - the cached EntitlementsContext value can be stale.
+  const [mainsQuotaOverride, setMainsQuotaOverride] = useState<{ used: number | null; limit: number | null } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const entitlements = useEntitlements();
@@ -272,8 +275,15 @@ export default function MainsAnswerEvaluatorPage() {
   async function handleSubmit() {
     if (!canEvaluate || submitting) return;
     if (!entitlements.loading && mainsQuota?.allowed === false) {
-      setShowQuotaModal(true);
-      return;
+      // Refresh first: the cached context value may not reflect evaluations
+      // submitted earlier in this session elsewhere.
+      const fresh = await entitlements.refreshEntitlements();
+      const freshQuota = fresh?.features?.['mains_evaluation'] ?? mainsQuota;
+      if (freshQuota?.allowed === false) {
+        setMainsQuotaOverride({ used: freshQuota.used, limit: freshQuota.limit });
+        setShowQuotaModal(true);
+        return;
+      }
     }
     setError(null);
     setSubmitting(true);
@@ -300,6 +310,11 @@ export default function MainsAnswerEvaluatorPage() {
     } catch (err: any) {
       const code = err instanceof ApiRequestError ? err.payload?.code : null;
       if (code === 'FEATURE_LIMIT_REACHED' || code === 'FEATURE_ACCESS_REQUIRED') {
+        const payload = err instanceof ApiRequestError ? err.payload : null;
+        setMainsQuotaOverride({
+          used: typeof payload?.used === 'number' ? payload.used : null,
+          limit: typeof payload?.limit === 'number' ? payload.limit : null,
+        });
         setShowQuotaModal(true);
       } else {
         setError(err?.message || 'Failed to submit answer. Please try again.');
@@ -314,8 +329,8 @@ export default function MainsAnswerEvaluatorPage() {
         open={showQuotaModal}
         onClose={() => setShowQuotaModal(false)}
         tier={entitlements.tier}
-        used={mainsQuota?.used}
-        limit={mainsQuota?.limit}
+        used={mainsQuotaOverride?.used ?? mainsQuota?.used}
+        limit={mainsQuotaOverride?.limit ?? mainsQuota?.limit}
         backLabel="Back to Dashboard"
       />
       <main className="flex-1 overflow-y-auto font-arimo" style={{ background: '#F9FAFB' }}>

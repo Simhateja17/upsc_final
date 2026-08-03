@@ -17,7 +17,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { wordCountChip, mainsWordLimit, mainsTimeLimit, stripMarksSuffix } from '@/lib/mainsPattern';
+import { wordCountChip, mainsWordLimit, mainsTimeLimit, stripMarksSuffix, stripSurroundingQuotes } from '@/lib/mainsPattern';
 import { useAuth } from '@/contexts/AuthContext';
 import CuratedModelAnswer from './CuratedModelAnswer';
 
@@ -909,7 +909,7 @@ export default function MainsResultsView({
                 {multi ? `Question ${selectedQ + 1} · ` : ''}{marks} marks
               </span>
             </div>
-            <p className="question-text">&quot;{questionText}&quot;</p>
+            <p className="question-text">{stripSurroundingQuotes(questionText)}</p>
           </div>
         )}
 

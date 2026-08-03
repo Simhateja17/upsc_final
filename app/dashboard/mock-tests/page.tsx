@@ -318,6 +318,11 @@ function MockTestsPageInner() {
   const [generating, setGenerating] = useState(false);
   const [generatedTestId, setGeneratedTestId] = useState<string | null>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  // Mains-evaluation quota is a shared lifetime/daily cap tracked server-side; the
+  // cached EntitlementsContext value can be stale, so capture the exact used/limit
+  // the backend just reported (from a fresh refresh or the blocking error itself)
+  // and show that in the modal instead of trusting the cache.
+  const [mainsQuotaOverride, setMainsQuotaOverride] = useState<{ used: number | null; limit: number | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generateBtnHovered, setGenerateBtnHovered] = useState(false);
   const [hoveredPaperType, setHoveredPaperType] = useState<string | null>(null);
@@ -542,8 +547,15 @@ function MockTestsPageInner() {
   /* ─── Generate Test Handler ─── */
   const handleGenerateTest = async () => {
     const featureKey = selectedExamMode === 'mains' ? 'mains_evaluation' : 'prelims_mock_attempt';
-    const quota = entitlements.featureStatus(featureKey);
+    let quota = entitlements.featureStatus(featureKey);
+    if (featureKey === 'mains_evaluation') {
+      // Refresh first: the cached context value may not reflect evaluations
+      // submitted earlier in this session (e.g. on the mock test attempt page).
+      const fresh = await entitlements.refreshEntitlements();
+      quota = fresh?.features?.[featureKey] ?? quota;
+    }
     if (quota?.allowed === false) {
+      if (featureKey === 'mains_evaluation') setMainsQuotaOverride({ used: quota.used, limit: quota.limit });
       setShowLimitModal(true);
       setError(quota.message || 'You have used your current plan limit.');
       return;
@@ -583,6 +595,7 @@ function MockTestsPageInner() {
         setShowLimitModal(true);
         setError(parsed.message || 'Failed to generate test. Please try again.');
       } else if (parsed.title === 'Limit reached' || parsed.title === 'Upgrade required') {
+        if (selectedExamMode === 'mains') setMainsQuotaOverride({ used: parsed.used, limit: parsed.limit });
         setShowLimitModal(true);
       } else {
         setError(parsed.message || 'Failed to generate test. Please try again.');
@@ -657,8 +670,8 @@ function MockTestsPageInner() {
           open={showLimitModal}
           onClose={() => setShowLimitModal(false)}
           tier={entitlements.tier}
-          used={activeQuota?.used}
-          limit={activeQuota?.limit}
+          used={mainsQuotaOverride?.used ?? activeQuota?.used}
+          limit={mainsQuotaOverride?.limit ?? activeQuota?.limit}
           backLabel="Back to Mock Tests"
         />
       ) : (

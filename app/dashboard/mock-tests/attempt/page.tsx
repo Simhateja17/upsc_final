@@ -12,7 +12,7 @@ import StructuredQuestionRenderer from '@/components/StructuredQuestionRenderer'
 import FilePreviewThumb from '@/components/FilePreviewThumb';
 import FilePreviewModal from '@/components/FilePreviewModal';
 import WritingTimer from '@/components/WritingTimer';
-import { mainsWordLimit, mainsTimeLimit, mainsWordRange, stripMarksSuffix } from '@/lib/mainsPattern';
+import { mainsWordLimit, mainsTimeLimit, mainsWordRange, stripMarksSuffix, stripSurroundingQuotes } from '@/lib/mainsPattern';
 
 interface Question {
   id: number;
@@ -179,6 +179,9 @@ function MockTestAttemptInner() {
   const [mainsSubmitting, setMainsSubmitting] = useState(false);
   const [mainsConfirmOpen, setMainsConfirmOpen] = useState(false);
   const [showMainsQuotaModal, setShowMainsQuotaModal] = useState(false);
+  // Exact used/limit from the freshest source available (a refresh or the
+  // blocking error itself) - the cached EntitlementsContext value can be stale.
+  const [mainsQuotaOverride, setMainsQuotaOverride] = useState<{ used: number | null; limit: number | null } | null>(null);
   const [mainsAnswers, setMainsAnswers] = useState<Record<number, MainsAnswer>>({});
   // Questions the user has explicitly marked as "didn't attempt" - these are
   // allowed through submission without an answer upload and are not evaluated.
@@ -488,8 +491,12 @@ function MockTestAttemptInner() {
         return;
       }
 
-      const quota = entitlements.featureStatus('mains_evaluation');
+      // Refresh first: the cached context value may not reflect evaluations
+      // submitted earlier in this session.
+      const freshSummary = await entitlements.refreshEntitlements();
+      const quota = freshSummary?.features?.['mains_evaluation'] ?? entitlements.featureStatus('mains_evaluation');
       if (quota?.allowed === false) {
+        setMainsQuotaOverride({ used: quota.used, limit: quota.limit });
         setShowMainsQuotaModal(true);
         setMainsSubmitting(false);
         return;
@@ -542,6 +549,7 @@ function MockTestAttemptInner() {
       entitlements.refreshEntitlements().catch(() => {});
       const parsed = handleEntitlementError(err);
       if (parsed.title === 'Limit reached' || parsed.title === 'Upgrade required') {
+        setMainsQuotaOverride({ used: parsed.used, limit: parsed.limit });
         setShowMainsQuotaModal(true);
       } else {
         setError(parsed.message || err.message || 'Failed to submit answers. Please try again.');
@@ -1390,7 +1398,7 @@ function MockTestAttemptInner() {
                   {/* Question text - gold-bordered serif blockquote (matches Daily Answer Writing) */}
                   <div style={{ borderRadius: 10, background: '#F9FAFB', padding: 16, boxShadow: '0px 1px 2px -1px #0000001A', borderLeft: '4px solid #C9A84C' }}>
                     <p className="italic" style={{ fontSize: 16, lineHeight: '26px', color: '#101828', fontFamily: 'var(--font-merriweather), Georgia, serif', margin: 0 }}>
-                      &quot;{stripMarksSuffix(q.text)}&quot;
+                      {stripSurroundingQuotes(stripMarksSuffix(q.text))}
                     </p>
                   </div>
 
@@ -2061,8 +2069,8 @@ function MockTestAttemptInner() {
         open={showMainsQuotaModal}
         onClose={() => setShowMainsQuotaModal(false)}
         tier={entitlements.tier}
-        used={entitlements.featureStatus('mains_evaluation')?.used}
-        limit={entitlements.featureStatus('mains_evaluation')?.limit}
+        used={mainsQuotaOverride?.used ?? entitlements.featureStatus('mains_evaluation')?.used}
+        limit={mainsQuotaOverride?.limit ?? entitlements.featureStatus('mains_evaluation')?.limit}
         backLabel="Back to Mock Tests"
       />
       <div style={{ maxWidth: 1320, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: isMobile ? 'none' : 1, minHeight: isMobile ? 'auto' : 0 }}>

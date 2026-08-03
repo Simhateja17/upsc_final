@@ -21,12 +21,22 @@ export function formatPeriod(period?: string) {
 export function handleEntitlementError(error: unknown) {
   const payload = error instanceof ApiRequestError ? error.payload : null;
   const code = payload?.code;
+  // used/limit/remaining reflect the exact usage snapshot the backend used to
+  // decide to block this request - always fresher than the client's cached
+  // EntitlementsContext, which only updates when something explicitly refreshes it.
+  const usage = {
+    used: typeof payload?.used === 'number' ? payload.used : null,
+    limit: typeof payload?.limit === 'number' ? payload.limit : null,
+    remaining: typeof payload?.remaining === 'number' ? payload.remaining : null,
+    period: payload?.period ?? null,
+  };
   if (code === 'FEATURE_THROTTLED') {
     return {
       title: 'Slow down for a bit',
       message: payload.message || 'You are sending requests too quickly. Please try again after some time.',
       resetAt: payload.throttle?.resetAt || payload.resetAt,
       action: 'Try again later',
+      ...usage,
     };
   }
   if (code === 'FEATURE_LIMIT_REACHED') {
@@ -35,6 +45,7 @@ export function handleEntitlementError(error: unknown) {
       message: payload.upgrade?.message || payload.message || 'You have used your current plan limit.',
       resetAt: payload.resetAt,
       action: 'Upgrade plan',
+      ...usage,
     };
   }
   if (code === 'FEATURE_ACCESS_REQUIRED') {
@@ -43,6 +54,7 @@ export function handleEntitlementError(error: unknown) {
       message: payload.upgrade?.message || payload.message || 'Upgrade your plan to unlock this feature.',
       resetAt: null,
       action: 'Upgrade plan',
+      ...usage,
     };
   }
   return {
@@ -50,6 +62,10 @@ export function handleEntitlementError(error: unknown) {
     message: error instanceof Error ? error.message : 'Please try again.',
     resetAt: null,
     action: 'Try again',
+    used: null,
+    limit: null,
+    remaining: null,
+    period: null,
   };
 }
 
