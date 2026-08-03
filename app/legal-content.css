@@ -1,0 +1,263 @@
+/* ------------------------------------------------------------------
+   Legal-page content typography (Cookie Policy).
+
+   Every value below is copied 1:1 from the `.lc-*` system that the
+   Terms of Use page (app/terms/TermsContent.tsx) and the Privacy page
+   (app/privacy/PrivacyContent.tsx) already use, which in turn matches the
+   approved design at public/cookie-policy.html. Previously the Cookie page
+   re-declared these as one-off inline styles (sans-serif headings, DM Sans
+   body), which is why its typography drifted from the rest of the policy
+   pages.
+
+   Everything is scoped under `.legal-page` so these rules cannot leak into
+   any other route.
+   ------------------------------------------------------------------ */
+
+.legal-page {
+  /* Palette + font stacks — same tokens as TermsContent.tsx `:root`. */
+  --lc-navy: #090e1c;
+  --lc-navy-4: #172444;
+  --lc-navy-5: #1e3060;
+  --lc-gold: #e8b84b;
+  --lc-gold-dim: rgba(232, 184, 75, 0.12);
+  --lc-gold-ln: rgba(232, 184, 75, 0.3);
+  --lc-cream: #faf8f4;
+  --lc-t1: #0c1424;
+  --lc-t2: #374560;
+  --lc-t3: #6b7a99;
+  --lc-b1: rgba(11, 22, 40, 0.09);
+  --lc-serif: 'Cormorant Garamond', Georgia, serif;
+}
+
+/* ── Section rhythm: 44px padding + 44px margin + hairline divider ── */
+.legal-page .lc-sec {
+  padding-bottom: 44px;
+  margin-bottom: 44px;
+  border-bottom: 1.5px solid var(--lc-b1);
+  scroll-margin-top: 84px;
+}
+.legal-page .lc-sec:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+/* ── Heading hierarchy ── */
+/* Section number: serif, gold, uppercase (was sans-serif on this page). */
+.legal-page .lc-num {
+  font-family: var(--lc-serif);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--lc-gold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+/* Section heading: serif at 1.6rem/600 (was sans-serif on this page). */
+.legal-page .lc-h2 {
+  font-family: var(--lc-serif);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--lc-t1);
+  line-height: 1.25;
+  margin: 0 0 14px;
+}
+
+/* ── Body copy ── */
+/* No font-family: inherits the site body font, exactly like Terms/Privacy. */
+.legal-page .lc-p {
+  font-size: 15px;
+  color: var(--lc-t2);
+  line-height: 1.85;
+  margin-bottom: 13px;
+}
+.legal-page .lc-p:last-child {
+  margin-bottom: 0;
+}
+/* Fine-print closing line (content that only exists on this page). */
+.legal-page .lc-p--fine {
+  font-size: 14px;
+  margin: 14px 0 0;
+}
+.legal-page .lc-p strong {
+  color: var(--lc-t1);
+  font-weight: 600;
+}
+.legal-page .lc-p a {
+  color: var(--lc-navy-5);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Callout boxes ── */
+.legal-page .lc-info {
+  background: var(--lc-gold-dim);
+  border: 1.5px solid var(--lc-gold-ln);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+}
+.legal-page .lc-info-ico {
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.legal-page .lc-info-txt {
+  font-size: 14px;
+  color: var(--lc-t1);
+  line-height: 1.7;
+}
+.legal-page .lc-info-txt strong {
+  color: var(--lc-navy-4);
+  font-weight: 700;
+}
+.legal-page .lc-info-txt a {
+  color: var(--lc-navy-5);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.legal-page .lc-note {
+  background: rgba(26, 48, 96, 0.05);
+  border: 1.5px solid rgba(26, 48, 96, 0.13);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-top: 18px;
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+}
+.legal-page .lc-note-ico {
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.legal-page .lc-note-txt {
+  font-size: 14px;
+  color: var(--lc-t2);
+  line-height: 1.7;
+}
+.legal-page .lc-note-txt strong {
+  color: var(--lc-t1);
+  font-weight: 600;
+}
+
+/* ── Lists: cream cards with a gold dot marker ──
+   Values (gap/padding/dot position, and the two-column label:description
+   grid for `<li><strong>Label:</strong><span>...</span></li>` items) copied
+   1:1 from TermsContent.tsx's `.lc-list` rules, including its 860px
+   single-column fallback below. */
+.legal-page .lc-list {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.legal-page .lc-list li {
+  position: relative;
+  font-size: 14px;
+  color: var(--lc-t2);
+  line-height: 1.7;
+  padding: 6px 15px 6px 32px;
+  background: var(--lc-cream);
+  border: 1.5px solid var(--lc-b1);
+  border-radius: 9px;
+}
+.legal-page .lc-list li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lc-gold);
+  position: absolute;
+  left: 15px;
+  top: 14px;
+}
+.legal-page .lc-list li:has(strong) {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  column-gap: 14px;
+  align-items: start;
+}
+.legal-page .lc-list li strong {
+  color: var(--lc-t1);
+  font-weight: 600;
+  line-height: 1.55;
+  word-break: break-word;
+}
+.legal-page .lc-list li span {
+  min-width: 0;
+  padding-top: 0;
+}
+@media (max-width: 860px) {
+  .legal-page .lc-list li:has(strong) {
+    grid-template-columns: 1fr;
+    row-gap: 4px;
+  }
+}
+
+/* ── Cookie reference table ── */
+.legal-page .lc-tbl-wrap {
+  overflow-x: auto;
+  margin: 18px 0;
+  border-radius: 12px;
+  border: 1.5px solid var(--lc-b1);
+}
+.legal-page .lc-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  /* Keeps columns readable instead of crushing them on small screens; the
+     wrapper scrolls horizontally below this width. */
+  min-width: 560px;
+}
+.legal-page .lc-tbl thead tr {
+  background: var(--lc-navy);
+}
+.legal-page .lc-tbl th {
+  padding: 11px 15px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.48);
+}
+.legal-page .lc-tbl th:first-child {
+  color: var(--lc-gold);
+}
+.legal-page .lc-tbl td {
+  padding: 12px 15px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--lc-t2);
+  vertical-align: top;
+  border-bottom: 1px solid var(--lc-b1);
+}
+.legal-page .lc-tbl tbody tr:last-child td {
+  border-bottom: none;
+}
+.legal-page .lc-tbl tbody tr:nth-child(even) td {
+  background: var(--lc-cream);
+}
+.legal-page .lc-tbl tbody tr:hover td {
+  background: rgba(232, 184, 75, 0.04);
+}
+.legal-page .lc-tbl td:first-child {
+  color: var(--lc-t1);
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* Status pills — sized to the design's 11px/700 scale. */
+.legal-page .lc-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}

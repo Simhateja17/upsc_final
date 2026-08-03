@@ -239,7 +239,8 @@ const CSS = `
 .sr-scope .qv-table-wrap{margin-bottom:24px}
 /* Left border is 4px (transparent) purely so the header columns line up with the 4px accent rail on each question card — no visible grey box/side border on the header itself, matching the PRD. */
 .sr-scope .qv-col-headers{display:grid;grid-template-columns:2.5fr 100px 110px 160px 58px;gap:16px;padding:12px 24px;background:var(--border-light);border-radius:var(--radius-sm);border-left:4px solid transparent;align-items:center;margin-bottom:12px}
-.sr-scope .qv-col-headers span{font-size:13px;font-weight:700;color:var(--text);letter-spacing:.04em;line-height:1.2;text-transform:uppercase;white-space:nowrap}
+/* Client feedback: headers were too small/didn't stand out — bumped 13px -> 14px (kept nowrap-safe within the 58px REMIND column) and kept weight 700 (bold) for prominence; layout/columns untouched */
+.sr-scope .qv-col-headers span{font-size:14px;font-weight:700;color:var(--text);letter-spacing:.04em;line-height:1.2;text-transform:uppercase;white-space:nowrap}
 .sr-scope .qv-col-headers .qh-question{text-align:left}
 .sr-scope .qv-col-headers .qh-subject,
 .sr-scope .qv-col-headers .qh-review,

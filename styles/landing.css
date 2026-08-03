@@ -181,30 +181,32 @@
   display: grid; grid-template-columns: repeat(4,1fr);
   gap: 20px; max-width: 1200px; margin: 0 auto;
 }
+/* Card shell aligned with the Flashcards SubjectChoiceCard design (components/SubjectChoiceCard.tsx):
+   16px radius, 20px padding, 1px border, same hover lift/shadow curve and accent-bar treatment. */
 .mod-card {
-  background: var(--card-white); border: 1.5px solid #E4EAF5; border-radius: 22px;
-  padding: 32px 26px; display: flex; flex-direction: column; justify-content: space-between;
-  min-height: 230px; cursor: pointer;
-  transition: all 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+  background: var(--card-white); border: 1px solid #E4EAF5; border-radius: 16px;
+  padding: 20px; display: flex; flex-direction: column; justify-content: space-between;
+  min-height: 200px; cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s cubic-bezier(0.4,0,0.2,1), border-color 0.3s cubic-bezier(0.4,0,0.2,1);
   position: relative; overflow: hidden;
 }
-.mod-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; opacity: 0; transition: opacity 0.3s; border-radius: 22px 22px 0 0; }
-.mc-gold::before { background: linear-gradient(90deg,var(--gold),var(--gold-light)); }
-.mc-cyan::before { background: linear-gradient(90deg,var(--cyan),#38BDF8); }
-.mc-emerald::before { background: linear-gradient(90deg,var(--emerald),#34D399); }
-.mc-violet::before { background: linear-gradient(90deg,var(--violet),#A78BFA); }
-.mc-rose::before { background: linear-gradient(90deg,var(--rose),#FB7185); }
-.mc-navy::before { background: linear-gradient(90deg,var(--navy),#1E3A5F); }
-.mc-teal::before { background: linear-gradient(90deg,#14B8A6,#2DD4BF); }
-.mc-amber::before { background: linear-gradient(90deg,#F59E0B,#FCD34D); }
-.mod-card:hover { transform: translateY(-7px); border-color: transparent; box-shadow: 0 24px 64px rgba(11,29,58,0.14); }
+.mod-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; opacity: 0; transition: opacity 0.3s; z-index: 2; }
+.mc-gold::before { background: var(--gold); }
+.mc-cyan::before { background: var(--cyan); }
+.mc-emerald::before { background: var(--emerald); }
+.mc-violet::before { background: var(--violet); }
+.mc-rose::before { background: var(--rose); }
+.mc-navy::before { background: var(--navy); }
+.mc-teal::before { background: #14B8A6; }
+.mc-amber::before { background: #F59E0B; }
+.mod-card:hover { transform: translateY(-3px); border-color: transparent; box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04); }
 .mod-card:hover::before { opacity: 1; }
-.mod-icon-wrap { width: 52px; height: 52px; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; overflow: hidden; }
-.mod-icon-wrap img { width: 36px; height: 36px; object-fit: contain; }
+.mod-icon-wrap { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; overflow: hidden; }
+.mod-icon-wrap img { width: 26px; height: 26px; object-fit: contain; }
 .mw-gold { background: #FEF3C7; } .mw-cyan { background: #E0F7FA; } .mw-emerald { background: #D1FAE5; } .mw-violet { background: #EDE9FE; } .mw-rose { background: #FFE4E6; } .mw-navy { background: #E8EDF5; } .mw-teal { background: #CCFBF1; } .mw-amber { background: #FEF3C7; }
-.mod-title { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 7px; font-family: 'Outfit', sans-serif; }
-.mod-desc { font-size: 13px; color: var(--text-mid); line-height: 1.55; flex: 1; font-family: 'Outfit', sans-serif; }
-.mod-tag { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: 0.4px; margin-top: 14px; width: fit-content; font-family: 'Outfit', sans-serif; }
+.mod-title { font-family: Georgia, serif; font-size: 16px; line-height: 20px; font-weight: 700; color: #22304D; margin-bottom: 6px; }
+.mod-desc { font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.5; color: #8A94A6; flex: 1; }
+.mod-tag { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 100px; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.4px; margin-top: 14px; width: fit-content; }
 .tag-gold { background: #FEF3C7; color: #92400E; } .tag-cyan { background: #E0F2FE; color: #075985; } .tag-emerald { background: #D1FAE5; color: #065F46; } .tag-violet { background: #EDE9FE; color: #5B21B6; } .tag-rose { background: #FFE4E6; color: #9F1239; } .tag-navy { background: #E8EDF5; color: var(--navy); } .tag-teal { background: #CCFBF1; color: #134E4A; } .tag-amber { background: #FEF3C7; color: #92400E; }
 
 /* ── WHY RISE BANNER ── */

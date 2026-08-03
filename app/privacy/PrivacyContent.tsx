@@ -519,17 +519,19 @@ export default function PrivacyContent() {
           padding: 36px 48px 28px;
           text-align: center;
         }
+        /* Badge now matches the Terms hero badge: gold on a gold tint at
+           12px / weight 500 (was 600 in white). */
         .lp-badge {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: rgba(232, 184, 75, 0.1);
+          border: 1px solid rgba(232, 184, 75, 0.3);
           border-radius: 20px;
           padding: 6px 16px;
           font-size: 12px;
-          font-weight: 600;
-          color: rgba(255, 255, 255, 0.6);
+          font-weight: 500;
+          color: var(--gold);
           margin-bottom: 14px;
         }
         .lp-eyebrow {
@@ -540,23 +542,29 @@ export default function PrivacyContent() {
           justify-content: center;
         }
         .lp-ey-line {
-          width: 44px;
+          width: 32px;
           height: 1px;
           background: var(--gold);
-          opacity: 0.6;
+          opacity: 0.3;
         }
+        /* Eyebrow matched to the Terms hero: 12px / weight 400 / 0.2em tracking
+           (was 11px / weight 700 / 0.18em). */
         .lp-ey-txt {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.18em;
-          color: var(--gold);
+          font-size: 12px;
+          font-weight: 400;
+          letter-spacing: 0.2em;
+          color: rgba(251, 191, 36, 0.7);
           text-transform: uppercase;
         }
+        /* H1 now uses the exact Terms hero metrics (60.8px / 69.92px). The old
+           clamp() capped at 4.5vw, so on a 1280-1366px laptop it rendered
+           ~57px — visibly smaller than the Terms H1. Scaled down responsively
+           below 860px (see media query). */
         .lp-h1 {
           font-family: var(--serif);
-          font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+          font-size: 60.8px;
           font-weight: 600;
-          line-height: 1.15;
+          line-height: 69.92px;
           color: #fff;
           margin-bottom: 10px;
         }
@@ -565,9 +573,14 @@ export default function PrivacyContent() {
           color: var(--gold);
           font-weight: 400;
         }
+        /* Meta line was inheriting the ambient body font and had no line-height.
+           Terms sets both explicitly — matched here. */
         .lp-meta {
+          font-family: var(--sans);
           font-size: 13px;
+          line-height: 20.8px;
           color: rgba(255, 255, 255, 0.38);
+          font-weight: 400;
         }
         .lp-meta strong {
           color: rgba(255, 255, 255, 0.6);
@@ -876,9 +889,11 @@ export default function PrivacyContent() {
           color: var(--t1);
           margin: 8px 0 4px;
         }
+        /* Brought onto the shared body scale (14px / 1.7), matching
+           .lc-note-txt and .lc-list li instead of an off-system 13px / 1.6. */
         .lc-rights-body {
-          font-size: 13px;
-          line-height: 1.6;
+          font-size: 14px;
+          line-height: 1.7;
           color: var(--t3);
         }
 
@@ -1016,6 +1031,11 @@ export default function PrivacyContent() {
           }
           .lp-hero-inner {
             padding: 32px 22px 24px;
+          }
+          /* Tablet/mobile: scale the now-fixed desktop H1 back down fluidly. */
+          .lp-h1 {
+            font-size: clamp(2.2rem, 7vw, 3.2rem);
+            line-height: 1.15;
           }
           .lp-cta-wrapper {
             padding: 48px 22px;

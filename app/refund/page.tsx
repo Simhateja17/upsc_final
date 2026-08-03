@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import LandingNav from '@/components/LandingNav';
 import Footer from '@/components/Footer';
@@ -283,7 +284,18 @@ export default function RefundPolicyPage() {
               </p>
 
               <div className="mb-6 flex gap-3 rounded-[7px] border-l-2 border-l-[#E8B84B] bg-white p-5">
-                <div className="text-xl">📬</div>
+                {/* Gmail icon replaces the 📬 emoji — reuses /icon-gmail.png and the
+                    same next/image pattern as Footer.tsx and app/contact/page.tsx.
+                    Sized 20px to match the text-xl emoji it stands in for, and
+                    shrink-0 so it keeps its size when the text wraps on mobile. */}
+                <Image
+                  src="/icon-gmail.png"
+                  alt="Gmail"
+                  width={20}
+                  height={20}
+                  className="shrink-0"
+                  style={{ objectFit: 'contain' }}
+                />
                 <div className="text-sm leading-relaxed text-[#374560]">
                   Billing and refunds:{' '}
                   <a href="mailto:together@risewithjeet.com" className="font-medium text-[#172444] underline">together@risewithjeet.com</a>

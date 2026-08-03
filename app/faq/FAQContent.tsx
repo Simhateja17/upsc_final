@@ -354,56 +354,92 @@ export default function FAQContent() {
   const [openItem, setOpenItem] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  // Keep in sync with the .faq-section-block scroll-margin-top below (clears the fixed nav).
-  const SCROLL_DETECTION_LINE = 140;
+  // Sections currently inside the scrollspy "detection band" (see rootMargin
+  // below) - kept up to date by the observer at all times, independent of
+  // whether we're currently suppressing the state update (see jumpTo).
+  const visibleIdsRef = useRef<Set<string>>(new Set());
+  // Ignore observer-driven active-section updates while a click-triggered
+  // smooth scroll is in flight, so the clicked item stays highlighted instead
+  // of flickering through whatever sections pass by on the way there.
+  const suppressSpyRef = useRef(false);
+  const suppressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Scrollspy via IntersectionObserver (cheaper than a scroll listener - no
+  // per-frame layout reads). rootMargin shrinks the observed viewport to a
+  // thin band starting 140px below the top (clearing the fixed nav) so the
+  // section whose heading has just scrolled past that line is "active".
   useEffect(() => {
-    let frame = 0;
+    const sectionIds = faqData.map((section) => section.id);
+    visibleIdsRef.current = new Set();
 
-    const syncActiveSection = () => {
-      frame = 0;
-      const visibleSections = faqData
-        .map((section) => ({ id: section.id, element: sectionRefs.current[section.id] }))
-        .filter((section): section is { id: string; element: HTMLDivElement } => Boolean(section.element));
-
-      if (visibleSections.length === 0) return;
-
-      const doc = document.documentElement;
-      if (window.scrollY + window.innerHeight >= doc.scrollHeight - 4) {
-        const lastSection = visibleSections[visibleSections.length - 1];
-        setActiveSection((previous) => previous === lastSection.id ? previous : lastSection.id);
-        return;
-      }
-
-      const passedSections = visibleSections.filter(
-        ({ element }) => element.getBoundingClientRect().top <= SCROLL_DETECTION_LINE,
-      );
-      const current = passedSections[passedSections.length - 1] ?? visibleSections[0];
-      setActiveSection((previous) => previous === current.id ? previous : current.id);
+    const applyActiveFromVisible = () => {
+      const current = sectionIds.filter((id) => visibleIdsRef.current.has(id));
+      if (current.length === 0) return;
+      const next = current[current.length - 1];
+      setActiveSection((previous) => (previous === next ? previous : next));
     };
 
-    const requestSync = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(syncActiveSection);
-    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) visibleIdsRef.current.add(entry.target.id);
+          else visibleIdsRef.current.delete(entry.target.id);
+        });
+        if (suppressSpyRef.current) return;
+        applyActiveFromVisible();
+      },
+      { rootMargin: '-140px 0px -66% 0px', threshold: 0 },
+    );
 
-    syncActiveSection();
-    window.addEventListener('scroll', requestSync, { passive: true });
-    window.addEventListener('resize', requestSync);
+    sectionIds.forEach((id) => {
+      const el = sectionRefs.current[id];
+      if (el) observer.observe(el);
+    });
 
-    return () => {
-      window.removeEventListener('scroll', requestSync);
-      window.removeEventListener('resize', requestSync);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
+    return () => observer.disconnect();
   }, [searchQuery]);
 
   const jumpTo = (id: string) => {
     setActiveSection(id);
+    suppressSpyRef.current = true;
+    if (suppressTimeoutRef.current) clearTimeout(suppressTimeoutRef.current);
+
     const el = sectionRefs.current[id];
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     el?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+
+    // Resume scrollspy once the smooth scroll has actually settled, then
+    // reconcile with whatever ended up in view (the observer keeps tracking
+    // intersections the whole time, just not committing state while
+    // suppressed). A fixed timeout can't reliably guess when a *smooth*
+    // scroll finishes - it varies with distance - so prefer the real
+    // `scrollend` event where supported, with a timeout only as a safety net
+    // in case it never fires (interrupted scroll) or isn't supported.
+    const resumeSpy = () => {
+      suppressSpyRef.current = false;
+      const sectionIds = faqData.map((section) => section.id);
+      const current = sectionIds.filter((sid) => visibleIdsRef.current.has(sid));
+      if (current.length > 0) setActiveSection(current[current.length - 1]);
+    };
+
+    if ('onscrollend' in window) {
+      const handleScrollEnd = () => {
+        if (suppressTimeoutRef.current) { clearTimeout(suppressTimeoutRef.current); suppressTimeoutRef.current = null; }
+        resumeSpy();
+      };
+      window.addEventListener('scrollend', handleScrollEnd, { once: true });
+      suppressTimeoutRef.current = setTimeout(() => {
+        window.removeEventListener('scrollend', handleScrollEnd);
+        resumeSpy();
+      }, 2500);
+    } else {
+      suppressTimeoutRef.current = setTimeout(resumeSpy, reducedMotion ? 0 : 1000);
+    }
   };
+
+  useEffect(() => () => {
+    if (suppressTimeoutRef.current) clearTimeout(suppressTimeoutRef.current);
+  }, []);
 
   const toggleFAQ = (sectionId: string, index: number) => {
     const key = `${sectionId}-${index}`;

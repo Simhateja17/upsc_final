@@ -1,6 +1,5 @@
 // Temporary product switch. Keep these routes unavailable until the features are ready to return.
 export const DISABLED_DASHBOARD_ROUTES = [
-  '/dashboard/discussion',
   '/dashboard/mental-health',
 ] as const;
 

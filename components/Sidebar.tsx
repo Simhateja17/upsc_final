@@ -90,7 +90,9 @@ const Sidebar = ({ isOpen, onClose, mobileOnly = false, collapsed: collapsedProp
     {
       title: 'COMMUNITY',
       items: [
+        { id: 'study-groups', label: 'Study Groups', icon: '/sidebar-mindmap.png', path: '/dashboard/study-groups', accessKey: 'live_study_room', allowed: ['full'] },
         { id: 'leaderboard', label: 'Leaderboard', icon: '/sidebar-study-groups.png', path: '/dashboard/leaderboard' },
+        { id: 'discussion', label: 'Discussion Forum', icon: '/sidebar-discussion.png', path: '/dashboard/discussion' },
       ],
     },
   ];

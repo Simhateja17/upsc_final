@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, type ReactNode, type CSSProperties } from 'react';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardPageHero from '@/components/DashboardPageHero';
 import { studyGroupService, dashboardService, studyPlannerService, adminService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
-import { getSubjectCardStyle, getSubjectMetaStyle } from '@/lib/subjectPalette';
-import { SubjectChoiceCardStyles } from '@/components/SubjectChoiceCard';
 
 const ROOM_FILTERS = ['All', 'Open', 'Full'];
 
@@ -418,6 +416,11 @@ export default function StudyGroupsPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [previewGroup, setPreviewGroup] = useState<Group | null>(null);
+  // Plays the Join Room modal's close animation before unmounting it.
+  const [previewClosing, setPreviewClosing] = useState(false);
+  // Id of the group currently being joined - disables the Join button and
+  // blocks duplicate join clicks while the request is in flight.
+  const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'rooms' | 'solo' | 'my'>('rooms');
@@ -469,27 +472,17 @@ export default function StudyGroupsPage() {
   const [teamTotalSeconds, setTeamTotalSeconds] = useState(0);
   const roomPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Pomodoro timer state – Solo Session
-  const BREAK_SECONDS = 5 * 60;
-  const [focusMinutes, setFocusMinutes] = useState(25);
-  const focusMinutesRef = useRef(25);
-  const [pomoSecondsLeft, setPomoSecondsLeft] = useState(25 * 60);
-  const [pomoRunning, setPomoRunning] = useState(false);
-  const [pomoSession, setPomoSession] = useState(1); // 1..4
-  const [pomoMode, setPomoMode] = useState<'focus' | 'break'>('focus');
+  // Solo Focus timer state – a stopwatch that counts up with no target
+  // duration or break periods (matches the client's reference design).
+  const [soloElapsed, setSoloElapsed] = useState(0);
+  const [soloRunning, setSoloRunning] = useState(false);
   const [todaySeconds, setTodaySeconds] = useState(0);
   const [completedSessions, setCompletedSessions] = useState(0);
   const [dayStreak, setDayStreak] = useState(0);
   const [weeklyHours, setWeeklyHours] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
-  const pomoTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const handleSetFocusMinutes = (m: number) => {
-    if (pomoRunning) return;
-    const clamped = Math.max(1, Math.min(180, m));
-    focusMinutesRef.current = clamped;
-    setFocusMinutes(clamped);
-    if (pomoMode === 'focus') setPomoSecondsLeft(clamped * 60);
-  };
+  const soloTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Collapses the Tasks panel so the Timer panel can be centered alone.
+  const [tasksPanelVisible, setTasksPanelVisible] = useState(true);
 
   // Load today's accumulated focus seconds from localStorage
   useEffect(() => {
@@ -537,87 +530,55 @@ export default function StudyGroupsPage() {
     }).catch(() => {});
   }, []);
 
-  // Tick interval
+  // Tick interval – counts elapsed/today's seconds up while running, flushing
+  // to the backend every 30s (same cadence/targets as before the stopwatch
+  // conversion, so Dashboard's study-hours stat keeps working unchanged).
   useEffect(() => {
-    if (!pomoRunning) {
-      if (pomoTickRef.current) { clearInterval(pomoTickRef.current); pomoTickRef.current = null; }
+    if (!soloRunning) {
+      if (soloTickRef.current) { clearInterval(soloTickRef.current); soloTickRef.current = null; }
       return;
     }
-    pomoTickRef.current = setInterval(() => {
-      setPomoSecondsLeft((prev) => {
-        const focusSecs = focusMinutesRef.current * 60;
-        if (prev <= 1) {
-          setPomoRunning(false);
-          if (pomoMode === 'focus') {
-            // Every tick while running already added +1 (see below), so the
-            // cycle-completion tick only needs to account for its own final
-            // second - adding focusSecs again here would double-count the
-            // whole session.
-            setTodaySeconds((t) => {
-              const next = t + 1;
-              persistTodaySeconds(next);
-              flushSoloSession(next);
-              flushRoomFocusTime(next);
-              return next;
-            });
-            setCompletedSessions((s) => {
-              const next = s + 1;
-              if (typeof window !== 'undefined') {
-                const key = `rwj_solo_sessions_${new Date().toISOString().slice(0, 10)}`;
-                localStorage.setItem(key, String(next));
-              }
-              return next;
-            });
-            // Move to break, or next focus if session was last
-            if (pomoSession >= 4) {
-              setPomoSession(1);
-              setPomoMode('focus');
-              return focusSecs;
-            }
-            setPomoMode('break');
-            return BREAK_SECONDS;
-          }
-          // break finished → next focus session
-          setPomoMode('focus');
-          setPomoSession((s) => s + 1);
-          return focusSecs;
-        }
-        if (pomoMode === 'focus') {
-          setTodaySeconds((t) => {
-            const next = t + 1;
-            if (next % 30 === 0) { persistTodaySeconds(next); flushSoloSession(next); flushRoomFocusTime(next); }
-            return next;
-          });
-        }
-        return prev - 1;
+    soloTickRef.current = setInterval(() => {
+      setSoloElapsed((e) => e + 1);
+      setTodaySeconds((t) => {
+        const next = t + 1;
+        if (next % 30 === 0) { persistTodaySeconds(next); flushSoloSession(next); flushRoomFocusTime(next); }
+        return next;
       });
     }, 1000);
-    return () => { if (pomoTickRef.current) clearInterval(pomoTickRef.current); };
+    return () => { if (soloTickRef.current) clearInterval(soloTickRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pomoRunning, pomoMode]);
+  }, [soloRunning]);
 
-  const handlePomoStart = () => {
-    setPomoRunning((r) => {
-      if (r && pomoMode === 'focus') { flushSoloSession(todaySeconds); flushRoomFocusTime(todaySeconds); }
+  const handleSoloToggle = () => {
+    setSoloRunning((r) => {
+      if (r) { persistTodaySeconds(todaySeconds); flushSoloSession(todaySeconds); flushRoomFocusTime(todaySeconds); }
       return !r;
     });
   };
-  const handlePomoReset = () => {
-    setPomoRunning(false);
-    setPomoSecondsLeft(pomoMode === 'focus' ? focusMinutesRef.current * 60 : BREAK_SECONDS);
+  const handleSoloReset = () => {
+    setSoloRunning(false);
+    setSoloElapsed(0);
   };
-  const handlePomoSkip = () => {
-    setPomoRunning(false);
-    const focusSecs = focusMinutesRef.current * 60;
-    if (pomoMode === 'focus') {
-      if (pomoSession >= 4) { setPomoSession(1); setPomoSecondsLeft(focusSecs); return; }
-      setPomoMode('break');
-      setPomoSecondsLeft(BREAK_SECONDS);
-    } else {
-      setPomoMode('focus');
-      setPomoSession((s) => s + 1);
-      setPomoSecondsLeft(focusSecs);
+  // Ends the current stint: flushes the accrued time, credits a completed
+  // session (replaces the old Pomodoro-cycle-complete credit), and zeroes
+  // the stopwatch so the next stint starts fresh.
+  const handleSoloSkip = () => {
+    setSoloRunning(false);
+    if (soloElapsed > 0) {
+      persistTodaySeconds(todaySeconds);
+      flushSoloSession(todaySeconds);
+      flushRoomFocusTime(todaySeconds);
+      setCompletedSessions((s) => {
+        const next = s + 1;
+        if (typeof window !== 'undefined') {
+          const key = `rwj_solo_sessions_${new Date().toISOString().slice(0, 10)}`;
+          localStorage.setItem(key, String(next));
+        }
+        return next;
+      });
     }
+    setSoloElapsed(0);
   };
 
   const formatMMSS = (s: number) => {
@@ -645,8 +606,8 @@ export default function StudyGroupsPage() {
     return `${h} Hrs ${m} Mins`;
   };
 
-  const pomoTotalForMode = pomoMode === 'focus' ? focusMinutes * 60 : BREAK_SECONDS;
-  const pomoProgress = 1 - pomoSecondsLeft / pomoTotalForMode;
+  // Ring fills up as elapsed time increases; a full ring = 60 minutes.
+  const soloProgress = Math.min(soloElapsed / 3600, 1);
 
   // A user only counts as "studying now" once they click Start Studying inside a
   // room and the count-up timer is actually running. Joining a room alone does
@@ -808,6 +769,8 @@ export default function StudyGroupsPage() {
     setRoomElapsed(0);
     if (inRoom) {
       try { await studyGroupService.stopStudying(inRoom.id); } catch { /* silent */ }
+      // Reflect the drop out of the live count immediately, same as Pause does.
+      fetchRoomGoalsAndTimes(inRoom.id);
     }
   };
 
@@ -923,12 +886,36 @@ export default function StudyGroupsPage() {
     return () => { mounted = false; };
   }, [fetchGroups, fetchMyGroups]);
 
+  // Periodically refresh the room list's live "studying" counts (every 15s) so
+  // another member's Start/Stop Studying elsewhere shows up here without the
+  // current user having to take an action of their own. Skipped on Solo Focus
+  // (no room list there) and while already immersed in a room (that view has
+  // its own 12s poll below).
+  useEffect(() => {
+    if (activeTab === 'solo' || inRoom) return;
+    const id = setInterval(() => { fetchGroups(); fetchMyGroups(); }, 15000);
+    return () => clearInterval(id);
+  }, [activeTab, inRoom, fetchGroups, fetchMyGroups]);
+
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab === 'solo' || tab === 'my' || tab === 'rooms') {
       setActiveTab(tab);
     }
   }, [searchParams]);
+
+  // Closes the Join Room modal with a brief fade/scale-out instead of an
+  // abrupt unmount. No-ops while that group's join request is still in
+  // flight, so the user can't dismiss the modal mid-request and end up
+  // dropped into a room they meant to cancel out of.
+  const closePreview = useCallback(() => {
+    if (joiningGroupId) return;
+    setPreviewClosing(true);
+    setTimeout(() => {
+      setPreviewGroup(null);
+      setPreviewClosing(false);
+    }, 180);
+  }, [joiningGroupId]);
 
   const openGroup = useCallback(async (group: Group) => {
     setPreviewGroup(group);
@@ -974,7 +961,7 @@ export default function StudyGroupsPage() {
   // Entering (or switching) a room resets the studying session: the user is
   // present but idle, and the timer is paused until they click Start Studying.
   useEffect(() => {
-    setPomoRunning(false);
+    setRoomRunning(false);
   }, [inRoom?.id]);
 
   const handleAddGoal = async (e?: React.FormEvent) => {
@@ -1034,9 +1021,16 @@ export default function StudyGroupsPage() {
   // directly. The backend decides which via res.data.status.
   const handleJoin = async (groupId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
+    // Block duplicate join clicks (double-click, slow network) while one is
+    // already in flight for this room.
+    if (joiningGroupId === groupId) return;
+    setJoiningGroupId(groupId);
     try {
       const res = await studyGroupService.joinGroup(groupId);
-      if (res.status !== 'success') return;
+      if (res.status !== 'success') {
+        showToast((res as any)?.message || 'Could not join the room. Please try again.');
+        return;
+      }
 
       const outcome = res.data?.status;
       if (outcome === 'pending') {
@@ -1060,7 +1054,9 @@ export default function StudyGroupsPage() {
         enterRoom({ ...joined, isMember: true }, groupRes.status === 'success' && groupRes.data?.messages ? groupRes.data.messages : []);
       }
     } catch {
-      // silent
+      showToast('Could not join the room. Please try again.');
+    } finally {
+      setJoiningGroupId(null);
     }
   };
 
@@ -1278,7 +1274,10 @@ export default function StudyGroupsPage() {
     return matchRoomState && matchSearch;
   });
 
-  const totalOnline = groups.reduce((sum, g) => sum + (g.memberCount || 0), 0);
+  // "Online Now" must reflect people who clicked Start Studying, not everyone
+  // who has ever joined a room - sum the per-room studyingNow counts (already
+  // isStudying-filtered server-side), not memberCount.
+  const totalOnline = groups.reduce((sum, g) => sum + (g.studyingNow || 0), 0);
   const liveCount = groups.filter((g) => g.status === 'live').length;
 
   const statusColor: Record<string, string> = {
@@ -1306,8 +1305,6 @@ export default function StudyGroupsPage() {
     <>
     <div className={`sg min-h-screen bg-[#F9FAFB] font-arimo text-[#0C1424]${locked ? ' plan-locked' : ''}`}>
       <style dangerouslySetInnerHTML={{ __html: SG_CSS }} />
-      <SubjectChoiceCardStyles />
-
       {/* Admin-only QA widget: preview Free vs Rise gating without real billing */}
       {isAdmin && (
         <div
@@ -1410,52 +1407,34 @@ export default function StudyGroupsPage() {
           </div>
         </div>
 
-        {/* Solo Focus Tab Content – Pomodoro timer */}
+        {/* Solo Focus Tab Content – stopwatch timer */}
         {activeTab === 'solo' && (
           <section className="mt-5">
-            <div className="mb-4 flex items-center gap-3">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <path d="M3 18v-6a9 9 0 1118 0v6" stroke="#6B7A99" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" fill="#6B7A99"/>
-              </svg>
-              <h2 className="text-[24px] font-bold text-[#0C1424]">Solo Session</h2>
+            <div className="mb-6 text-center">
+              <h2 className="text-[24px] font-bold text-[#0C1424]" style={{ fontFamily: 'var(--font-cormorant)' }}>Your Solo Focus Session</h2>
+              <p className="mt-1 text-[14px] text-[#6B7A99]">Deep work, zero distractions. Your personal study sanctuary.</p>
             </div>
 
-            <div className="grid items-start gap-5 lg:grid-cols-2">
+            <div className={tasksPanelVisible ? 'mx-auto grid max-w-[920px] items-start gap-5 lg:grid-cols-2' : 'mx-auto max-w-[480px]'}>
             <div className="rounded-[18px] border border-[#E1E6EF] bg-white px-6 py-10 shadow-sm">
-              {/* Time picker – shown when timer is idle */}
-              {!pomoRunning && (
-                <div className="mb-8 flex flex-col items-center gap-3">
-                  <p className="text-[12px] font-bold uppercase tracking-[1.2px] text-[#6B7A99]">Set Focus Duration</p>
-                  <div className="flex items-center gap-2">
-                    {[15, 25, 45, 60].map((m) => (
-                      <button
-                        key={m}
-                        onClick={() => handleSetFocusMinutes(m)}
-                        className="rounded-[8px] border px-4 py-1.5 text-[13px] font-semibold transition"
-                        style={{
-                          background: focusMinutes === m ? '#E8B84B' : '#F9FAFB',
-                          borderColor: focusMinutes === m ? '#E8B84B' : '#DDE3EC',
-                          color: focusMinutes === m ? '#0C1424' : '#6B7A99',
-                        }}
-                      >
-                        {m}m
-                      </button>
-                    ))}
-                    <div className="flex items-center gap-1 rounded-[8px] border border-[#DDE3EC] bg-[#F9FAFB] px-3 py-1.5">
-                      <input
-                        type="number"
-                        min={1}
-                        max={180}
-                        value={focusMinutes}
-                        onChange={(e) => handleSetFocusMinutes(Number(e.target.value))}
-                        className="w-12 bg-transparent text-center text-[13px] font-semibold text-[#0C1424] outline-none"
-                      />
-                      <span className="text-[12px] text-[#6B7A99]">min</span>
-                    </div>
-                  </div>
+              {/* Timer panel header */}
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[13px] font-bold text-[#0C1424]">
+                  <span className="size-2.5 rounded-full" style={{ background: soloRunning ? '#22C55E' : '#F59E0B' }} />
+                  Focus Timer
                 </div>
-              )}
+                <button
+                  type="button"
+                  onClick={() => setTasksPanelVisible((v) => !v)}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${tasksPanelVisible ? 'border-[#3B82F6] bg-[#EFF6FF] text-[#3B82F6]' : 'border-[#DDE3EC] bg-[#F3F4F6] text-[#6B7A99]'}`}
+                  title="Toggle Tasks Panel"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/>
+                  </svg>
+                  {tasks.filter((t) => !t.isCompleted).length}
+                </button>
+              </div>
 
               {/* Circular timer */}
               <div className="flex flex-col items-center">
@@ -1466,12 +1445,12 @@ export default function StudyGroupsPage() {
                       cx="140"
                       cy="140"
                       r="128"
-                      stroke={pomoMode === 'focus' ? '#E8B84B' : '#22C55E'}
+                      stroke="#E8B84B"
                       strokeWidth="10"
                       fill="none"
                       strokeLinecap="round"
                       strokeDasharray={2 * Math.PI * 128}
-                      strokeDashoffset={(2 * Math.PI * 128) * (1 - pomoProgress)}
+                      strokeDashoffset={(2 * Math.PI * 128) * (1 - soloProgress)}
                       transform="rotate(-90 140 140)"
                       style={{ transition: 'stroke-dashoffset 1s linear' }}
                     />
@@ -1481,11 +1460,10 @@ export default function StudyGroupsPage() {
                       className="text-[#0C1424]"
                       style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 64, lineHeight: 1, letterSpacing: '-1px' }}
                     >
-                      {formatMMSS(pomoSecondsLeft)}
+                      {formatMMSS(soloElapsed)}
                     </div>
-                    <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[1.5px] text-[#6B7A99]">
-                      {pomoMode === 'focus' ? 'Focus Time' : 'Break Time'}
-                      <span aria-hidden>🎯</span>
+                    <div className="mt-2 text-[11px] font-semibold uppercase tracking-[1.5px] text-[#6B7A99]">
+                      Focus Time
                     </div>
                   </div>
                 </div>
@@ -1493,7 +1471,7 @@ export default function StudyGroupsPage() {
                 {/* Controls */}
                 <div className="mt-6 flex items-center gap-3">
                   <button
-                    onClick={handlePomoReset}
+                    onClick={handleSoloReset}
                     className="flex items-center gap-2 rounded-[10px] border border-[#DDE3EC] bg-white px-5 py-2.5 text-[13px] font-semibold text-[#6B7A99] hover:bg-[#F9FAFB]"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -1503,10 +1481,10 @@ export default function StudyGroupsPage() {
                     Reset
                   </button>
                   <button
-                    onClick={handlePomoStart}
+                    onClick={handleSoloToggle}
                     className="flex items-center gap-2 rounded-[10px] bg-[#E8B84B] px-7 py-2.5 text-[14px] font-bold text-[#0C1424] hover:brightness-105"
                   >
-                    {pomoRunning ? (
+                    {soloRunning ? (
                       <>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
                         Pause
@@ -1514,12 +1492,12 @@ export default function StudyGroupsPage() {
                     ) : (
                       <>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg>
-                        Start Focus
+                        Start
                       </>
                     )}
                   </button>
                   <button
-                    onClick={handlePomoSkip}
+                    onClick={handleSoloSkip}
                     className="flex items-center gap-2 rounded-[10px] border border-[#DDE3EC] bg-white px-5 py-2.5 text-[13px] font-semibold text-[#6B7A99] hover:bg-[#F9FAFB]"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5v14l8-7-8-7z"/><path d="M13 5v14l8-7-8-7z"/></svg>
@@ -1542,7 +1520,8 @@ export default function StudyGroupsPage() {
               </div>
             </div>
 
-            {/* Today's Study Tasks */}
+            {/* Today's Tasks */}
+            {tasksPanelVisible && (
             <div
               className="bg-white"
               style={{
@@ -1553,8 +1532,11 @@ export default function StudyGroupsPage() {
             >
               {/* Header */}
               <div className="mb-4 flex items-center justify-between">
-                <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 13, color: '#0C1424', margin: 0 }}>
-                  📋 Today&apos;s Study Tasks
+                <h3 className="flex items-center gap-2" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: 13, color: '#0C1424', margin: 0 }}>
+                  📖 Today&apos;s Tasks
+                  <span className="rounded-full bg-[#FFF1EA] px-2.5 py-0.5 text-[11px] font-bold text-[#9A5C54]">
+                    {tasks.filter((t) => t.isCompleted).length}/{tasks.length}
+                  </span>
                 </h3>
                 <button
                   type="button"
@@ -1665,6 +1647,7 @@ export default function StudyGroupsPage() {
                 </button>
               </form>
             </div>
+            )}
             </div>
 
             {/* ── Dashboard Stats Row ────────────────────────────── */}
@@ -1858,90 +1841,44 @@ export default function StudyGroupsPage() {
           </div>
         ) : (
           <section className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {filteredGroups.map((group) => {
-              const paletteMeta = getSubjectMetaStyle(group.subject || group.name || '');
-              const paletteCard = getSubjectCardStyle(group.subject || group.name || '');
+            {filteredGroups.map((group, idx) => {
+              const meta = getSubjectMeta(group);
               const isFull = getRoomFull(group);
-              const members = group.members ?? [];
-              const visibleMembers = members.slice(0, 3);
-              const occupancyPercent = group.maxMembers > 0
-                ? Math.min(100, Math.round((group.memberCount / group.maxMembers) * 100))
-                : 60;
-              const capacityState: 'ok' | 'warn' | 'full' = isFull ? 'full' : occupancyPercent >= 80 ? 'warn' : 'ok';
-              const capacityColors = {
-                ok: { fill: '#22C55E', text: '#166534' },
-                warn: { fill: '#F59E0B', text: '#B45309' },
-                full: { fill: '#EF4444', text: '#B91C1C' },
-              }[capacityState];
+              const visibleMembers = (group.members ?? []).slice(0, 3);
+              const topColor = roomTopBorderColors[idx % roomTopBorderColors.length];
               return (
                 <article
                   key={group.id}
-                  onClick={() => guard({ kind: 'room', title: group.name, subject: group.subject }, () => openGroup(group))}
-                  className={`subject-choice-card relative flex cursor-pointer flex-col overflow-hidden rounded-[16px] bg-white p-5 text-left${isFull && !group.isMember ? ' opacity-60 grayscale-[0.35]' : ''}`}
-                  style={{ ['--subject-choice-border']: '#E4EAF5', height: 190 } as CSSProperties}
+                  // Already a member → straight into the room, no popup.
+                  // Not a member yet → open the Join Room modal first.
+                  onClick={() => guard(
+                    { kind: 'room', title: group.name, subject: group.subject },
+                    () => (group.isMember ? handleEnterRoom(group.id) : openGroup(group)),
+                  )}
+                  className={`room-card${isFull && !group.isMember ? ' is-full' : ''}`}
                 >
-                  <div className="subject-choice-accent" style={{ background: paletteCard.bar }} />
-
-                  <span
-                    aria-hidden
-                    className="flex flex-shrink-0 items-center justify-center"
-                    style={{ width: 48, height: 48, borderRadius: 14, background: paletteMeta.bg, fontSize: 24, lineHeight: 1 }}
-                  >
-                    {paletteMeta.icon}
-                  </span>
-
-                  <h3
-                    className="mt-3 truncate"
-                    title={group.name}
-                    style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: 16, lineHeight: '20px', color: '#22304D' }}
-                  >
-                    {group.name}
-                  </h3>
-                  <p className="mt-1 truncate" style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 11, lineHeight: '15px', color: '#8A94A6' }}>
-                    {group.description || paletteMeta.label}
-                  </p>
-
-                  <div className="mt-auto">
-                    <div className="mb-1.5 flex min-w-0 items-center gap-2">
-                      <span className="flex shrink-0 -space-x-1.5">
-                        {visibleMembers.map((m, i) => {
-                          const colors = ['#1E3A5F', '#2D5016', '#5B2C6F', '#7C4A1E', '#1A4D4D'];
-                          return (
-                            <span
-                              key={`${group.id}-${i}`}
-                              style={{ background: colors[i % colors.length] }}
-                              className="flex size-6 items-center justify-center rounded-full border-2 border-white text-[9px] font-bold text-white"
-                            >
-                              {getMemberInitials(m)}
-                            </span>
-                          );
-                        })}
+                  <div className="room-card-top" style={{ background: topColor }} />
+                  <div className="room-card-body">
+                    <div className="room-card-title-row">
+                      <span className="subject-icon" style={{ background: meta.bg, color: meta.color }}>
+                        {meta.icon}
                       </span>
-                      <span
-                        className="truncate"
-                        style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 12, lineHeight: '16px', color: '#8A94A6' }}
-                      >
-                        {group.studyingNow ?? group.memberCount} studying
-                      </span>
+                      <div className="room-card-title truncate" title={group.name}>{group.name}</div>
                     </div>
-                    <div
-                      className="flex items-center gap-2 rounded-[8px] px-2.5 py-1.5"
-                      style={{ background: `${capacityColors.fill}0D`, border: `1px solid ${capacityColors.fill}26` }}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={capacityColors.text} strokeWidth="2" style={{ flexShrink: 0, opacity: 0.6 }}>
-                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
-                      </svg>
-                      <div className="h-[4px] flex-1 overflow-hidden rounded-full" style={{ background: 'rgba(15,23,42,0.08)' }}>
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{ width: `${occupancyPercent}%`, background: capacityColors.fill }}
-                        />
+                    <div className="room-card-footer">
+                      <div className="flex items-center">
+                        <span className="member-avatars">
+                          {visibleMembers.map((m, i) => {
+                            const colors = ['#1E3A5F', '#2D5016', '#5B2C6F', '#7C4A1E', '#1A4D4D'];
+                            return (
+                              <span key={`${group.id}-${i}`} className="m-av" style={{ background: colors[i % colors.length] }}>
+                                {getMemberInitials(m)}
+                              </span>
+                            );
+                          })}
+                        </span>
+                        <span className="member-count">{group.studyingNow ?? group.memberCount} studying</span>
                       </div>
-                      <span className="shrink-0 whitespace-nowrap text-[10.5px] font-bold" style={{ color: capacityColors.text }}>
-                        {group.memberCount}{group.maxMembers > 0 ? ` of ${group.maxMembers}` : ''}
-                      </span>
-                    </div>
-                    <div className="mt-3 flex items-center justify-end gap-2">
                       {group.isMember ? (
                         <button
                           type="button"
@@ -1949,7 +1886,7 @@ export default function StudyGroupsPage() {
                             e.stopPropagation();
                             guard({ kind: 'room', title: group.name, subject: group.subject }, () => handleEnterRoom(group.id));
                           }}
-                          className="shrink-0 rounded-full bg-[#22C55E] px-5 py-2 text-[13px] font-bold text-white"
+                          className="btn-join enter"
                         >
                           Enter →
                         </button>
@@ -1960,7 +1897,7 @@ export default function StudyGroupsPage() {
                             e.stopPropagation();
                             guard({ kind: 'room', title: group.name, subject: group.subject }, () => openGroup(group));
                           }}
-                          className="shrink-0 rounded-full bg-[#FEE2E2] px-5 py-2 text-[12px] font-bold text-[#EF4444]"
+                          className="btn-join full"
                         >
                           Study Room Full
                         </button>
@@ -1971,7 +1908,8 @@ export default function StudyGroupsPage() {
                             e.stopPropagation();
                             guard({ kind: 'room', title: group.name, subject: group.subject }, () => openGroup(group));
                           }}
-                          className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#F1F3F8] px-4 py-2 text-[12px] font-bold text-[#6B7A99]"
+                          className="btn-join"
+                          style={{ background: 'var(--border)', color: 'var(--text-secondary)', cursor: 'not-allowed' }}
                         >
                           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                           Pending
@@ -1983,7 +1921,7 @@ export default function StudyGroupsPage() {
                             e.stopPropagation();
                             guard({ kind: 'room', title: group.name, subject: group.subject }, () => openGroup(group));
                           }}
-                          className="shrink-0 rounded-full bg-[#E8B84B] px-5 py-2 text-[13px] font-bold text-[#090E1C]"
+                          className="btn-join"
                         >
                           View →
                         </button>
@@ -2001,17 +1939,32 @@ export default function StudyGroupsPage() {
           <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">Room Features</span>
           <span className="h-px flex-1 bg-[#DDE3EC]" />
         </div>
+        {/* Card styling matches Flashcards' SubjectChoiceCard (components/SubjectChoiceCard.tsx):
+            16px radius, 20px padding, 1px border, left-aligned icon-in-colored-box, same hover lift/shadow + top accent bar. */}
         <section className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-4">
           {[
-            ['🍅', 'Pomodoro Timer', 'Stay deep in focus with proven time blocks'],
-            ['🏆', 'Leaderboards', 'Track rankings and compete with peers'],
-            ['📋', 'Task Cards', 'Share daily goals, stay accountable'],
-            ['🔍', 'Peer Review', 'Get answer feedback from fellow aspirants'],
-          ].map(([icon, title, desc]) => (
-            <div key={title} className="rounded-[14px] border border-[#E1E6EF] bg-white p-6 text-center">
-              <div className="mb-3 text-[26px]">{icon}</div>
-              <h3 className="mb-2 text-[13px] font-bold text-[#0C1424]">{title}</h3>
-              <p className="text-[12px] text-[#6B7A99]">{desc}</p>
+            ['🍅', 'Pomodoro Timer', 'Stay deep in focus with proven time blocks', '#FFE4E6', '#F43F5E'],
+            ['🏆', 'Leaderboards', 'Track rankings and compete with peers', '#FEF3C7', '#E8B84B'],
+            ['📋', 'Task Cards', 'Share daily goals, stay accountable', '#E0F2FE', '#06B6D4'],
+            ['🔍', 'Peer Review', 'Get answer feedback from fellow aspirants', '#EDE9FE', '#8B5CF6'],
+          ].map(([icon, title, desc, iconBg, accent]) => (
+            <div
+              key={title}
+              className="group relative overflow-hidden rounded-[16px] border border-[#E4EAF5] bg-white p-5 text-left transition-all duration-300 ease-out hover:-translate-y-[3px] hover:border-transparent hover:shadow-[0_4px_24px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)]"
+            >
+              <span
+                className="absolute top-0 left-0 right-0 h-[3px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                style={{ background: accent }}
+              />
+              <span
+                aria-hidden
+                className="flex h-12 w-12 items-center justify-center rounded-[14px] text-[24px]"
+                style={{ background: iconBg }}
+              >
+                {icon}
+              </span>
+              <h3 className="mt-3 text-[16px] font-bold leading-[20px] text-[#22304D]" style={{ fontFamily: 'Georgia, serif' }}>{title}</h3>
+              <p className="mt-1 text-[12px] font-medium leading-[1.5] text-[#8A94A6]">{desc}</p>
             </div>
           ))}
         </section>
@@ -2223,18 +2176,18 @@ export default function StudyGroupsPage() {
         const previewBorder = roomTopBorderColors[Math.max(0, groups.findIndex((g) => g.id === previewGroup.id)) % roomTopBorderColors.length];
         return (
           <div
-            className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 px-4 backdrop-blur-[4px]"
-            onClick={() => setPreviewGroup(null)}
+            className={`sg-modal-overlay fixed inset-0 z-[210] flex items-center justify-center bg-black/50 px-4 backdrop-blur-[4px]${previewClosing ? ' closing' : ''}`}
+            onClick={closePreview}
           >
             <div
-              className="relative flex max-h-[85vh] w-full max-w-[600px] flex-col overflow-hidden rounded-[20px] bg-white shadow-2xl"
+              className={`sg-modal-pop relative flex max-h-[85vh] w-full max-w-[600px] flex-col overflow-hidden rounded-[20px] bg-white shadow-2xl${previewClosing ? ' closing' : ''}`}
               onClick={(e) => e.stopPropagation()}
               style={{ borderTop: `4px solid ${previewBorder}` }}
             >
               <button
                 type="button"
-                onClick={() => setPreviewGroup(null)}
-                aria-label="Close room preview"
+                onClick={closePreview}
+                aria-label="Close Join Room"
                 className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full bg-[#F3F4F6] text-[24px] font-bold leading-none text-[#9CA3AF] transition hover:bg-[#E5E7EB] hover:text-[#6B7280]"
               >
                 ×
@@ -2342,10 +2295,10 @@ export default function StudyGroupsPage() {
               <div className="flex justify-end gap-3 border-t border-[#E5E7EB] bg-[#F9FAFB] px-7 py-4">
                 <button
                   type="button"
-                  onClick={() => setPreviewGroup(null)}
+                  onClick={closePreview}
                   className="rounded-full border border-[#E1E6EF] bg-white px-6 py-3 text-[14px] font-semibold text-[#6B7280] shadow-sm"
                 >
-                  Go Back
+                  Cancel
                 </button>
                 {isFull && !previewGroup.isMember ? (
                   <button
@@ -2376,9 +2329,10 @@ export default function StudyGroupsPage() {
                   <button
                     type="button"
                     onClick={(e) => guard({ kind: 'room', title: previewGroup.name, subject: previewGroup.subject }, () => handleJoin(previewGroup.id, e))}
-                    className="rounded-full bg-[#E8B84B] px-8 py-3 text-[14px] font-bold text-[#090E1C]"
+                    disabled={joiningGroupId === previewGroup.id}
+                    className="rounded-full bg-[#E8B84B] px-8 py-3 text-[14px] font-bold text-[#090E1C] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Request to Join →
+                    {joiningGroupId === previewGroup.id ? 'Joining…' : 'Join Room →'}
                   </button>
                 )}
               </div>
@@ -2509,8 +2463,11 @@ export default function StudyGroupsPage() {
               Upgrade
             </button>
 
-            {/* Plan badge */}
-            <div className="hidden sm:flex items-center gap-1.5 text-[12px] font-semibold text-white/60">
+            {/* Plan badge - wrapped in a pill with dropdown chevron to match reference */}
+            <div
+              className="hidden sm:flex items-center gap-1.5 rounded-full py-1 pl-3 pr-2.5 text-[12px] font-semibold text-white/60"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)' }}
+            >
               <span>Plan:</span>
               <span
                 className="rounded-full px-3 py-1 text-[11px] font-bold"
@@ -2518,6 +2475,7 @@ export default function StudyGroupsPage() {
               >
                 {tier ? tier.charAt(0).toUpperCase() + tier.slice(1) : 'Free'}
               </span>
+              <span className="text-[9px] text-white/50">▾</span>
             </div>
 
             {/* Bell - same style as DashboardHeader */}
@@ -2592,9 +2550,12 @@ export default function StudyGroupsPage() {
 
             {/* Focus timer card */}
             <div
-              className="mx-auto mb-5 max-w-[420px] rounded-[20px] bg-white p-6"
+              className="relative mx-auto mb-5 max-w-[420px] overflow-hidden rounded-[20px] bg-white p-6"
               style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}
             >
+              {/* Gold accent bar across the card top, matching reference */}
+              <span className="absolute inset-x-0 top-0 h-[3px]" style={{ background: '#E8B84B' }} />
+
               {/* Timer header - label + Active/Paused status */}
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-[15px] font-bold text-[#0C1424]">
@@ -2690,7 +2651,7 @@ export default function StudyGroupsPage() {
                     className="text-[#C99730]"
                     style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: 'italic', fontWeight: 700, fontSize: 26 }}
                   >
-                    {formatHrsMins(todaySeconds)}
+                    {formatHM(todaySeconds)}
                   </div>
                   <div className="mt-0.5 text-[10px] font-bold uppercase tracking-[1.5px] text-[#6B7A99]">
                     Your Time Today
@@ -2705,7 +2666,10 @@ export default function StudyGroupsPage() {
               style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}
             >
               {(() => {
-                const othersStudying = memberTimes.filter((m) => m.userId !== user?.id && (m.focusSeconds || 0) > 0).length;
+                // Count by the live isStudying flag, not logged time - a member
+                // who studied earlier and has since stopped must not still show
+                // as "studying" just because focusSeconds is nonzero.
+                const othersStudying = memberTimes.filter((m) => m.userId !== user?.id && m.isStudying).length;
                 const studyingCount = othersStudying + (isStudying ? 1 : 0);
                 return (
                   <div className="mb-4 flex items-center justify-between">
@@ -2729,9 +2693,9 @@ export default function StudyGroupsPage() {
                     const displayTime = isMe ? formatHourMin(todaySeconds) : formatHourMin(m.focusSeconds);
                     // My own dot reflects whether I'm actively studying right now
                     // (Start Studying clicked), not merely whether I've logged
-                    // time today. Other members fall back to the presence flag
-                    // from the API (m.isStudying) once available, else logged time.
-                    const active = isMe ? isStudying : (m.isStudying ?? m.focusSeconds > 0);
+                    // time today. Other members use the same live isStudying flag
+                    // from the API - never logged time, which lags after they stop.
+                    const active = isMe ? isStudying : !!m.isStudying;
                     return (
                       <div key={m.userId} className="flex flex-col items-center gap-1.5">
                         <div className="relative">
@@ -2836,6 +2800,21 @@ export default function StudyGroupsPage() {
                 ← Back to Study Rooms
               </button>
             </div>
+          </div>
+
+          {/* Sidebar collapse toggle - stays visible even when the panel is hidden via
+              Focus Mode, so users can bring it back; reuses roomFocusMode rather than
+              adding separate collapse state since that already mounts/unmounts the panel. */}
+          <div className="flex w-6 shrink-0 items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setRoomFocusMode((active) => !active)}
+              aria-label={roomFocusMode ? 'Show side panel' : 'Hide side panel'}
+              className="flex h-9 w-5 items-center justify-center rounded-[6px] text-white/70 transition hover:bg-[#1a2540]"
+              style={{ background: '#0C1424' }}
+            >
+              <span className="text-[11px] leading-none">{roomFocusMode ? '›' : '‹'}</span>
+            </button>
           </div>
 
           {/* Chat panel */}

@@ -31,14 +31,19 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  /* `clip` (not `hidden`) on purpose: setting overflow-x to `hidden` here
+     makes the browser compute overflow-y as `auto`, which turns html/body
+     into a scroll container and silently breaks `position: sticky` for any
+     element on the site (e.g. the FAQ sidebar). `clip` prevents the same
+     horizontal overflow without creating that scroll container. */
+  overflow-x: clip;
   max-width: 100%;
 }
 
 body {
   font-family: var(--font-sf-pro);
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
   -moz-osx-font-smoothing: grayscale;
   border: none;
 }
