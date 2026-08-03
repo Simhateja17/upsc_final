@@ -198,6 +198,9 @@ export default function EssayModelAnswerClient({ questionId: providedQuestionId 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  // Exact used/limit from the freshest source available (a refresh or the
+  // blocking error itself) - the cached EntitlementsContext value can be stale.
+  const [mainsQuotaOverride, setMainsQuotaOverride] = useState<{ used: number | null; limit: number | null } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Timer (cosmetic, matches source design)
@@ -296,8 +299,15 @@ export default function EssayModelAnswerClient({ questionId: providedQuestionId 
     if (!question || !canSubmit) return;
     const quota = entitlements.featureStatus?.('mains_evaluation');
     if (quota?.allowed === false) {
-      setShowQuotaModal(true);
-      return;
+      // Refresh first: the cached context value may not reflect evaluations
+      // submitted earlier in this session elsewhere.
+      const fresh = await entitlements.refreshEntitlements?.();
+      const freshQuota = fresh?.features?.['mains_evaluation'] ?? quota;
+      if (freshQuota?.allowed === false) {
+        setMainsQuotaOverride({ used: freshQuota.used, limit: freshQuota.limit });
+        setShowQuotaModal(true);
+        return;
+      }
     }
     setSubmitting(true);
     setSubmitError(null);
@@ -328,6 +338,7 @@ export default function EssayModelAnswerClient({ questionId: providedQuestionId 
     } catch (err: any) {
       const entitlementError = handleEntitlementError(err);
       if (entitlementError.title === 'Limit reached' || entitlementError.title === 'Upgrade required') {
+        setMainsQuotaOverride({ used: entitlementError.used, limit: entitlementError.limit });
         setShowQuotaModal(true);
       } else {
         setSubmitError(entitlementError.message || err?.message || 'Failed to submit. Please try again.');

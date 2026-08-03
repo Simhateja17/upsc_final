@@ -47,7 +47,7 @@ type EntitlementsContextValue = {
   preview: Record<string, number | null>;
   loading: boolean;
   error: string | null;
-  refreshEntitlements: () => Promise<void>;
+  refreshEntitlements: () => Promise<EntitlementSummary | null>;
   canAccess: (accessKey: string, allowed?: AccessLevel[]) => boolean;
   featureStatus: (featureKey: string) => FeatureStatus | null;
   isLimited: (accessKey: string) => boolean;
@@ -70,19 +70,26 @@ export function EntitlementsProvider({ children }: { children: React.ReactNode }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshEntitlements = useCallback(async () => {
+  // Returns the freshly-fetched summary directly (not just via context state) so
+  // callers that need an up-to-date read immediately after awaiting this - e.g. a
+  // pre-flight quota check - aren't stuck reading the stale `entitlements` closure
+  // captured before the state update triggers a re-render.
+  const refreshEntitlements = useCallback(async (): Promise<EntitlementSummary | null> => {
     if (!isAuthenticated) {
       setSummary(null);
-      return;
+      return null;
     }
 
     setLoading(true);
     setError(null);
     try {
       const res = await entitlementService.getMyEntitlements();
-      setSummary((res.data || DEFAULT_SUMMARY) as EntitlementSummary);
+      const next = (res.data || DEFAULT_SUMMARY) as EntitlementSummary;
+      setSummary(next);
+      return next;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load entitlements');
+      return null;
     } finally {
       setLoading(false);
     }
