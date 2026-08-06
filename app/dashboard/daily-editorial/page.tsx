@@ -702,7 +702,7 @@ export default function DailyEditorialPage() {
                           color: colors.color,
                         }}
                       >
-                        {tag}
+                        {colors.label}
                       </span>
                       );
                     })}
@@ -1491,7 +1491,7 @@ export default function DailyEditorialPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     {ed?.source && <span className="jeetSummary-chip jeetSummary-chip-purple">{ed.source}</span>}
                     {tags.slice(0, 2).map(t => (
-                      <span key={t} className="jeetSummary-chip jeetSummary-chip-blue">{t}</span>
+                      <span key={t} className="jeetSummary-chip jeetSummary-chip-blue">{getSubjectMetaStyle(t).label}</span>
                     ))}
                   </div>
                   <button onClick={closeModal} style={{ width: 32, height: 32, borderRadius: 10, border: '1px solid #E6E8EE', background: '#fff', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0, margin: 0, boxSizing: 'border-box', display: 'grid', placeItems: 'center', color: '#6B7280', flexShrink: 0 }}><span style={{ display: 'block', transform: 'translateY(-1.5px)' }}>×</span></button>
