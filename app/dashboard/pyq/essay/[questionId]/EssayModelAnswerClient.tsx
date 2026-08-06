@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Footer from '@/components/Footer';
+import UploadedAnswerFiles from '@/components/UploadedAnswerFiles';
 import { pyqService } from '@/lib/services';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEntitlements } from '@/contexts/EntitlementsContext';
@@ -279,6 +280,20 @@ export default function EssayModelAnswerClient({ questionId: providedQuestionId 
     return () => document.removeEventListener('keydown', onKey);
   }, [writeOpen, closeWrite]);
 
+  // Lock scroll on both <html> and <body> while the write modal is open so
+  // the page behind cannot scroll and the modal is the only scroll surface.
+  useEffect(() => {
+    if (!writeOpen) return;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, [writeOpen]);
+
   // Countdown timer
   useEffect(() => {
     if (!writeOpen || !timerRunning) return;
@@ -293,6 +308,11 @@ export default function EssayModelAnswerClient({ questionId: providedQuestionId 
   const handleFiles = (list: FileList | null) => {
     if (!list) return;
     setFiles(Array.from(list).slice(0, 5));
+  };
+
+  // Matches removeMainsFile in the GS-Mains PYQ Write & Evaluate flow.
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const submit = async () => {
@@ -742,7 +762,7 @@ export default function EssayModelAnswerClient({ questionId: providedQuestionId 
                       {files.length > 0 ? (
                         <>
                           <div className="write-drop-title">{files.length} file{files.length === 1 ? '' : 's'} selected</div>
-                          <div className="write-drop-sub">{files.map((f) => f.name).join(', ')}</div>
+                          <div className="write-drop-sub">Tap Browse Files to change your selection</div>
                         </>
                       ) : (
                         <>
@@ -754,6 +774,13 @@ export default function EssayModelAnswerClient({ questionId: providedQuestionId 
                       <button type="button" className="write-browse" onClick={() => fileInputRef.current?.click()}>Browse Files</button>
                       <input ref={fileInputRef} className="hidden" type="file" multiple accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => handleFiles(e.target.files)} />
                     </div>
+
+                    {/* Uploaded file preview (image/PDF thumbnails) — same shared component as Mains Answer Evaluator */}
+                    {files.length > 0 && (
+                      <div className="mt-3">
+                        <UploadedAnswerFiles files={files} onRemove={removeFile} />
+                      </div>
+                    )}
 
                     <div className="write-or-row">
                       <button type="button" className="write-or-pill" onClick={() => setMode('type')}>

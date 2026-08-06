@@ -601,7 +601,7 @@ export default function LandingPage() {
 
           <div className="mentor-features-grid">
             {[
-              { img: '/pppp.png', title: 'Weekly 1-on-1 Sessions', desc: 'Personal strategy calls with your assigned mentor. Adjust, refine, and stay on course.', delay: 1 },
+              { img: '/pppp.png', title: 'Bi-weekly 1-on-1 Sessions', desc: 'Personal strategy calls with your assigned mentor. Adjust, refine, and stay on course.', delay: 1 },
               { img: '/mmmm.png', title: 'Jeet Path Roadmap', desc: 'Your personalised preparation roadmap built around your strengths, gaps, and timeline.', delay: 2 },
               { img: '/ree.png', title: 'Dynamic Plan Updates', desc: 'Your study plan evolves weekly based on performance data and live mentor feedback.', delay: 3 },
             ].map(f => (

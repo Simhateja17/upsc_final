@@ -749,7 +749,7 @@ export default function PyqPage() {
   };
 
   const addMainsFlashcard = async (q: any) => {
-    if (mainsFlashcardBusyIds.has(q.id)) return;
+    if (mainsFlashcardBusyIds.has(q.id) || mainsFlashcardIds.has(q.id)) return;
     setMainsFlashcardBusyIds((prev) => new Set(prev).add(q.id));
     try {
       const subject = String(q.subject || 'General Studies');
@@ -850,7 +850,7 @@ export default function PyqPage() {
   };
 
   const addPrelimsFlashcard = async (q: any) => {
-    if (prelimsFlashcardBusyIds.has(q.id)) return;
+    if (prelimsFlashcardBusyIds.has(q.id) || prelimsFlashcardIds.has(q.id)) return;
     setPrelimsFlashcardBusyIds((prev) => new Set(prev).add(q.id));
     try {
       const subject = String(q.subject || 'General Studies');
@@ -1028,6 +1028,20 @@ export default function PyqPage() {
 
     return () => clearTimeout(timer);
   }, [showMainsWriteModal, mainsReadTimeLeft]);
+
+  // Lock scroll on both <html> and <body> while the write modal is open so
+  // the page behind cannot scroll and the modal is the only scroll surface.
+  useEffect(() => {
+    if (!showMainsWriteModal) return;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, [showMainsWriteModal]);
 
   useEffect(() => {
     fetchQuestions();
@@ -1971,21 +1985,27 @@ export default function PyqPage() {
       style={{ background: '#F9FAFB' }}
     >
       <style>{`
-        .pyq-act-btn{position:relative;overflow:hidden;transition:transform .2s cubic-bezier(0.4,0,0.2,1),box-shadow .2s cubic-bezier(0.4,0,0.2,1),border-color .2s cubic-bezier(0.4,0,0.2,1);}
-        .pyq-act-btn:active{transform:translateY(0) scale(0.97);}
+        /* 3D action-button system: shared base gives every action button (Write & Evaluate,
+           Model Answer, Bookmark, Add to Flashcard, Need to Review) the same resting depth,
+           hover lift, and pressed feedback so they read as one consistent design language. */
+        .pyq-act-btn{position:relative;overflow:hidden;transition:transform .2s cubic-bezier(0.4,0,0.2,1),box-shadow .2s cubic-bezier(0.4,0,0.2,1),border-color .2s cubic-bezier(0.4,0,0.2,1),background-color .2s ease;}
         .pyq-act-btn--primary{box-shadow:0 1px 0 rgba(255,255,255,0.08) inset,0 2px 6px rgba(15,23,42,0.28),0 10px 22px -8px rgba(15,23,42,0.4);}
         .pyq-act-btn--primary::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent);transition:left .5s cubic-bezier(0.4,0,0.2,1);pointer-events:none;}
         .pyq-act-btn--primary:hover{transform:translateY(-2px);box-shadow:0 1px 0 rgba(255,255,255,0.1) inset,0 4px 10px rgba(15,23,42,0.32),0 16px 30px -8px rgba(212,175,55,0.35);}
         .pyq-act-btn--primary:hover::before{left:100%;}
-        .pyq-act-btn--secondary{box-shadow:0 1px 2px rgba(16,24,40,0.05),0 1px 0 rgba(255,255,255,0.7) inset;}
+        .pyq-act-btn--secondary{box-shadow:0 1px 2px rgba(16,24,40,0.06),0 6px 14px -6px rgba(16,24,40,0.14),0 1px 0 rgba(255,255,255,0.7) inset;}
         .pyq-act-btn--secondary:hover{transform:translateY(-2px);border-color:#D4AF37 !important;box-shadow:0 8px 18px -6px rgba(212,175,55,0.22),0 2px 6px rgba(16,24,40,0.06);}
-        .pyq-act-pill{box-shadow:0 1px 2px rgba(16,24,40,0.05);}
-        .pyq-act-pill:hover{transform:translateY(-2px);}
-        .pyq-act-pill--bookmark:hover{border-color:#D4AF37 !important;box-shadow:0 8px 18px -6px rgba(212,175,55,0.3);}
-        .pyq-act-pill--flashcard:hover{border-color:#0891B2 !important;box-shadow:0 8px 18px -6px rgba(8,145,178,0.3);}
-        .pyq-act-pill--review:hover{border-color:#E65100 !important;box-shadow:0 8px 18px -6px rgba(230,81,0,0.3);}
+        .pyq-act-pill{min-height:42px;box-shadow:0 1px 2px rgba(16,24,40,0.06),0 3px 8px -3px rgba(16,24,40,0.14),0 1px 0 rgba(255,255,255,0.6) inset;}
+        .pyq-act-pill:hover{transform:translateY(-2px);box-shadow:0 1px 0 rgba(255,255,255,0.7) inset,0 8px 16px -5px rgba(16,24,40,0.2);}
+        .pyq-act-pill--bookmark:hover{border-color:#D4AF37 !important;box-shadow:0 1px 0 rgba(255,255,255,0.7) inset,0 8px 18px -6px rgba(212,175,55,0.3);}
+        .pyq-act-pill--flashcard:hover{border-color:#0891B2 !important;box-shadow:0 1px 0 rgba(255,255,255,0.7) inset,0 8px 18px -6px rgba(8,145,178,0.3);}
+        .pyq-act-pill--review:hover{border-color:#E65100 !important;box-shadow:0 1px 0 rgba(255,255,255,0.7) inset,0 8px 18px -6px rgba(230,81,0,0.3);}
+        .pyq-act-btn:disabled{cursor:not-allowed;}
         .pyq-sparkle{display:inline-block;animation:pyqSparkle 2s ease-in-out infinite;}
         @keyframes pyqSparkle{0%,100%{transform:scale(1) rotate(0deg);opacity:1}50%{transform:scale(1.15) rotate(12deg);opacity:.85}}
+        /* Placed last so equal-specificity :active always wins over the :hover lift above,
+           giving a real "pressed" 3D effect instead of staying lifted while clicked. */
+        .pyq-act-btn:not(:disabled):active{transform:translateY(0) scale(0.97);box-shadow:0 1px 2px rgba(16,24,40,0.18) inset;}
       `}</style>
       <MainsEvaluationLimitModal
         open={showMainsQuotaModal}
@@ -2319,7 +2339,7 @@ export default function PyqPage() {
                           <button
                             type="button"
                             onClick={() => addPrelimsFlashcard(q)}
-                            disabled={prelimsFlashcardBusyIds.has(q.id)}
+                            disabled={prelimsFlashcardBusyIds.has(q.id) || prelimsFlashcardIds.has(q.id)}
                             className="pyq-act-btn pyq-act-pill pyq-act-pill--flashcard flex items-center gap-2"
                             style={{
                               padding: '9px 18px',
@@ -2331,9 +2351,10 @@ export default function PyqPage() {
                               background: prelimsFlashcardIds.has(q.id) ? 'rgba(8,145,178,0.08)' : '#FFFFFF',
                               color: prelimsFlashcardIds.has(q.id) ? '#0891B2' : '#101828',
                               opacity: prelimsFlashcardBusyIds.has(q.id) ? 0.6 : 1,
+                              cursor: prelimsFlashcardIds.has(q.id) ? 'default' : 'pointer',
                             }}
                           >
-                            <span aria-hidden>⚡</span>
+                            <span aria-hidden>{prelimsFlashcardIds.has(q.id) ? '✅' : '⚡'}</span>
                             <span>{prelimsFlashcardBusyIds.has(q.id) ? 'Adding...' : prelimsFlashcardIds.has(q.id) ? 'In Flashcards' : 'Add to Flashcard'}</span>
                           </button>
                           <button
@@ -2591,7 +2612,7 @@ export default function PyqPage() {
                   return (
                   <div
                     key={q.id}
-                    className="mb-6"
+                    className="mb-4"
                     style={{
                       width: '100%',
                       maxWidth: '100%',
@@ -2599,19 +2620,16 @@ export default function PyqPage() {
                       border: '0.8px solid #E5E7EB',
                       background: '#FFFFFF',
                       boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A',
-                      padding: '32px',
+                      padding: '20px 24px',
                     }}
                   >
-                    {/* Tag row */}
-                    <div className="flex flex-wrap gap-2 mb-4">
+                    {/* Tag row — year/subject/sub-subject/topic only; marks moved to the metadata row below to avoid duplication */}
+                    <div className="flex flex-wrap gap-1.5 mb-3">
                       {chips.map((chip) => (
-                        <span key={chip.key} className="px-3 py-1 rounded-full text-[12px] font-bold" style={chip.style}>
+                        <span key={chip.key} className="px-[11px] py-1 rounded-full text-[0.68rem] font-semibold uppercase tracking-[0.5px]" style={chip.style}>
                           {chip.label}
                         </span>
                       ))}
-                      <span className="px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: '#F3E8FF', color: '#7E22CE' }}>
-                        {getMainsMarks(q)} marks
-                      </span>
                     </div>
 
                     {false && <div className="inline-flex items-center mb-4" style={{ borderRadius: '8px', background: '#17223E', padding: '4px 16px' }}>
@@ -2631,37 +2649,39 @@ export default function PyqPage() {
                     >
                       <QuestionTextRenderer
                         text={q.questionText}
-                        className="mb-4 text-[16px] font-[500] leading-[26px] text-[#101828] transition-colors group-hover:text-[#0F4C81]"
-                        textClassName="text-[16px] font-[500] leading-[26px] text-[#101828] transition-colors group-hover:text-[#0F4C81]"
+                        className="mb-3 text-[0.95rem] font-normal leading-[1.6] text-[#101828] transition-colors group-hover:text-[#0F4C81]"
+                        textClassName="text-[0.95rem] font-normal leading-[1.6] text-[#101828] transition-colors group-hover:text-[#0F4C81]"
                         textStyle={{ fontFamily: PYQ_QUESTION_FONT }}
                       />
                     </Link>
 
-                    {/* Stats row */}
-                    <div className="flex flex-wrap items-center gap-6 mb-6">
+                    {/* Stats row — year / word limit / marks, matching the HTML reference (topic already shown as a top capsule) */}
+                    <div className="flex flex-wrap items-center gap-4 mb-4 text-[0.78rem] text-[#6A7282]">
                       {q.year > 0 && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <span aria-hidden>📅</span>
-                          <span className="text-[14px] text-[#6A7282]">{q.year}</span>
+                          <span>{q.year}</span>
                         </div>
                       )}
-                      {q.topic && (
-                        <div className="flex items-center gap-2">
-                          <span aria-hidden>📝</span>
-                          <span className="text-[14px] text-[#6A7282]">{q.topic}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        <span aria-hidden>✏️</span>
+                        <span>{getMainsWordLimit(q)} words</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span aria-hidden>☆</span>
+                        <span>{getMainsMarks(q)} marks</span>
+                      </div>
                     </div>
 
                     {/* Buttons row */}
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                       <button
                         type="button"
                         onClick={() => openMainsWriteModal(q)}
                         className="pyq-act-btn pyq-act-btn--primary flex items-center justify-center"
-                        style={{ height: '59px', borderRadius: '14px', background: 'linear-gradient(135deg, #101828 0%, #1E2133 100%)', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
+                        style={{ borderRadius: '10px', background: 'linear-gradient(135deg, #101828 0%, #1E2133 100%)', color: '#FFFFFF', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '0.82rem', padding: '10px 20px' }}
                       >
-                        <span aria-hidden className="pyq-sparkle" style={{ marginRight: '8px' }}>✨</span>
+                        <span aria-hidden className="pyq-sparkle" style={{ marginRight: '7px' }}>✨</span>
                         <span>Write &amp; Evaluate</span>
                       </button>
                       <button
@@ -2682,8 +2702,8 @@ export default function PyqPage() {
                           });
                           if (!isExpanded) scrollToAnswerSection(`pyq-model-answer-${q.id}`);
                         }}
-                        className="pyq-act-btn pyq-act-btn--secondary flex items-center justify-center gap-2"
-                        style={{ height: '59px', borderRadius: '14px', background: '#FFFFFF', color: '#101828', border: '1.5px solid #E5E7EB', fontFamily: 'Inter, sans-serif', fontWeight: 700, fontSize: '16px', padding: '0 20px' }}
+                        className="pyq-act-btn pyq-act-btn--secondary flex items-center justify-center gap-1.5"
+                        style={{ borderRadius: '10px', background: '#FFFFFF', color: '#101828', border: '1.5px solid #E5E7EB', fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '0.82rem', padding: '9px 18px' }}
                       >
                         <span aria-hidden>📄</span>
                         <span>Model Answer</span>
@@ -2738,7 +2758,7 @@ export default function PyqPage() {
                           <button
                             type="button"
                             onClick={() => addMainsFlashcard(q)}
-                            disabled={mainsFlashcardBusyIds.has(q.id)}
+                            disabled={mainsFlashcardBusyIds.has(q.id) || mainsFlashcardIds.has(q.id)}
                             className="pyq-act-btn pyq-act-pill pyq-act-pill--flashcard flex items-center gap-2"
                             style={{
                               padding: '9px 18px',
@@ -2750,9 +2770,10 @@ export default function PyqPage() {
                               background: mainsFlashcardIds.has(q.id) ? 'rgba(8,145,178,0.08)' : '#FFFFFF',
                               color: mainsFlashcardIds.has(q.id) ? '#0891B2' : '#101828',
                               opacity: mainsFlashcardBusyIds.has(q.id) ? 0.6 : 1,
+                              cursor: mainsFlashcardIds.has(q.id) ? 'default' : 'pointer',
                             }}
                           >
-                            <span aria-hidden>⚡</span>
+                            <span aria-hidden>{mainsFlashcardIds.has(q.id) ? '✅' : '⚡'}</span>
                             <span>{mainsFlashcardBusyIds.has(q.id) ? 'Adding...' : mainsFlashcardIds.has(q.id) ? 'In Flashcards' : 'Add to Flashcard'}</span>
                           </button>
                           <button
@@ -2969,32 +2990,41 @@ export default function PyqPage() {
       {showMainsWriteModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-4"
-          style={{ background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(8px)' }}
+          style={{ background: 'rgba(15,17,26,0.5)', backdropFilter: 'blur(6px)' }}
           onClick={() => setShowMainsWriteModal(false)}
         >
+          {/* Modal shell — width/radius/shadow match the HTML reference's .modal (1100px, 20px radius, 92vh cap) */}
           <div
-            className="flex flex-col overflow-hidden rounded-[24px] bg-white"
+            className="flex w-full flex-col overflow-hidden rounded-[20px] bg-white"
             style={{
-              width: '1180px',
+              width: '1100px',
               maxWidth: '100%',
-              height: 'min(760px, calc(100vh - 32px))',
-              boxShadow: '0px 28px 70px rgba(15,23,42,0.35)',
+              maxHeight: '92vh',
+              boxShadow: '0 30px 80px rgba(15,17,26,0.4)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex flex-shrink-0 items-center justify-between bg-[#0F1424] px-8 py-5 text-white">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[12px] bg-[#D9B84A] text-[24px] text-[#0F1424]">✎</div>
-                <div>
-                  <h2 className="m-0 font-bold" style={{ fontFamily: 'Merriweather, serif', fontSize: 22 }}>Craft Your Answer</h2>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div
+              className="flex flex-shrink-0 items-stretch justify-between"
+              style={{ background: 'linear-gradient(145deg,#0D0F1A 0%,#141728 50%,#1A1D32 100%)', borderBottom: '2px solid rgba(212,175,55,0.2)' }}
+            >
+              <div className="flex flex-1 items-center gap-3.5 px-6 py-4">
+                <div
+                  className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[12px] text-[20px] text-[#0F111A]"
+                  style={{ background: 'linear-gradient(135deg,#D4AF37,#E5C56A)', boxShadow: '0 4px 16px rgba(212,175,55,0.3)' }}
+                >
+                  ✎
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <h2 className="m-0" style={{ fontFamily: 'Merriweather, serif', fontSize: '1.2rem', fontWeight: 700, letterSpacing: '-0.01em', color: '#fff' }}>Craft Your Answer</h2>
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {selectedQuestion?.paper && (() => {
                       const style = getSubjectMetaStyle(selectedQuestion.paper);
-                      return <span className="inline-flex items-center gap-1 rounded-[7px] px-3 py-1 text-[12px] font-bold" style={{ border: `1px solid ${style.border}`, background: style.bg, color: style.color }}><span aria-hidden>{style.icon}</span>{selectedQuestion.paper}</span>;
+                      return <span className="inline-flex items-center gap-1 rounded-[6px] px-2.5 py-[3px] text-[0.7rem] font-semibold" style={{ border: `1px solid ${style.border}`, background: style.bg, color: style.color }}><span aria-hidden>{style.icon}</span>{selectedQuestion.paper}</span>;
                     })()}
                     {selectedQuestion?.subject && String(selectedQuestion.subject).toLowerCase() !== String(selectedQuestion.paper || '').toLowerCase() && (() => {
                       const style = getSubjectMetaStyle(selectedQuestion.subject);
-                      return <span className="inline-flex items-center gap-1 rounded-[7px] px-3 py-1 text-[12px] font-bold" style={{ border: `1px solid ${style.border}`, background: style.bg, color: style.color }}><span aria-hidden>{style.icon}</span>{selectedQuestion.subject}</span>;
+                      return <span className="inline-flex items-center gap-1 rounded-[6px] px-2.5 py-[3px] text-[0.7rem] font-semibold" style={{ border: `1px solid ${style.border}`, background: style.bg, color: style.color }}><span aria-hidden>{style.icon}</span>{selectedQuestion.subject}</span>;
                     })()}
                   </div>
                 </div>
@@ -3002,25 +3032,27 @@ export default function PyqPage() {
               <button
                 type="button"
                 onClick={() => setShowMainsWriteModal(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-[12px] border border-white/15 bg-white/10 text-[24px] text-white/70"
+                className="my-4 mr-5 flex h-9 w-9 flex-shrink-0 items-center justify-center self-start rounded-[10px] border border-white/15 bg-white/10 text-[14px] text-white/80"
                 aria-label="Close"
               >
                 ×
               </button>
             </div>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_300px]">
-              <div className="flex min-h-0 flex-col overflow-hidden px-8 py-5">
-                <div className="flex-shrink-0 rounded-[12px] bg-[#F9FAFB] p-4" style={{ borderLeft: '4px solid #D4AF37' }}>
-                  <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Question</div>
+            {/* Body — 1fr/280px columns; each pane scrolls on its own like the reference, instead of one flex-fill column */}
+            <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[1fr_280px]">
+              <div className="overflow-y-auto px-6 py-5 lg:border-r lg:border-[#F0F1F3]">
+                {/* Question box — bg/radius/padding/margin/border match .modal-question exactly */}
+                <div className="mb-[14px] rounded-[12px] bg-[#F4F5F7] px-4 py-3" style={{ borderLeft: '4px solid #D4AF37' }}>
+                  <div className="mb-2 text-[0.64rem] font-semibold uppercase tracking-[1px] text-[#9CA3AF]">Question</div>
                   <QuestionTextRenderer
                     text={selectedQuestion?.questionText || 'Loading question...'}
-                    textClassName="italic text-[15px] leading-[26px] text-[#1E2939]"
+                    textClassName="italic text-[0.86rem] leading-[1.7] text-[#1A1A1A]"
                     textStyle={{ fontFamily: PYQ_QUESTION_FONT }}
                   />
                 </div>
 
-                <div className="mt-3 flex flex-shrink-0 flex-wrap items-center gap-x-6 gap-y-2 text-[13px] font-semibold text-[#6A7282]">
+                <div className="mb-[14px] flex flex-wrap items-center gap-4 text-[0.78rem] font-medium text-[#6B7280]">
                   <span>◷ {Math.floor(getMainsTimeLimit(selectedQuestion) / 60)} min</span>
                   <span>✍️ {getMainsWordLimit(selectedQuestion)} words</span>
                   <span>☆ {getMainsMarks(selectedQuestion)} marks</span>
@@ -3048,24 +3080,24 @@ export default function PyqPage() {
 
                 {!textAnswerExpanded && (
                   <>
-                    <div className="mt-4 flex flex-shrink-0 items-center gap-2 text-[16px] font-bold text-[#0F172B]">
+                    <div className="mb-[10px] flex items-center gap-1.5 text-[0.95rem] font-bold text-[#0F111A]">
                       <span className="text-[#D4AF37]">⇧</span>
                       Upload your answer
                     </div>
 
                     <div
-                      className="mt-3 flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[14px] px-6 py-4 text-center"
+                      className="flex cursor-pointer flex-col items-center justify-center rounded-[14px] px-4 py-5 text-center"
                       style={{
-                        border: mainsFiles.length > 0 ? '1.5px dashed #17223E' : '1px dashed #CBD5E1',
-                        background: mainsFiles.length > 0 ? '#EFF6FF' : '#F9FAFB',
+                        border: mainsFiles.length > 0 ? '2px dashed #D4AF37' : '2px dashed #E5E7EB',
+                        background: mainsFiles.length > 0 ? 'rgba(212,175,55,0.05)' : '#F4F5F7',
                       }}
                       onClick={() => mainsFileInputRef.current?.click()}
                     >
-                      <div className="mb-3 grid h-12 w-12 flex-shrink-0 place-items-center rounded-[12px] bg-[#0F1424] text-[#D4AF37]">⇧</div>
-                      <p className="mb-2 text-[16px] font-bold text-[#0F172B]">
+                      <div className="mb-3 grid h-11 w-11 flex-shrink-0 place-items-center rounded-[12px] bg-[#0F111A] text-[#D4AF37]">⇧</div>
+                      <p className="mb-1 text-[0.86rem] font-semibold text-[#1A1A1A]">
                         {mainsFiles.length > 1 ? `${mainsFiles.length} pages selected` : mainsFile ? mainsFile.name : 'Drop your answer script here'}
                       </p>
-                      <p className="mb-3 text-[14px] text-[#9AA3B2]">Upload handwritten answers for AI evaluation</p>
+                      <p className="mb-[10px] text-[0.74rem] text-[#9CA3AF]">Upload handwritten answers for AI evaluation</p>
                       {mainsFiles.length > 1 && (
                         <div className="mb-3 max-w-full px-6 text-left text-[12px] text-[#4B5563]">
                           {mainsFiles.map((file, index) => (
@@ -3073,9 +3105,9 @@ export default function PyqPage() {
                           ))}
                         </div>
                       )}
-                      <div className="mb-3 flex flex-wrap justify-center gap-2">
+                      <div className="mb-3 flex flex-wrap justify-center gap-1.5">
                         {['JPG', 'PNG', 'PDF', 'Max 10MB'].map((fmt) => (
-                          <span key={fmt} className="rounded bg-[#E5E7EB] px-2.5 py-1 text-[12px] text-[#374151]">{fmt}</span>
+                          <span key={fmt} className="rounded-[14px] border border-[#E5E7EB] bg-white px-2.5 py-[3px] text-[0.68rem] font-semibold text-[#6B7280]">{fmt}</span>
                         ))}
                       </div>
                       <button
@@ -3084,7 +3116,7 @@ export default function PyqPage() {
                           e.stopPropagation();
                           mainsFileInputRef.current?.click();
                         }}
-                        className="flex-shrink-0 rounded-[8px] border border-[#D1D5DB] bg-white px-6 py-2 text-[14px] font-bold text-[#111827]"
+                        className="flex-shrink-0 rounded-[8px] border border-[#E5E7EB] bg-white px-5 py-2 text-[0.78rem] font-semibold text-[#1A1A1A]"
                       >
                         Browse Files
                       </button>
@@ -3097,12 +3129,12 @@ export default function PyqPage() {
                       </div>
                     )}
 
-                    <button type="button" onClick={() => setTextAnswerExpanded(true)} className="mt-4 flex w-full flex-shrink-0 items-center gap-3">
+                    <button type="button" onClick={() => setTextAnswerExpanded(true)} className="my-[14px] flex w-full items-center gap-3">
                       <div className="h-px flex-1 bg-[#E5E7EB]" />
-                      <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E7EB] bg-white px-3.5 py-1.5 text-[0.74rem] font-semibold text-[#6B7280]">
                         <span
                           aria-hidden="true"
-                          className="h-2 w-2 border-b-2 border-r-2 border-[#8B919B]"
+                          className="h-1.5 w-1.5 border-b-2 border-r-2 border-[#8B919B]"
                           style={{ transform: 'rotate(45deg)' }}
                         />
                         OR Type your answer
@@ -3114,12 +3146,12 @@ export default function PyqPage() {
 
                 {textAnswerExpanded && (
                   <>
-                    <button type="button" onClick={() => setTextAnswerExpanded(false)} className="mt-4 flex w-full flex-shrink-0 items-center gap-3">
+                    <button type="button" onClick={() => setTextAnswerExpanded(false)} className="my-[14px] flex w-full items-center gap-3">
                       <div className="h-px flex-1 bg-[#E5E7EB]" />
-                      <span className="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4 py-2 text-[13px] font-semibold text-[#6A7282]">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E5E7EB] bg-white px-3.5 py-1.5 text-[0.74rem] font-semibold text-[#6B7280]">
                         <span
                           aria-hidden="true"
-                          className="h-2 w-2 border-b-2 border-r-2 border-[#8B919B]"
+                          className="h-1.5 w-1.5 border-b-2 border-r-2 border-[#8B919B]"
                           style={{ transform: 'rotate(225deg)' }}
                         />
                         Hide
@@ -3127,22 +3159,23 @@ export default function PyqPage() {
                       <div className="h-px flex-1 bg-[#E5E7EB]" />
                     </button>
 
-                    <div className="mt-4 flex min-h-0 flex-1 flex-col">
+                    <div className="mb-[14px]">
                       <textarea
                         value={mainsAnswerText}
                         onChange={(e) => setMainsAnswerText(e.target.value)}
                         placeholder="Write your answer here..."
                         autoFocus
-                        className="w-full min-h-0 flex-1 resize-none rounded-[10px] border border-[#D1D5DB] bg-[#F9FAFB] p-4 text-[#101828] outline-none"
-                        style={{ fontSize: 15, lineHeight: '24px', overflowY: 'auto' }}
+                        rows={7}
+                        className="w-full resize-y rounded-[12px] border-[1.5px] border-[#E5E7EB] bg-white p-4 text-[#1A1A1A] outline-none"
+                        style={{ fontSize: '0.84rem', lineHeight: 1.6 }}
                       />
-                      <p className="mt-1 flex-shrink-0 text-right text-[12px] text-[#6A7282]">{mainsAnswerText.trim().split(/\s+/).filter(Boolean).length} words</p>
+                      <p className="mt-2 text-right text-[12px] text-[#6A7282]">{mainsAnswerText.trim().split(/\s+/).filter(Boolean).length} words</p>
                     </div>
                   </>
                 )}
 
                 {mainsSubmitError && (
-                  <div className="mt-4 flex-shrink-0 rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#B91C1C]">
+                  <div className="mb-[14px] rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-3 text-[13px] text-[#B91C1C]">
                     {mainsSubmitError}
                   </div>
                 )}
@@ -3192,58 +3225,68 @@ export default function PyqPage() {
                       setMainsSubmitting(false);
                     }
                   }}
-                  className="mt-4 flex h-[48px] w-full flex-shrink-0 items-center justify-center gap-2 rounded-[12px] bg-[#0F1424] text-[15px] font-bold text-white disabled:opacity-45"
+                  className="mt-[14px] flex w-full items-center justify-center gap-2 rounded-[10px] bg-[#0F111A] py-3 text-[0.84rem] font-semibold text-white disabled:opacity-45"
                 >
                   {mainsSubmitting ? (
                     <>
-                      <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
+                      <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
                       Submitting...
                     </>
                   ) : (
                     <>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/Icon%20(13).png" alt="" style={{ width: '22px', height: '22px' }} />
+                      <img src="/Icon%20(13).png" alt="" style={{ width: '16px', height: '16px' }} />
                       Submit Answer for Evaluation
                     </>
                   )}
                 </button>
+
+                {/* Free-evaluations banner — mirrors the reference's green pill below Submit, using real quota data */}
+                {typeof mainsQuota?.limit === 'number' && (
+                  <div
+                    className="mt-[10px] flex items-center justify-center gap-2 rounded-[16px] px-3.5 py-2 text-[0.74rem] font-semibold"
+                    style={{ background: '#E8F5E9', border: '1px solid #00C853', color: '#2E7D32' }}
+                  >
+                    ✓ {Math.max(0, mainsQuota.limit - (mainsQuota.used ?? 0))} Free Evaluations Remaining
+                  </div>
+                )}
               </div>
 
-              <aside className="flex min-h-0 flex-col gap-4 overflow-hidden bg-[#F8F9FB] p-5">
-                <div className="rounded-[18px] bg-white p-4 text-center shadow-sm">
-                  <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#9AA3B2]">Writing Timer</div>
+              <aside className="flex flex-col gap-[10px] overflow-y-auto border-t border-[#F0F1F3] bg-[#F4F5F7] p-4 lg:border-t-0">
+                <div className="rounded-[14px] bg-white p-3.5 text-center" style={{ boxShadow: '0 1px 3px rgba(15,17,26,0.04),0 4px 14px rgba(15,17,26,0.06)' }}>
+                  <div className="mb-[10px] text-[0.64rem] font-semibold uppercase tracking-[1px] text-[#9CA3AF]">Writing Timer</div>
                   {(() => {
-                    const radius = 82;
+                    const radius = 60;
                     const circumference = 2 * Math.PI * radius;
                     const pct = Math.max(0, Math.min(1, mainsTimeLeft / getMainsTimeLimit(selectedQuestion)));
                     return (
-                      <div className="relative mx-auto mb-3 flex h-[180px] w-[180px] items-center justify-center">
-                        <svg width="180" height="180" viewBox="0 0 180 180" style={{ transform: 'rotate(-90deg)' }}>
-                          <circle cx="90" cy="90" r={radius} fill="none" stroke="#E6E8EE" strokeWidth="5" />
+                      <div className="relative mx-auto mb-[10px] flex h-[100px] w-[100px] items-center justify-center">
+                        <svg width="100" height="100" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
+                          <circle cx="70" cy="70" r={radius} fill="none" stroke="#F0F1F3" strokeWidth="7" />
                           <circle
-                            cx="90"
-                            cy="90"
+                            cx="70"
+                            cy="70"
                             r={radius}
                             fill="none"
                             stroke={mainsTimeLeft <= 60 ? '#EF4444' : '#D4AF37'}
-                            strokeWidth="5"
+                            strokeWidth="7"
                             strokeLinecap="round"
                             strokeDasharray={circumference}
                             strokeDashoffset={circumference * (1 - pct)}
                           />
                         </svg>
                         <div className="absolute flex flex-col items-center">
-                          <div className="font-mono text-[32px] font-bold text-[#0B1020]" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                          <div className="font-mono text-[1.4rem] font-bold text-[#0F111A]" style={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '1px' }}>
                             {Math.floor(mainsTimeLeft / 60)}:{String(mainsTimeLeft % 60).padStart(2, '0')}
                           </div>
-                          <div className="mt-1 whitespace-nowrap text-[9px] font-semibold uppercase tracking-[0.1em] text-[#9AA3B2]">
+                          <div className="mt-[2px] whitespace-nowrap text-[0.62rem] uppercase tracking-[0.5px] text-[#9CA3AF]">
                             {mainsReadTimeLeft !== null ? `Auto-start ${mainsReadTimeLeft}s` : 'Minutes left'}
                           </div>
                         </div>
                       </div>
                     );
                   })()}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -3254,7 +3297,7 @@ export default function PyqPage() {
                         }
                         setMainsTimerPaused((p) => !p);
                       }}
-                      className="rounded-[10px] bg-[#0F1424] px-3 py-2.5 text-[13px] font-bold text-white"
+                      className="flex-1 rounded-[8px] bg-[#0F111A] py-2 text-[0.78rem] font-semibold text-white"
                     >
                       ▷ {mainsReadTimeLeft !== null ? 'Start now' : mainsTimerPaused ? 'Resume' : 'Pause'}
                     </button>
@@ -3265,26 +3308,26 @@ export default function PyqPage() {
                         setMainsTimerPaused(true);
                         setMainsReadTimeLeft(PYQ_READING_WINDOW_SECONDS);
                       }}
-                      className="rounded-[10px] border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[13px] font-bold text-[#4A5565]"
+                      className="flex-1 rounded-[8px] border border-[#E5E7EB] bg-[#F4F5F7] py-2 text-[0.78rem] font-semibold text-[#6B7280]"
                     >
                       ↻ Reset
                     </button>
                   </div>
                 </div>
 
-                <div className="rounded-[18px] bg-white p-4 shadow-sm">
-                  <div className="mb-3 flex items-center gap-2 text-[14px] font-bold uppercase text-[#0F172B]">
+                <div className="rounded-[14px] bg-white p-3.5" style={{ boxShadow: '0 1px 3px rgba(15,17,26,0.04),0 4px 14px rgba(15,17,26,0.06)' }}>
+                  <div className="mb-3 flex items-center gap-2 text-[0.82rem] font-bold uppercase tracking-[0.5px] text-[#0F111A]">
                     <span>💡</span> Quick Tips
                   </div>
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2">
                     {[
-                      ['✏️', 'Use blue/black ink'],
-                      ['📷', 'Clear photo in good lighting'],
-                      ['📝', 'Write legibly on white paper'],
-                    ].map(([icon, text]) => (
-                      <div key={text} className="flex items-center gap-3 rounded-[10px] bg-[#F4F5F7] p-2.5">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-white">{icon}</span>
-                        <span className="text-[13px] font-bold text-[#364153]">{text}</span>
+                      ['✏️', 'Use blue/black ink', '#E3F2FD'],
+                      ['📷', 'Clear photo in good lighting', '#E8F5E9'],
+                      ['📝', 'Write legibly on white paper', '#EDE7F6'],
+                    ].map(([icon, text, tagBg]) => (
+                      <div key={text} className="flex items-center gap-2.5 rounded-[8px] bg-[#F4F5F7] p-2.5">
+                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] text-[1rem]" style={{ background: tagBg }}>{icon}</span>
+                        <span className="text-[0.78rem] font-semibold text-[#1A1A1A]">{text}</span>
                       </div>
                     ))}
                   </div>
