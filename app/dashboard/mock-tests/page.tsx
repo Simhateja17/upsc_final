@@ -155,11 +155,13 @@ const optionalSubjectIcons: Record<string, string> = {
 
 // Mock Test Mains only uses 10-mark questions (cheaper to auto-evaluate),
 // so every question in the set is a 10-marker - including Full Length. Essay
-// Paper is the one exception: always exactly 2 questions, each a 125-marker.
-const ESSAY_QUESTION_COUNT = 2;
+// Paper is the one exception: 1 or 2 essays (the real exam has 2, one per
+// section), each a 125-marker.
+const ESSAY_MIN_QUESTION_COUNT = 1;
+const ESSAY_MAX_QUESTION_COUNT = 2;
 const ESSAY_MARKS = 125;
-function buildMainsMarksPattern(questionCount: number, paperType?: string) {
-  if (paperType === 'essay') return Array(ESSAY_QUESTION_COUNT).fill(ESSAY_MARKS);
+function buildMainsMarksPattern(questionCount: number, paperType?: string, essayCount = ESSAY_MAX_QUESTION_COUNT) {
+  if (paperType === 'essay') return Array(Math.max(1, essayCount)).fill(ESSAY_MARKS);
   return Array(Math.max(1, questionCount)).fill(10);
 }
 
@@ -304,6 +306,7 @@ function MockTestsPageInner() {
   const [selectedSubject, setSelectedSubject] = useState('All Subjects');
   const [selectedExamMode, setSelectedExamMode] = useState('prelims');
   const [selectedPaperType, setSelectedPaperType] = useState('gs1');
+  const [essayQuestionCount, setEssayQuestionCount] = useState(ESSAY_MAX_QUESTION_COUNT);
   const [selectedOptional, setSelectedOptional] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState(1);
   const [selectedDifficulty, setSelectedDifficulty] = useState('medium');
@@ -380,11 +383,11 @@ function MockTestsPageInner() {
       (s) => s.name === 'All Subjects' || allowed.includes(s.name),
     );
   }, [availableSubjects, selectedExamMode, selectedPaperType]);
-  // Essay Paper is always exactly 2 questions (one per section), never the
-  // user-selected question count - matches the real exam structure.
+  // Essay Paper uses its own 1-2 counter (real exam has 2, one per section),
+  // never the general question-count slider - marks/timing differ entirely.
   const isEssaySelected = selectedExamMode === 'mains' && selectedPaperType === 'essay';
-  const effectiveQuestionCount = isEssaySelected ? ESSAY_QUESTION_COUNT : questionCount;
-  const mainsMarksPattern = selectedExamMode === 'mains' ? buildMainsMarksPattern(questionCount, selectedPaperType) : [];
+  const effectiveQuestionCount = isEssaySelected ? essayQuestionCount : questionCount;
+  const mainsMarksPattern = selectedExamMode === 'mains' ? buildMainsMarksPattern(questionCount, selectedPaperType, essayQuestionCount) : [];
 
   const difficultyDisplay: Record<string, { short: string; imgSrc: string; label: string; description: string }> = {
     easy: { short: '🌱', imgSrc: '/diff-easy.png', label: 'Easy', description: 'Foundational · single-dimensional' },
@@ -1136,23 +1139,41 @@ function MockTestsPageInner() {
             <StepHeader
               step={3}
               label="Number of Questions"
-              subtitle={isEssaySelected ? 'Fixed to the real exam structure - one essay per section.' : selectedExamMode === 'mains' ? 'Slide to set your set size · auto-balanced for time.' : undefined}
+              subtitle={isEssaySelected ? 'The real exam has 2 (one per section) - choose 1 to practice a single essay.' : selectedExamMode === 'mains' ? 'Slide to set your set size · auto-balanced for time.' : undefined}
             />
 
             {isEssaySelected ? (
-              <div style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-                padding: '20px 16px', borderRadius: '14px', border: '1.5px solid #D4B483',
-                background: 'rgba(212,180,131,0.08)',
-              }}>
-                <div style={{ fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: '48px', lineHeight: '48px', color: '#17223E' }}>
-                  2
-                </div>
-                <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282' }}>
-                  ESSAYS
-                </div>
-                <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '12px', color: '#B8960C', marginTop: '2px' }}>
-                  125 marks each · 90 min each · ~1000-1200 words
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(4px, 0.4vw, 8px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(18px, 1.5vw, 28px)' }}>
+                  <button
+                    onClick={() => setEssayQuestionCount((c) => Math.max(ESSAY_MIN_QUESTION_COUNT, c - 1))}
+                    style={{
+                      width: '56px', height: '56px', borderRadius: '50%',
+                      border: '1.5px solid #D4B483', background: 'transparent',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 400, fontSize: '26px', color: '#17223E', transition: 'all 0.15s ease',
+                    }}
+                  >−</button>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: '72px', lineHeight: '72px', color: '#17223E' }}>
+                      {essayQuestionCount}
+                    </div>
+                    <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282', marginTop: '6px' }}>
+                      {essayQuestionCount === 1 ? 'ESSAY' : 'ESSAYS'}
+                    </div>
+                    <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '12px', color: '#B8960C', marginTop: '2px' }}>
+                      {`~${essayQuestionCount * 90} mins · 125 marks each · 1000-1200 words`}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setEssayQuestionCount((c) => Math.min(ESSAY_MAX_QUESTION_COUNT, c + 1))}
+                    style={{
+                      width: '56px', height: '56px', borderRadius: '50%',
+                      border: '1.5px solid #D4B483', background: 'transparent',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 400, fontSize: '26px', color: '#17223E', transition: 'all 0.15s ease',
+                    }}
+                  >+</button>
                 </div>
               </div>
             ) : (
