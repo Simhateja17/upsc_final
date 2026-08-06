@@ -234,6 +234,29 @@ const getExplanationConclusion = (question: any, structured: any) => {
   return 'Hence, refer to the highlighted correct option as the answer.';
 };
 
+// AI-generated explanation text carries markdown (**bold**, bullets) that
+// must be parsed, not shown as literal asterisks. Renders as a <div> (not a
+// <p>) so ReactMarkdown's own <p> output isn't nested inside one.
+function ExplanationText({ text }: { text: string }) {
+  return (
+    <div style={{ fontSize: '15px', color: '#364153', lineHeight: '26px' }}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{children}</p>,
+          strong: ({ children }) => <strong className="font-bold" style={{ color: '#1E2939' }}>{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          ul: ({ children }) => <ul className="ml-4 list-disc space-y-1.5">{children}</ul>,
+          ol: ({ children }) => <ol className="ml-4 list-decimal space-y-1.5">{children}</ol>,
+          li: ({ children }) => <li className="pl-1">{children}</li>,
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
 function ExplanationRenderer({ question }: { question: any }) {
   const explanation = getExplanationText(question);
   const structured = question?.structuredJson?.explanation?.structured;
@@ -258,17 +281,13 @@ function ExplanationRenderer({ question }: { question: any }) {
     return (
       <div className="space-y-3">
         {paragraphs.map((paragraph: string, index: number) => (
-          <p key={index} style={{ fontSize: '15px', color: '#364153', lineHeight: '26px', whiteSpace: 'pre-wrap' }}>
-            {paragraph}
-          </p>
+          <ExplanationText key={index} text={paragraph} />
         ))}
         <section className="rounded-[12px] bg-white/70 p-3" style={{ border: '1px solid #BBF7D0' }}>
           <h4 className="mb-2 text-[13px] font-bold uppercase tracking-[0.06em]" style={{ color: '#016630' }}>
             Conclusion
           </h4>
-          <p style={{ fontSize: '15px', color: '#364153', lineHeight: '26px', whiteSpace: 'pre-wrap' }}>
-            {conclusion}
-          </p>
+          <ExplanationText text={conclusion} />
         </section>
       </div>
     );
@@ -286,9 +305,7 @@ function ExplanationRenderer({ question }: { question: any }) {
             </h4>
             <div className="space-y-3">
               {items.map((item: string, index: number) => (
-                <p key={index} style={{ fontSize: '15px', color: '#364153', lineHeight: '26px', whiteSpace: 'pre-wrap' }}>
-                  {item}
-                </p>
+                <ExplanationText key={index} text={item} />
               ))}
             </div>
           </section>
@@ -298,9 +315,7 @@ function ExplanationRenderer({ question }: { question: any }) {
         <h4 className="mb-2 text-[13px] font-bold uppercase tracking-[0.06em]" style={{ color: '#016630' }}>
           Conclusion
         </h4>
-        <p style={{ fontSize: '15px', color: '#364153', lineHeight: '26px', whiteSpace: 'pre-wrap' }}>
-          {conclusion}
-        </p>
+        <ExplanationText text={conclusion} />
       </section>
     </div>
   );

@@ -261,13 +261,14 @@ function MockTestAttemptInner() {
           statuses[i] = i === 0 ? 'current' : 'unattempted';
         });
         setQuestionStatuses(statuses);
-        // Both modes derive total time deterministically from the question count
+        // Both modes derive total time deterministically from the question set
         // so the timer always matches the setup summary and instructions - never a
         // stale/random API duration.
-        //   Mains:   7 min per 10-mark question (numberOfQuestions × 7).
+        //   Mains:   mainsTimeLimit(marks) per question, summed (a 125-mark Essay
+        //            gets 90 min, not the 10-marker default of 7).
         //   Prelims: 100 questions = 120 minutes, scaled proportionally (× 1.2).
         const durationSeconds = isMains
-          ? qs.length * 7 * 60
+          ? qs.reduce((total: number, q: any) => total + mainsTimeLimit(q.marks || 10), 0) * 60
           : Math.round(qs.length * 1.2) * 60;
         setTimeLeft(durationSeconds);
         setExamTotalSeconds(durationSeconds);
@@ -710,7 +711,7 @@ function MockTestAttemptInner() {
       || (currentQ as any).paper
       || (isMains ? 'GS Paper I' : 'GS Paper I');
     // Show the same exam-wide timer everywhere: setup summary, instructions and
-    // the countdown ring all read one value (mains = numberOfQuestions × 7 min).
+    // the countdown ring all read one value, derived from each question's marks.
     const totalTimeMinutes = examTotalSeconds > 0
       ? Math.round(examTotalSeconds / 60)
       : (isMains ? Math.max(7, totalQuestions * 7) : Math.max(1, Math.round(timeLeft / 60)));

@@ -41,7 +41,11 @@ const avatarColorByInitial: Record<string, string> = {
 export default function LeaderboardPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('overall');
-  const [range, setRange] = useState<Range>('week');
+  // Default to All Time - every other rank-consuming surface (Mains League
+  // widget, profile, results pages) requests range='all', so defaulting this
+  // page to 'week' made the same "Mains" ranking look different depending on
+  // which page you checked it from, even though it's the same query.
+  const [range, setRange] = useState<Range>('all');
   const [showRangeMenu, setShowRangeMenu] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [myRank, setMyRank] = useState<any>(null);
