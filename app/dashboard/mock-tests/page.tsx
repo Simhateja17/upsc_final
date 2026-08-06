@@ -154,8 +154,12 @@ const optionalSubjectIcons: Record<string, string> = {
 };
 
 // Mock Test Mains only uses 10-mark questions (cheaper to auto-evaluate),
-// so every question in the set is a 10-marker - including Full Length.
-function buildMainsMarksPattern(questionCount: number) {
+// so every question in the set is a 10-marker - including Full Length. Essay
+// Paper is the one exception: always exactly 2 questions, each a 125-marker.
+const ESSAY_QUESTION_COUNT = 2;
+const ESSAY_MARKS = 125;
+function buildMainsMarksPattern(questionCount: number, paperType?: string) {
+  if (paperType === 'essay') return Array(ESSAY_QUESTION_COUNT).fill(ESSAY_MARKS);
   return Array(Math.max(1, questionCount)).fill(10);
 }
 
@@ -376,7 +380,11 @@ function MockTestsPageInner() {
       (s) => s.name === 'All Subjects' || allowed.includes(s.name),
     );
   }, [availableSubjects, selectedExamMode, selectedPaperType]);
-  const mainsMarksPattern = selectedExamMode === 'mains' ? buildMainsMarksPattern(questionCount) : [];
+  // Essay Paper is always exactly 2 questions (one per section), never the
+  // user-selected question count - matches the real exam structure.
+  const isEssaySelected = selectedExamMode === 'mains' && selectedPaperType === 'essay';
+  const effectiveQuestionCount = isEssaySelected ? ESSAY_QUESTION_COUNT : questionCount;
+  const mainsMarksPattern = selectedExamMode === 'mains' ? buildMainsMarksPattern(questionCount, selectedPaperType) : [];
 
   const difficultyDisplay: Record<string, { short: string; imgSrc: string; label: string; description: string }> = {
     easy: { short: '🌱', imgSrc: '/diff-easy.png', label: 'Easy', description: 'Foundational · single-dimensional' },
@@ -570,7 +578,7 @@ function MockTestsPageInner() {
         subject: selectedSubject,
         examMode: selectedExamMode,
         paperType: selectedExamMode === 'mains' ? selectedPaperType : undefined,
-        questionCount,
+        questionCount: effectiveQuestionCount,
         difficulty: selectedDifficulty,
       };
       if (selectedExamMode === 'prelims' && selectedPaperType === 'csat') {
@@ -619,7 +627,7 @@ function MockTestsPageInner() {
   const setupNodes = [
     { label: 'Paper', done: availablePaperTypes.some((paper) => paper.id === selectedPaperType && !(selectedExamMode === 'prelims' && paper.id === 'csat')) },
     { label: 'Question Source', done: availableSources.some((source) => source.id === selectedSource) },
-    { label: 'Number of Questions', done: Number.isInteger(questionCount) && questionCount >= minQuestionCount && questionCount <= maxQuestionCount },
+    { label: 'Number of Questions', done: isEssaySelected || (Number.isInteger(questionCount) && questionCount >= minQuestionCount && questionCount <= maxQuestionCount) },
     { label: 'Difficulty', done: difficulties.some((difficulty) => difficulty.id === selectedDifficulty) },
   ];
   const focusSubjectValid = selectedSource !== 'subject_wise' || selectedSubject !== 'All Subjects';
@@ -1128,9 +1136,27 @@ function MockTestsPageInner() {
             <StepHeader
               step={3}
               label="Number of Questions"
-              subtitle={selectedExamMode === 'mains' ? 'Slide to set your set size · auto-balanced for time.' : undefined}
+              subtitle={isEssaySelected ? 'Fixed to the real exam structure - one essay per section.' : selectedExamMode === 'mains' ? 'Slide to set your set size · auto-balanced for time.' : undefined}
             />
 
+            {isEssaySelected ? (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                padding: '20px 16px', borderRadius: '14px', border: '1.5px solid #D4B483',
+                background: 'rgba(212,180,131,0.08)',
+              }}>
+                <div style={{ fontFamily: 'Georgia, serif', fontWeight: 400, fontSize: '48px', lineHeight: '48px', color: '#17223E' }}>
+                  2
+                </div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6A7282' }}>
+                  ESSAYS
+                </div>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: '12px', color: '#B8960C', marginTop: '2px' }}>
+                  125 marks each · 90 min each · ~1000-1200 words
+                </div>
+              </div>
+            ) : (
+            <>
             {/* Counter */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(4px, 0.4vw, 8px)', marginBottom: 'clamp(16px, 1.2vw, 22px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(18px, 1.5vw, 28px)' }}>
@@ -1254,6 +1280,8 @@ function MockTestsPageInner() {
                 })}
               </div>
             </div>
+            </>
+            )}
           </div>
           )}
 
@@ -1412,7 +1440,7 @@ function MockTestsPageInner() {
                   marginBottom: 'clamp(14px, 1vw, 18px)',
                 }}>
                   {[
-                    { emoji: '📋', value: `${questionCount}`, label: 'Questions' },
+                    { emoji: '📋', value: `${effectiveQuestionCount}`, label: 'Questions' },
                     { emoji: '⏱', value: `${estimatedMinutes} min`, label: 'Duration' },
                     { emoji: '🔥', value: sourceLabel, label: 'Source' },
                     { emoji: '📘', value: paperLabel, label: 'Paper' },
