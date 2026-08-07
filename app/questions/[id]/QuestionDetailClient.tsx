@@ -83,7 +83,8 @@ const PLATFORM_ITEMS = [
   { title: 'Performance Analytics', subtitle: 'Deep insights on your prep', href: '/dashboard/performance', icon: 'pulse', bg: 'from-emerald-500 to-teal-600' },
   { title: 'Flashcards & Revision', subtitle: 'Smart spaced repetition', href: '/dashboard/flashcards', icon: 'monitor', bg: 'from-indigo-500 to-blue-700' },
   { title: 'Syllabus Tracker', subtitle: 'Track every topic you cover', href: '/dashboard/syllabus-tracker', icon: 'book', bg: 'from-cyan-500 to-teal-600' },
-  { title: 'Study Groups', subtitle: 'Learn together, grow together', href: '/dashboard/study-groups', icon: 'users', bg: 'from-pink-500 to-rose-600' },
+  // Study Groups (Live Study Room) is hidden for now; re-enable when it is ready.
+  // { title: 'Study Groups', subtitle: 'Learn together, grow together', href: '/dashboard/study-groups', icon: 'users', bg: 'from-pink-500 to-rose-600' },
 ];
 
 function cleanText(value?: string | null) {
